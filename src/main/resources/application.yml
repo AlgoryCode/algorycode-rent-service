@@ -21,11 +21,12 @@ spring:
         # MySQL şeması CHAR(36); Hibernate 7 varsayılanı BINARY(16) — validate uyumu için CHAR kullan.
         type:
           preferred_uuid_jdbc_type: CHAR
+  # AuthService / mail-service ile aynı broker (DNS: rabbitmq.algorycode.com veya küme içi servis)
   rabbitmq:
-    host: localhost
+    host: rabbitmq.algorycode.com
     port: 5672
-    username: guest
-    password: guest
+    username: admin
+    password: GuvenliSifre123
     virtual-host: /
 
 management:
@@ -38,7 +39,7 @@ management:
       show-details: when_authorized
 
 app:
-  # Virgülle ayırın. Prod’da örn: https://rent.algorycode.com,https://www.algorycode.com
+  # CORS: SecurityConfig.corsConfigurationSource — virgülle ayırın (Helm: APP_CORS_ALLOWED_ORIGIN_PATTERNS)
   cors:
     allowed-origin-patterns: "http://localhost:*,http://127.0.0.1:*"
   mail:

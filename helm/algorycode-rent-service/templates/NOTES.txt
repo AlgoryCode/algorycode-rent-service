@@ -1,0 +1,11 @@
+1. Kontrol:
+   kubectl get pods -l app.kubernetes.io/instance={{ .Release.Name }}
+
+2. Servis (ClusterIP):
+   kubectl get svc {{ include "algorycode-rent-service.fullname" . }}
+
+3. Sağlık:
+   kubectl port-forward svc/{{ include "algorycode-rent-service.fullname" . }} {{ .Values.service.port }}:{{ .Values.service.port }}
+   curl -s http://127.0.0.1:{{ .Values.service.port }}/actuator/health
+
+4. Üretimde secret değerlerini asla values.yaml'a işlemeyin; ayrı bir dosya veya CI secret kullanın.

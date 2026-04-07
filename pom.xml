@@ -19,7 +19,10 @@
 
   <properties>
     <java.version>25</java.version>
+    <lombok.version>1.18.38</lombok.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <!-- Helm values.yaml image.tag ile aynı tut (mail-service :s19, authservice :s19 benzeri) -->
+    <jib.image.tag>r1</jib.image.tag>
   </properties>
 
   <dependencies>
@@ -44,6 +47,10 @@
       <artifactId>spring-boot-starter-actuator</artifactId>
     </dependency>
     <dependency>
+      <groupId>org.springframework.boot</groupId>
+      <artifactId>spring-boot-starter-security</artifactId>
+    </dependency>
+    <dependency>
       <groupId>com.mysql</groupId>
       <artifactId>mysql-connector-j</artifactId>
       <scope>runtime</scope>
@@ -51,6 +58,7 @@
     <dependency>
       <groupId>org.projectlombok</groupId>
       <artifactId>lombok</artifactId>
+      <version>${lombok.version}</version>
       <optional>true</optional>
     </dependency>
     <dependency>
@@ -61,12 +69,21 @@
   </dependencies>
 
   <build>
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <groupId>com.google.cloud.tools</groupId>
+          <artifactId>jib-maven-plugin</artifactId>
+          <version>3.5.1</version>
+        </plugin>
+      </plugins>
+    </pluginManagement>
     <plugins>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-compiler-plugin</artifactId>
         <configuration>
-          <!-- JDK 21+ / 25: Lombok işlemcisi açık classpath'te olmalı; aksi halde getter/setter üretilmez. -->
+          <release>${java.version}</release>
           <annotationProcessorPaths>
             <path>
               <groupId>org.projectlombok</groupId>
@@ -79,6 +96,29 @@
       <plugin>
         <groupId>org.springframework.boot</groupId>
         <artifactId>spring-boot-maven-plugin</artifactId>
+      </plugin>
+      <plugin>
+        <groupId>com.google.cloud.tools</groupId>
+        <artifactId>jib-maven-plugin</artifactId>
+        <version>3.5.1</version>
+        <configuration>
+          <from>
+            <image>eclipse-temurin:25-jre-alpine</image>
+          </from>
+          <to>
+            <image>tarikhamarat/algorycode-rent-service:${jib.image.tag}</image>
+          </to>
+          <container>
+            <ports>
+              <port>8090</port>
+            </ports>
+            <creationTime>USE_CURRENT_TIMESTAMP</creationTime>
+            <jvmFlags>
+              <jvmFlag>-XX:+UseContainerSupport</jvmFlag>
+              <jvmFlag>-XX:MaxRAMPercentage=75.0</jvmFlag>
+            </jvmFlags>
+          </container>
+        </configuration>
       </plugin>
     </plugins>
   </build>

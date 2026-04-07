@@ -1,0 +1,97 @@
+# Jib imaj etiketi pom.xml içindeki jib.image.tag ile aynı olmalı (ör. r1)
+replicaCount: 1
+
+nameOverride: ""
+fullnameOverride: ""
+
+image:
+  repository: tarikhamarat/algorycode-rent-service
+  tag: r1
+  pullPolicy: IfNotPresent
+
+imagePullSecrets: []
+# - name: regcred
+
+containerPort: 8090
+
+service:
+  type: ClusterIP
+  port: 8090
+
+# application.yml ile uyumlu; üretimde validate veya none önerilir
+spring:
+  applicationName: algorycode-rent-service
+  jpa:
+    ddlAuto: update
+    showSql: "false"
+
+# Dış broker DNS (A kaydı sunucuya); kümede iç servis kullanılıyorsa host’u değiştirin
+rabbitmq:
+  host: rabbitmq.algorycode.com
+  port: "5672"
+  virtualHost: "/"
+
+app:
+  # Tarayıcıdaki tam kök (Origin) eşleşmeli: www / Vercel önizleme / farklı alt alan ekleyin
+  cors:
+    allowedOriginPatterns: "https://rent.algorycode.com,https://www.rent.algorycode.com,https://*.vercel.app,http://localhost:*"
+  mail:
+    rabbit:
+      exchange: rent.mail
+      routingKey: mail.send.requested
+      queueDlq: rent.mail.dlq
+
+logging:
+  levelRent: INFO
+
+secret:
+  data:
+    springDatasourceUrl: jdbc:mysql://45.147.47.129:3306/algorycoderentdb?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+    springDatasourceUsername: root
+    springDatasourcePassword: algorycode1.
+    springRabbitmqUsername: admin
+    springRabbitmqPassword: GuvenliSifre123
+
+extraEnv: []
+
+resources:
+  requests:
+    memory: "512Mi"
+    cpu: "250m"
+  limits:
+    memory: "1Gi"
+    cpu: "1000m"
+
+podSecurityContext: {}
+securityContext: {}
+
+probes:
+  startup:
+    # Tam /actuator/health Rabbit/DB ile 503 verebilir; JVM yavaşken varsayılan 1s timeout yetmez
+    path: /actuator/health/liveness
+    failureThreshold: 60
+    periodSeconds: 5
+    timeoutSeconds: 10
+  readiness:
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 6
+  liveness:
+    initialDelaySeconds: 90
+    periodSeconds: 20
+    timeoutSeconds: 5
+
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+  hosts:
+    - host: rent-api.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+  # - secretName: rent-api-tls
+  #   hosts:
+  #     - rent-api.example.com
