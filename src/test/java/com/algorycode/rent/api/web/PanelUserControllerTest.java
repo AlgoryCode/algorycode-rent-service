@@ -1,0 +1,53 @@
+package com.algorycode.rent.api.web;
+
+import com.algorycode.rent.api.dto.PanelUserDto;
+import com.algorycode.rent.domain.user.PanelUserRole;
+import com.algorycode.rent.service.PanelUserService;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+
+import java.time.Instant;
+import java.util.List;
+import java.util.UUID;
+
+import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+@ExtendWith(MockitoExtension.class)
+class PanelUserControllerTest {
+
+  @Mock private PanelUserService panelUserService;
+
+  private MockMvc mockMvc;
+
+  @BeforeEach
+  void setUp() {
+    mockMvc = MockMvcBuilders.standaloneSetup(new PanelUserController(panelUserService)).build();
+  }
+
+  @Test
+  void list_returnsUsers() throws Exception {
+    var dto =
+        new PanelUserDto(
+            UUID.randomUUID(),
+            "User",
+            "u@x.com",
+            PanelUserRole.viewer,
+            Instant.parse("2026-01-01T00:00:00Z"),
+            true);
+    when(panelUserService.listAll()).thenReturn(List.of(dto));
+
+    mockMvc
+        .perform(get("/panel-users"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$[0].email").value("u@x.com"))
+        .andExpect(jsonPath("$[0].role").value("viewer"));
+  }
+}
