@@ -21,19 +21,21 @@ public class SecurityConfig {
 
   @Bean
   public CorsConfigurationSource corsConfigurationSource(
-      @Value("${app.cors.allowed-origin-patterns:http://localhost:*,http://127.0.0.1:*}")
-          String allowedOriginPatterns) {
+      @Value("${app.cors.allowed-origin-patterns:*}") String allowedOriginPatterns) {
     String[] patterns =
         Arrays.stream(allowedOriginPatterns.split(","))
             .map(String::trim)
             .filter(s -> !s.isEmpty())
             .toArray(String[]::new);
     if (patterns.length == 0) {
-      patterns = new String[] {"http://localhost:*"};
+      patterns = new String[] {"*"};
     }
 
+    boolean allowAnyOrigin = patterns.length == 1 && "*".equals(patterns[0]);
+
     CorsConfiguration config = new CorsConfiguration();
-    config.setAllowCredentials(true);
+    // "*" ile credential gönderilemez; aksi halde FE withCredentials için true
+    config.setAllowCredentials(!allowAnyOrigin);
     config.setAllowedOriginPatterns(Arrays.asList(patterns));
     config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
     config.setAllowedHeaders(List.of("*"));

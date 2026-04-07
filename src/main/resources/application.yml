@@ -39,9 +39,9 @@ management:
       show-details: when_authorized
 
 app:
-  # CORS: SecurityConfig.corsConfigurationSource — virgülle ayırın (Helm: APP_CORS_ALLOWED_ORIGIN_PATTERNS)
+  # "*" = tüm Origin; credential (cookie) tarayıcıda yasak. Daraltmak için virgülle domain listesi.
   cors:
-    allowed-origin-patterns: "http://localhost:*,http://127.0.0.1:*"
+    allowed-origin-patterns: "*"
   mail:
     rabbit:
       exchange: rent.mail

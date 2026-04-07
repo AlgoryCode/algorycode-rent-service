@@ -32,9 +32,8 @@ rabbitmq:
   virtualHost: "/"
 
 app:
-  # Tarayıcıdaki tam kök (Origin) eşleşmeli: www / Vercel önizleme / farklı alt alan ekleyin
   cors:
-    allowedOriginPatterns: "https://rent.algorycode.com,https://www.rent.algorycode.com,https://*.vercel.app,http://localhost:*"
+    allowedOriginPatterns: "*"
   mail:
     rabbit:
       exchange: rent.mail
