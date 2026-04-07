@@ -1,8 +1,7 @@
 # Gerekli GitHub Secrets (Repository → Settings → Secrets and variables → Actions):
 #   DOCKERHUB_USERNAME   — Docker Hub kullanıcı adı
 #   DOCKERHUB_TOKEN      — Docker Hub Access Token (şifre değil; Account → Security)
-#   KUBE_CONFIG_B64      — kubeconfig dosyasının tek satır base64’ü (satır sonları olmadan):
-#                          base64 < ~/.kube/config | tr -d '\n'  → çıktıyı secret olarak yapıştırın
+#   KUBE_CONFIG          — ~/.kube/config dosyasının tam metni (çok satırlı secret olarak yapıştırın)
 #
 # İsteğe bağlı: farklı dal / namespace / release için aşağıdaki env bloğunu veya secrets ile override edin.
 
@@ -62,9 +61,11 @@ jobs:
           version: v3.14.4
 
       - name: Kubeconfig
+        env:
+          KUBE_CONFIG: ${{ secrets.KUBE_CONFIG }}
         run: |
           mkdir -p "$HOME/.kube"
-          echo "${{ secrets.KUBE_CONFIG_B64 }}" | base64 -d > "$HOME/.kube/config"
+          printf '%s\n' "$KUBE_CONFIG" > "$HOME/.kube/config"
           chmod 600 "$HOME/.kube/config"
 
       - name: Helm upgrade
