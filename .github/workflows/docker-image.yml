@@ -1,9 +1,12 @@
-# Gerekli GitHub Secrets (Repository → Settings → Secrets and variables → Actions):
-#   DOCKERHUB_USERNAME   — Docker Hub kullanıcı adı
-#   DOCKERHUB_TOKEN      — Docker Hub Access Token (şifre değil; Account → Security)
-#   KUBE_CONFIG          — ~/.kube/config dosyasının tam metni (çok satırlı secret olarak yapıştırın)
+# AuthService CI/CD ile aynı desen: KUBE_CONFIG = base64 (tek satır veya boşluksuz); decode ile ~/.kube/config
 #
-# İsteğe bağlı: farklı dal / namespace / release için aşağıdaki env bloğunu veya secrets ile override edin.
+# Gerekli Secrets (Settings → Secrets and variables → Actions):
+#   DOCKERHUB_USERNAME
+#   DOCKERHUB_TOKEN
+#   KUBE_CONFIG        — kubeconfig dosyasının base64’ü:
+#                        base64 < ~/.kube/config | tr -d '\n\r '
+#
+# İsteğe bağlı: env bloğunda HELM_* / IMAGE_NAME / branches değiştirin.
 
 name: Build image and Helm upgrade
 
@@ -22,7 +25,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  IMAGE_REPO: tarikhamarat/algorycode-rent-service
+  IMAGE_NAME: algorycode-rent-service
   HELM_RELEASE: rent-api
   HELM_NAMESPACE: rent
   HELM_CHART: helm/algorycode-rent-service
@@ -41,35 +44,40 @@ jobs:
           java-version: "25"
           cache: maven
 
-      - name: Docker Hub login
-        uses: docker/login-action@v3
-        with:
-          username: ${{ secrets.DOCKERHUB_USERNAME }}
-          password: ${{ secrets.DOCKERHUB_TOKEN }}
-
-      - name: Maven package + Jib push
+      # AuthService ile aynı: Jib doğrudan Docker Hub’a push (docker/login gerekmez)
+      - name: Build and push Docker image with Jib
         run: |
           chmod +x mvnw
-          ./mvnw -B -DskipTests -Djib.image.tag=${{ github.sha }} package jib:build
+          SHORT_SHA=${GITHUB_SHA::7}
+          echo "SHORT_SHA=$SHORT_SHA" >> "$GITHUB_ENV"
+          ./mvnw -B -DskipTests compile jib:build \
+            -Djib.to.image="${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}:latest" \
+            -Djib.to.tags="${SHORT_SHA},${GITHUB_SHA}" \
+            -Djib.to.auth.username=${{ secrets.DOCKERHUB_USERNAME }} \
+            -Djib.to.auth.password=${{ secrets.DOCKERHUB_TOKEN }}
 
       - name: Install kubectl
-        uses: azure/setup-kubectl@v4
+        uses: azure/setup-kubectl@v3
+        with:
+          version: v1.28.0
 
       - name: Install Helm
         uses: azure/setup-helm@v4
         with:
           version: v3.14.4
 
-      - name: Kubeconfig
-        uses: azure/k8s-set-context@v4
-        with:
-          method: kubeconfig
-          kubeconfig: ${{ secrets.KUBE_CONFIG }}
+      # AuthService ile aynı: secret tek satır base64 (newline/boşluk temizlenir)
+      - name: Configure kubeconfig
+        run: |
+          mkdir -p "$HOME/.kube"
+          echo "${{ secrets.KUBE_CONFIG }}" | tr -d '\n\r ' | base64 -d > "$HOME/.kube/config"
+          chmod 600 "$HOME/.kube/config"
 
       - name: Helm upgrade
         run: |
           helm upgrade --install "${{ env.HELM_RELEASE }}" "${{ env.HELM_CHART }}" \
             --namespace "${{ env.HELM_NAMESPACE }}" \
             --create-namespace \
-            --set image.repository="${{ env.IMAGE_REPO }}" \
-            --set image.tag="${{ github.sha }}"
+            --kube-insecure-skip-tls-verify \
+            --set image.repository="${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}" \
+            --set image.tag="${SHORT_SHA}"
