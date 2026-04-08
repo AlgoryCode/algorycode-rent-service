@@ -5,7 +5,9 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
+import jakarta.validation.constraints.DecimalMin;
 
+import java.math.BigDecimal;
 import java.util.Map;
 
 public record CreateVehicleRequest(
@@ -14,6 +16,11 @@ public record CreateVehicleRequest(
     @NotBlank @Size(max = 255) String model,
     @NotNull @Min(1950) @Max(2100) Integer year,
     boolean maintenance,
+    /** Araç başka firmadan geldiyse işaretleyin. */
+    boolean external,
+    @Size(max = 255) String externalCompany,
+    @DecimalMin(value = "0.0", inclusive = true)
+    BigDecimal defaultCommissionAmount,
     /** ISO 3166-1 alpha-2; kayıtlı ülke kodu veya boş. */
     @Size(min = 2, max = 2) String countryCode,
     Map<String, String> images) {}

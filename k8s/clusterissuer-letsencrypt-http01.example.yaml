@@ -1,0 +1,22 @@
+# Bir kez cluster başına uygulayın; e-postayı ve gerekirse ingress class’ı düzenleyin.
+#   kubectl apply -f k8s/clusterissuer-letsencrypt-http01.example.yaml
+#
+# Test için önce Let's Encrypt staging kullanabilirsiniz:
+#   server: https://acme-staging-v02.api.letsencrypt.org/directory
+#   metadata.name: letsencrypt-staging
+# Ingress annotation: cert-manager.io/cluster-issuer: letsencrypt-staging
+
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-prod
+spec:
+  acme:
+    email: admin@algorycode.com
+    server: https://acme-v02.api.letsencrypt.org/directory
+    privateKeySecretRef:
+      name: letsencrypt-prod-account-key
+    solvers:
+      - http01:
+          ingress:
+            class: traefik

@@ -19,6 +19,15 @@ data:
   APP_MAIL_RABBIT_EXCHANGE: {{ .Values.app.mail.rabbit.exchange | quote }}
   APP_MAIL_RABBIT_ROUTING_KEY: {{ .Values.app.mail.rabbit.routingKey | quote }}
   APP_MAIL_RABBIT_QUEUE_DLQ: {{ .Values.app.mail.rabbit.queueDlq | quote }}
+  APP_RENTAL_REQUEST_GREEN_INSURANCE_FEE: {{ .Values.app.rentalRequest.greenInsuranceFee | quote }}
+  APP_CONTRACT_TEMPLATE_PATH: {{ .Values.app.contract.templatePath | quote }}
+  APP_CONTRACT_OUTPUT_DIR: {{ .Values.app.contract.outputDir | quote }}
+  {{- $wa := .Values.app.whatsapp | default dict }}
+  APP_WHATSAPP_ENABLED: {{ $wa.enabled | default "true" | quote }}
+  APP_WHATSAPP_ADMIN_PHONE_E164: {{ $wa.adminPhoneE164 | default "905312187455" | quote }}
+  APP_WHATSAPP_WEBHOOK_URL: {{ $wa.webhookUrl | default "" | quote }}
+  APP_WHATSAPP_WEBHOOK_BEARER: {{ $wa.webhookAuthBearer | default "" | quote }}
+  APP_WHATSAPP_CALLMEBOT_API_KEY: {{ $wa.callmebotApiKey | default "" | quote }}
   MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: "health,info,metrics"
   MANAGEMENT_ENDPOINT_HEALTH_PROBES_ENABLED: "true"
   MANAGEMENT_ENDPOINT_HEALTH_SHOW_DETAILS: "when_authorized"

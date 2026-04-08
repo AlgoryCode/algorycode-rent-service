@@ -1,6 +1,7 @@
 package com.algorycode.rent.api.web;
 
 import com.algorycode.rent.api.dto.RentalDto;
+import com.algorycode.rent.domain.rental.RentalCommissionFlow;
 import com.algorycode.rent.api.error.RestExceptionHandler;
 import com.algorycode.rent.domain.rental.RentalStatus;
 import com.algorycode.rent.service.RentalService;
@@ -51,7 +52,11 @@ class RentalControllerTest {
             LocalDate.of(2026, 1, 5),
             Instant.parse("2025-12-01T10:00:00Z"),
             RentalStatus.pending,
-            new RentalDto.CustomerDto("A", "1", "P", "+90"),
+            java.math.BigDecimal.valueOf(100),
+            RentalCommissionFlow.collect,
+            null,
+            new RentalDto.CustomerDto("A", "1", "P", "+90", null, null, null, null, null),
+            List.of(),
             null,
             List.of(),
             List.of());

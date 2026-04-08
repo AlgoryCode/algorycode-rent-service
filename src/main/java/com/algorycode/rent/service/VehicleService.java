@@ -14,6 +14,8 @@ import com.algorycode.rent.repository.VehicleRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -55,6 +57,22 @@ public class VehicleService {
     v.setModel(req.model().trim());
     v.setYear(req.year());
     v.setMaintenance(req.maintenance());
+    v.setExternal(req.external());
+    if (req.external()) {
+      if (req.externalCompany() == null || req.externalCompany().isBlank()) {
+        throw new BadRequestException("Harici araç için firma adı zorunludur.");
+      }
+      v.setExternalCompany(req.externalCompany().trim());
+    } else {
+      v.setExternalCompany(null);
+    }
+    BigDecimal defaultCommission = req.defaultCommissionAmount();
+    if (defaultCommission != null) {
+      if (defaultCommission.compareTo(BigDecimal.ZERO) < 0) {
+        throw new BadRequestException("Komisyon tutarı negatif olamaz.");
+      }
+      v.setDefaultCommissionAmount(defaultCommission.setScale(2, RoundingMode.HALF_UP));
+    }
     String cc = req.countryCode();
     if (cc != null && !cc.isBlank()) {
       String code = cc.trim().toUpperCase();

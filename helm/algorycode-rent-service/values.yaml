@@ -1,4 +1,4 @@
-# Jib imaj etiketi pom.xml içindeki jib.image.tag ile aynı olmalı (ör. r1)
+# Jib / CI: imaj etiketi latest; pullPolicy Always ile yeni digest çekilir
 replicaCount: 1
 
 nameOverride: ""
@@ -6,8 +6,8 @@ fullnameOverride: ""
 
 image:
   repository: tarikhamarat/algorycode-rent-service
-  tag: r1
-  pullPolicy: IfNotPresent
+  tag: latest
+  pullPolicy: Always
 
 imagePullSecrets: []
 # - name: regcred
@@ -39,6 +39,18 @@ app:
       exchange: rent.mail
       routingKey: mail.send.requested
       queueDlq: rent.mail.dlq
+  rentalRequest:
+    greenInsuranceFee: "75.00"
+  contract:
+    # Pod içinde şablonun yolu (volume mount veya image içine koyabilirsiniz).
+    templatePath: /app/contracts/KURU_GLOBAL_SOZLESME.pdf
+    outputDir: /app/generated-contracts
+  whatsapp:
+    enabled: "true"
+    adminPhoneE164: "905312187455"
+    webhookUrl: ""
+    webhookAuthBearer: ""
+    callmebotApiKey: ""
 
 logging:
   levelRent: INFO
@@ -83,14 +95,16 @@ probes:
 
 ingress:
   enabled: false
-  className: ""
-  annotations: {}
+  className: traefik
+  annotations:
+    traefik.ingress.kubernetes.io/router.tls: "true"
+    cert-manager.io/cluster-issuer: letsencrypt-prod
   hosts:
-    - host: rent-api.example.com
+    - host: rent.algorycode.com
       paths:
         - path: /
           pathType: Prefix
-  tls: []
-  # - secretName: rent-api-tls
-  #   hosts:
-  #     - rent-api.example.com
+  tls:
+    - secretName: rent-algorycode-tls
+      hosts:
+        - rent.algorycode.com

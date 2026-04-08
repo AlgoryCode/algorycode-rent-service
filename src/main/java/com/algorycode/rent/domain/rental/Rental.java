@@ -17,6 +17,7 @@ import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
@@ -43,6 +44,19 @@ public class Rental extends AbstractAuditableUuidEntity {
 
   @Embedded
   private CustomerSnapshot customer;
+
+  @Column(name = "commission_amount", nullable = false, precision = 12, scale = 2)
+  private BigDecimal commissionAmount = BigDecimal.ZERO;
+
+  @Enumerated(EnumType.STRING)
+  @Column(name = "commission_flow", nullable = false, length = 16)
+  private RentalCommissionFlow commissionFlow = RentalCommissionFlow.collect;
+
+  @Column(name = "commission_company", length = 255)
+  private String commissionCompany;
+
+  @OneToMany(mappedBy = "rental", cascade = CascadeType.ALL, orphanRemoval = true)
+  private List<RentalAdditionalDriver> additionalDrivers = new ArrayList<>();
 
   @OneToOne(mappedBy = "rental", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
   private RentalFeedback feedback;

@@ -52,9 +52,7 @@ jobs:
       - name: Maven package + Jib push
         run: |
           chmod +x mvnw
-          SHORT_SHA=${GITHUB_SHA::7}
-          echo "SHORT_SHA=$SHORT_SHA" >> "$GITHUB_ENV"
-          ./mvnw -B -DskipTests package jib:build -Djib.image.tag="${SHORT_SHA}"
+          ./mvnw -B -DskipTests package jib:build -Djib.image.tag=latest
 
       - name: Install kubectl
         uses: azure/setup-kubectl@v4
@@ -77,4 +75,8 @@ jobs:
             --create-namespace \
             --kube-insecure-skip-tls-verify \
             --set image.repository="${{ env.IMAGE_REPO }}" \
-            --set image.tag="${SHORT_SHA}"
+            --set image.tag=latest \
+            --set image.pullPolicy=Always
+          kubectl rollout restart deployment/"${{ env.HELM_RELEASE }}-algorycode-rent-service" \
+            --namespace "${{ env.HELM_NAMESPACE }}" \
+            --insecure-skip-tls-verify=true

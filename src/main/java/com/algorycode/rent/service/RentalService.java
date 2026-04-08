@@ -2,12 +2,15 @@ package com.algorycode.rent.service;
 
 import com.algorycode.rent.api.dto.CreateRentalRequest;
 import com.algorycode.rent.api.dto.RentalDto;
+import com.algorycode.rent.api.dto.UpdateRentalRequest;
 import com.algorycode.rent.api.error.BadRequestException;
 import com.algorycode.rent.api.error.ConflictException;
 import com.algorycode.rent.api.error.ResourceNotFoundException;
 import com.algorycode.rent.api.mapper.RentalMapper;
+import com.algorycode.rent.domain.rental.RentalAdditionalDriver;
 import com.algorycode.rent.domain.rental.CustomerSnapshot;
 import com.algorycode.rent.domain.rental.Rental;
+import com.algorycode.rent.domain.rental.RentalCommissionFlow;
 import com.algorycode.rent.domain.rental.RentalStatus;
 import com.algorycode.rent.domain.vehicle.Vehicle;
 import com.algorycode.rent.repository.RentalRepository;
@@ -15,6 +18,8 @@ import com.algorycode.rent.repository.VehicleRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
@@ -71,31 +76,146 @@ public class RentalService {
     if (vehicle.isMaintenance()) {
       throw new ConflictException("Bakımdaki araç kiralanamaz.");
     }
+    if (req.commissionAmount().compareTo(BigDecimal.ZERO) <= 0) {
+      throw new BadRequestException("Komisyon tutarı sıfırdan büyük olmalıdır.");
+    }
+    if (req.commissionFlow() == RentalCommissionFlow.pay
+        && (req.commissionCompany() == null || req.commissionCompany().isBlank())) {
+      throw new BadRequestException("Komisyon ödemesinde firma adı zorunludur.");
+    }
     RentalStatus status = req.status() != null ? req.status() : RentalStatus.active;
     List<Rental> sameVehicle = rentalRepository.findByVehicle_IdOrderByCreatedAtDesc(req.vehicleId());
-    for (Rental r : sameVehicle) {
-      if (r.getStatus() == RentalStatus.cancelled) {
-        continue;
-      }
-      if (datesOverlap(r.getStartDate(), r.getEndDate(), req.startDate(), req.endDate())) {
-        throw new ConflictException("Bu tarih aralığında zaten bir kiralama var.");
-      }
-    }
+    ensureNoOverlap(sameVehicle, req.startDate(), req.endDate(), null);
     Rental rental = new Rental();
     rental.setVehicle(vehicle);
     rental.setStartDate(req.startDate());
     rental.setEndDate(req.endDate());
     rental.setStatus(status);
+    rental.setCommissionAmount(req.commissionAmount().setScale(2, RoundingMode.HALF_UP));
+    rental.setCommissionFlow(req.commissionFlow());
+    rental.setCommissionCompany(
+        req.commissionCompany() != null && !req.commissionCompany().isBlank()
+            ? req.commissionCompany().trim()
+            : null);
     CustomerSnapshot c = new CustomerSnapshot();
     c.setFullName(req.customer().fullName().trim());
     c.setNationalId(req.customer().nationalId().trim());
     c.setPassportNo(req.customer().passportNo().trim());
     c.setPhone(req.customer().phone().trim());
+    c.setEmail(req.customer().email() != null ? req.customer().email().trim() : null);
+    c.setBirthDate(req.customer().birthDate());
+    c.setDriverLicenseNo(
+        req.customer().driverLicenseNo() != null ? req.customer().driverLicenseNo().trim() : null);
+    c.setDriverLicenseImageDataUrl(
+        req.customer().driverLicenseImageDataUrl() != null
+            ? req.customer().driverLicenseImageDataUrl().trim()
+            : null);
+    c.setPassportImageDataUrl(
+        req.customer().passportImageDataUrl() != null
+            ? req.customer().passportImageDataUrl().trim()
+            : null);
     rental.setCustomer(c);
+    if (req.additionalDrivers() != null) {
+      for (var d : req.additionalDrivers()) {
+        RentalAdditionalDriver ad = new RentalAdditionalDriver();
+        ad.setRental(rental);
+        ad.setFullName(d.fullName().trim());
+        ad.setBirthDate(d.birthDate());
+        ad.setDriverLicenseNo(d.driverLicenseNo().trim());
+        ad.setPassportNo(d.passportNo().trim());
+        ad.setDriverLicenseImageDataUrl(d.driverLicenseImageDataUrl().trim());
+        ad.setPassportImageDataUrl(d.passportImageDataUrl().trim());
+        rental.getAdditionalDrivers().add(ad);
+      }
+    }
+    return RentalMapper.toDto(rentalRepository.save(rental));
+  }
+
+  @Transactional
+  public RentalDto update(UUID id, UpdateRentalRequest req) {
+    Rental rental =
+        rentalRepository
+            .findById(id)
+            .orElseThrow(() -> new ResourceNotFoundException("Rental not found: " + id));
+
+    LocalDate nextStart = req.startDate() != null ? req.startDate() : rental.getStartDate();
+    LocalDate nextEnd = req.endDate() != null ? req.endDate() : rental.getEndDate();
+    if (nextEnd.isBefore(nextStart)) {
+      throw new BadRequestException("Bitiş tarihi başlangıçtan önce olamaz.");
+    }
+
+    RentalStatus nextStatus = req.status() != null ? req.status() : rental.getStatus();
+
+    BigDecimal nextCommission =
+        req.commissionAmount() != null ? req.commissionAmount() : rental.getCommissionAmount();
+    if (nextCommission.compareTo(BigDecimal.ZERO) <= 0) {
+      throw new BadRequestException("Komisyon tutarı sıfırdan büyük olmalıdır.");
+    }
+    nextCommission = nextCommission.setScale(2, RoundingMode.HALF_UP);
+
+    RentalCommissionFlow nextFlow =
+        req.commissionFlow() != null ? req.commissionFlow() : rental.getCommissionFlow();
+    String nextCompany =
+        req.commissionCompany() != null ? cleanOrNull(req.commissionCompany()) : rental.getCommissionCompany();
+    if (nextFlow == RentalCommissionFlow.pay && (nextCompany == null || nextCompany.isBlank())) {
+      throw new BadRequestException("Komisyon ödemesinde firma adı zorunludur.");
+    }
+
+    if (nextStatus != RentalStatus.cancelled) {
+      List<Rental> sameVehicle = rentalRepository.findByVehicle_IdOrderByCreatedAtDesc(rental.getVehicle().getId());
+      ensureNoOverlap(sameVehicle, nextStart, nextEnd, rental.getId());
+    }
+
+    rental.setStartDate(nextStart);
+    rental.setEndDate(nextEnd);
+    rental.setStatus(nextStatus);
+    rental.setCommissionAmount(nextCommission);
+    rental.setCommissionFlow(nextFlow);
+    rental.setCommissionCompany(nextCompany);
+
+    if (req.customer() != null) {
+      CustomerSnapshot c = rental.getCustomer();
+      if (req.customer().fullName() != null) c.setFullName(req.customer().fullName().trim());
+      if (req.customer().nationalId() != null) c.setNationalId(req.customer().nationalId().trim());
+      if (req.customer().passportNo() != null) c.setPassportNo(req.customer().passportNo().trim());
+      if (req.customer().phone() != null) c.setPhone(req.customer().phone().trim());
+      if (req.customer().email() != null) c.setEmail(cleanOrNull(req.customer().email()));
+      if (req.customer().birthDate() != null) c.setBirthDate(req.customer().birthDate());
+      if (req.customer().driverLicenseNo() != null) c.setDriverLicenseNo(cleanOrNull(req.customer().driverLicenseNo()));
+      rental.setCustomer(c);
+    }
+
     return RentalMapper.toDto(rentalRepository.save(rental));
   }
 
   private static boolean datesOverlap(LocalDate aStart, LocalDate aEnd, LocalDate bStart, LocalDate bEnd) {
     return !aStart.isAfter(bEnd) && !bStart.isAfter(aEnd);
+  }
+
+  private void ensureNoOverlap(List<Rental> sameVehicle, LocalDate startDate, LocalDate endDate, UUID skipRentalId) {
+    for (Rental r : sameVehicle) {
+      if (skipRentalId != null && skipRentalId.equals(r.getId())) {
+        continue;
+      }
+      if (r.getStatus() == RentalStatus.cancelled) {
+        continue;
+      }
+      if (datesOverlap(r.getStartDate(), r.getEndDate(), startDate, endDate)) {
+        throw new ConflictException(
+            "Bu araç "
+                + r.getStartDate()
+                + " - "
+                + r.getEndDate()
+                + " aralığında kirada ("
+                + r.getCustomer().getFullName()
+                + ").");
+      }
+    }
+  }
+
+  private static String cleanOrNull(String input) {
+    if (input == null) return null;
+    String s = input.trim();
+    return s.isBlank() ? null : s;
   }
 }

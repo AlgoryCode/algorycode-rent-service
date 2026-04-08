@@ -47,6 +47,22 @@ app:
       exchange: rent.mail
       routing-key: mail.send.requested
       queue-dlq: rent.mail.dlq
+  rental-request:
+    # Yurt dışı çıkış seçilirse otomatik eklenen yeşil sigorta ücreti.
+    green-insurance-fee: 75.00
+  contract:
+    # Kullanıcının verdiği sözleşme şablonu (2 sayfa olsa da ilk sayfa baz alınır).
+    template-path: "/home/tarik/İndirilenler/KURU GLOBAL SÖZLEŞME.pdf"
+    # Çıkan PDF dosyaları backend kökünde bu klasöre yazılır.
+    output-dir: ./generated-contracts
+  whatsapp:
+    # Talep oluşturulunca sözleşme PDF’i yöneticiye iletilmesi (webhook: JSON + documentBase64).
+    enabled: true
+    admin-phone-e164: "905312187455"
+    webhook-url: ${APP_WHATSAPP_WEBHOOK_URL:}
+    webhook-auth-bearer: ${APP_WHATSAPP_WEBHOOK_BEARER:}
+    # PDF için webhook yoksa isteğe bağlı metin bildirimi (CallMeBot ücretsiz API — PDF göndermez).
+    callmebot-api-key: ${APP_WHATSAPP_CALLMEBOT_API_KEY:}
 
 info:
   app:

@@ -23,6 +23,9 @@ public final class VehicleMapper {
         v.getModel(),
         v.getYear(),
         v.isMaintenance(),
+        v.isExternal(),
+        v.getExternalCompany(),
+        v.getDefaultCommissionAmount(),
         v.getCountryCode(),
         Map.copyOf(images));
   }

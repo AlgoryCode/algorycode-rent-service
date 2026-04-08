@@ -2,10 +2,12 @@ package com.algorycode.rent.api.web;
 
 import com.algorycode.rent.api.dto.CreateRentalRequest;
 import com.algorycode.rent.api.dto.RentalDto;
+import com.algorycode.rent.api.dto.UpdateRentalRequest;
 import com.algorycode.rent.domain.rental.RentalStatus;
 import com.algorycode.rent.service.RentalService;
 import jakarta.validation.Valid;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -41,5 +43,10 @@ public class RentalController {
   @PostMapping
   public RentalDto create(@Valid @RequestBody CreateRentalRequest body) {
     return rentalService.create(body);
+  }
+
+  @PatchMapping("/{id}")
+  public RentalDto update(@PathVariable UUID id, @Valid @RequestBody UpdateRentalRequest body) {
+    return rentalService.update(id, body);
   }
 }
