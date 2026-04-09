@@ -36,23 +36,32 @@ public class RentalService {
   }
 
   @Transactional(readOnly = true)
-  public List<RentalDto> list(UUID vehicleId, RentalStatus status) {
+  public List<RentalDto> list(UUID vehicleId, RentalStatus status, LocalDate startDate, LocalDate endDate) {
+    if (startDate != null && endDate != null && endDate.isBefore(startDate)) {
+      throw new BadRequestException("Bitiş tarihi başlangıçtan önce olamaz.");
+    }
+
+    List<Rental> base;
     if (vehicleId != null && status != null) {
-      return rentalRepository.findByVehicle_IdAndStatusOrderByCreatedAtDesc(vehicleId, status).stream()
-          .map(RentalMapper::toDto)
-          .toList();
+      base = rentalRepository.findByVehicle_IdAndStatusOrderByCreatedAtDesc(vehicleId, status);
+    } else if (vehicleId != null) {
+      base = rentalRepository.findByVehicle_IdOrderByCreatedAtDesc(vehicleId);
+    } else if (status != null) {
+      base = rentalRepository.findByStatusOrderByCreatedAtDesc(status);
+    } else {
+      base = rentalRepository.findAllByOrderByCreatedAtDesc();
     }
-    if (vehicleId != null) {
-      return rentalRepository.findByVehicle_IdOrderByCreatedAtDesc(vehicleId).stream()
-          .map(RentalMapper::toDto)
-          .toList();
-    }
-    if (status != null) {
-      return rentalRepository.findByStatusOrderByCreatedAtDesc(status).stream()
-          .map(RentalMapper::toDto)
-          .toList();
-    }
-    return rentalRepository.findAllByOrderByCreatedAtDesc().stream().map(RentalMapper::toDto).toList();
+
+    return base.stream()
+        .filter(
+            r ->
+                overlapsRange(
+                    r.getStartDate(),
+                    r.getEndDate(),
+                    startDate,
+                    endDate))
+        .map(RentalMapper::toDto)
+        .toList();
   }
 
   @Transactional(readOnly = true)
@@ -99,7 +108,7 @@ public class RentalService {
             : null);
     CustomerSnapshot c = new CustomerSnapshot();
     c.setFullName(req.customer().fullName().trim());
-    c.setNationalId(req.customer().nationalId().trim());
+    c.setNationalId(req.customer().nationalId() != null ? req.customer().nationalId().trim() : "");
     c.setPassportNo(req.customer().passportNo().trim());
     c.setPhone(req.customer().phone().trim());
     c.setEmail(req.customer().email() != null ? req.customer().email().trim() : null);
@@ -190,6 +199,16 @@ public class RentalService {
 
   private static boolean datesOverlap(LocalDate aStart, LocalDate aEnd, LocalDate bStart, LocalDate bEnd) {
     return !aStart.isAfter(bEnd) && !bStart.isAfter(aEnd);
+  }
+
+  private static boolean overlapsRange(
+      LocalDate rentalStart, LocalDate rentalEnd, LocalDate filterStart, LocalDate filterEnd) {
+    if (filterStart == null && filterEnd == null) {
+      return true;
+    }
+    LocalDate start = filterStart != null ? filterStart : LocalDate.MIN;
+    LocalDate end = filterEnd != null ? filterEnd : LocalDate.MAX;
+    return datesOverlap(rentalStart, rentalEnd, start, end);
   }
 
   private void ensureNoOverlap(List<Rental> sameVehicle, LocalDate startDate, LocalDate endDate, UUID skipRentalId) {

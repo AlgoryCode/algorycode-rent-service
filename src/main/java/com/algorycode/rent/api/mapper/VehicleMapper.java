@@ -25,7 +25,11 @@ public final class VehicleMapper {
         v.isMaintenance(),
         v.isExternal(),
         v.getExternalCompany(),
-        v.getDefaultCommissionAmount(),
+        v.getRentalDailyPrice(),
+        v.isCommissionEnabled(),
+        v.getCommissionRatePercent(),
+        v.getCommissionBrokerFullName(),
+        v.getCommissionBrokerPhone(),
         v.getCountryCode(),
         Map.copyOf(images));
   }

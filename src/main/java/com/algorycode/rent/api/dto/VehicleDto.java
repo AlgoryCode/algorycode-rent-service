@@ -14,6 +14,10 @@ public record VehicleDto(
     boolean maintenance,
     boolean external,
     String externalCompany,
-    BigDecimal defaultCommissionAmount,
+    BigDecimal rentalDailyPrice,
+    boolean commissionEnabled,
+    BigDecimal commissionRatePercent,
+    String commissionBrokerFullName,
+    String commissionBrokerPhone,
     String countryCode,
     Map<String, String> images) {}

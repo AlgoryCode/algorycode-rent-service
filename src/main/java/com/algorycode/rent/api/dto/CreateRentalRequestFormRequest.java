@@ -17,6 +17,7 @@ public record CreateRentalRequestFormRequest(
     boolean outsideCountryTravel,
     @Size(max = 1000) String note,
     @NotNull @Valid CustomerBody customer,
+    @Size(max = 1)
     List<@Valid AdditionalDriverBody> additionalDrivers) {
 
   public record CustomerBody(

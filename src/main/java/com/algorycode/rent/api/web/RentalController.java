@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
 
@@ -31,8 +32,10 @@ public class RentalController {
   @GetMapping
   public List<RentalDto> list(
       @RequestParam(required = false) UUID vehicleId,
-      @RequestParam(required = false) RentalStatus status) {
-    return rentalService.list(vehicleId, status);
+      @RequestParam(required = false) RentalStatus status,
+      @RequestParam(required = false) LocalDate startDate,
+      @RequestParam(required = false) LocalDate endDate) {
+    return rentalService.list(vehicleId, status, startDate, endDate);
   }
 
   @GetMapping("/{id}")

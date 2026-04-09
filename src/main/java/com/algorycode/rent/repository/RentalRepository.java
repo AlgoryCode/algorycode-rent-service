@@ -22,4 +22,6 @@ public interface RentalRepository extends JpaRepository<Rental, UUID>, JpaSpecif
 
   @EntityGraph(attributePaths = {"vehicle"})
   List<Rental> findByVehicle_IdAndStatusOrderByCreatedAtDesc(UUID vehicleId, RentalStatus status);
+
+  boolean existsByVehicle_Id(UUID vehicleId);
 }

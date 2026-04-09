@@ -22,12 +22,13 @@ public record CreateRentalRequest(
     @NotNull @DecimalMin(value = "0.01", inclusive = true) BigDecimal commissionAmount,
     @NotNull RentalCommissionFlow commissionFlow,
     @Size(max = 255) String commissionCompany,
+    @Size(max = 1)
     List<@Valid AdditionalDriverBody> additionalDrivers,
     RentalStatus status) {
 
   public record CustomerBody(
       @NotBlank @Size(max = 255) String fullName,
-      @NotBlank @Size(max = 32) String nationalId,
+      @Size(max = 32) String nationalId,
       @NotBlank @Size(max = 32) String passportNo,
       @NotBlank @Size(max = 32) String phone,
       @Email @Size(max = 255) String email,

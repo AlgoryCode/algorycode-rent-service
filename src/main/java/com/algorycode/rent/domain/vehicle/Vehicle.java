@@ -41,9 +41,25 @@ public class Vehicle extends AbstractAuditableUuidEntity {
   @Column(name = "external_company", length = 255)
   private String externalCompany;
 
-  /** Araç bazlı varsayılan komisyon (opsiyonel). */
-  @Column(name = "default_commission_amount", precision = 12, scale = 2)
-  private BigDecimal defaultCommissionAmount;
+  /** Günlük kiralama fiyatı. */
+  @Column(name = "rental_daily_price", precision = 12, scale = 2)
+  private BigDecimal rentalDailyPrice;
+
+  /** Araç için komisyon var/yok. */
+  @Column(name = "commission_enabled", nullable = false)
+  private boolean commissionEnabled = false;
+
+  /** Komisyon oranı (yüzde). */
+  @Column(name = "commission_rate_percent", precision = 5, scale = 2)
+  private BigDecimal commissionRatePercent;
+
+  /** Komisyoncu adı soyadı. */
+  @Column(name = "commission_broker_full_name", length = 255)
+  private String commissionBrokerFullName;
+
+  /** Komisyoncu telefonu (opsiyonel). */
+  @Column(name = "commission_broker_phone", length = 32)
+  private String commissionBrokerPhone;
 
   /** ISO 3166-1 alpha-2; ülke listesi / satır rengi için. */
   @Column(name = "country_code", length = 2)
