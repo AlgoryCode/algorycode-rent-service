@@ -42,15 +42,31 @@ app:
   rentalRequest:
     greenInsuranceFee: "75.00"
   contract:
-    # Pod içinde şablonun yolu (volume mount veya image içine koyabilirsiniz).
-    templatePath: /app/contracts/KURU_GLOBAL_SOZLESME.pdf
+    templatePath: ""
     outputDir: /app/generated-contracts
+    authorization:
+      taxablePersonName: "KURU GLOBAL"
+      niptNumber: "M51406058A"
+      representativeName: "TARIK KURU"
+      representativeBirthPlace: "ISTANBUL"
+      representativeResidence: "TIRAN"
+      representativeBirthDate: "21/07/2000"
+      representativePassportNo: "U36724300"
+      footerCompany: "KURU GLOBAL"
+      footerAddress: "RINAS AIRPORT - Rinas, Albania."
+      roadsideAssistancePhone: "+90 510 220 553"
   whatsapp:
     enabled: "true"
     adminPhoneE164: "905312187455"
     webhookUrl: ""
     webhookAuthBearer: ""
     callmebotApiKey: ""
+  objectStorage:
+    enabled: "true"
+    endpoint: "https://s3.algorycode.com"
+    bucket: "rent"
+    keyPrefix: "prod"
+    presignExpirySeconds: "3600"
 
 logging:
   levelRent: INFO
@@ -62,6 +78,8 @@ secret:
     springDatasourcePassword: algorycode1.
     springRabbitmqUsername: admin
     springRabbitmqPassword: GuvenliSifre123
+    appObjectStorageAccessKey: "ld88HanEcv4q2BR0"
+    appObjectStorageSecretKey: "DuE4w8K3jONhT8FfTd2ZaUzkszlJ4r0i"
 
 extraEnv: []
 

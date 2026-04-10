@@ -22,12 +22,29 @@ data:
   APP_RENTAL_REQUEST_GREEN_INSURANCE_FEE: {{ .Values.app.rentalRequest.greenInsuranceFee | quote }}
   APP_CONTRACT_TEMPLATE_PATH: {{ .Values.app.contract.templatePath | quote }}
   APP_CONTRACT_OUTPUT_DIR: {{ .Values.app.contract.outputDir | quote }}
+  {{- $auth := .Values.app.contract.authorization | default dict }}
+  APP_CONTRACT_AUTHORIZATION_TAXABLE_PERSON_NAME: {{ $auth.taxablePersonName | default "" | quote }}
+  APP_CONTRACT_AUTHORIZATION_NIPT_NUMBER: {{ $auth.niptNumber | default "" | quote }}
+  APP_CONTRACT_AUTHORIZATION_REPRESENTATIVE_NAME: {{ $auth.representativeName | default "" | quote }}
+  APP_CONTRACT_AUTHORIZATION_REPRESENTATIVE_BIRTH_PLACE: {{ $auth.representativeBirthPlace | default "" | quote }}
+  APP_CONTRACT_AUTHORIZATION_REPRESENTATIVE_RESIDENCE: {{ $auth.representativeResidence | default "" | quote }}
+  APP_CONTRACT_AUTHORIZATION_REPRESENTATIVE_BIRTH_DATE: {{ $auth.representativeBirthDate | default "" | quote }}
+  APP_CONTRACT_AUTHORIZATION_REPRESENTATIVE_PASSPORT_NO: {{ $auth.representativePassportNo | default "" | quote }}
+  APP_CONTRACT_AUTHORIZATION_FOOTER_COMPANY: {{ $auth.footerCompany | default "" | quote }}
+  APP_CONTRACT_AUTHORIZATION_FOOTER_ADDRESS: {{ $auth.footerAddress | default "" | quote }}
+  APP_CONTRACT_AUTHORIZATION_ROADSIDE_ASSISTANCE_PHONE: {{ $auth.roadsideAssistancePhone | default "+90 510 220 553" | quote }}
   {{- $wa := .Values.app.whatsapp | default dict }}
   APP_WHATSAPP_ENABLED: {{ $wa.enabled | default "true" | quote }}
   APP_WHATSAPP_ADMIN_PHONE_E164: {{ $wa.adminPhoneE164 | default "905312187455" | quote }}
   APP_WHATSAPP_WEBHOOK_URL: {{ $wa.webhookUrl | default "" | quote }}
   APP_WHATSAPP_WEBHOOK_BEARER: {{ $wa.webhookAuthBearer | default "" | quote }}
   APP_WHATSAPP_CALLMEBOT_API_KEY: {{ $wa.callmebotApiKey | default "" | quote }}
+  {{- $os := .Values.app.objectStorage | default dict }}
+  APP_OBJECT_STORAGE_ENABLED: {{ $os.enabled | default "true" | quote }}
+  APP_OBJECT_STORAGE_ENDPOINT: {{ $os.endpoint | default "https://s3.algorycode.com" | quote }}
+  APP_OBJECT_STORAGE_BUCKET: {{ $os.bucket | default "rent" | quote }}
+  APP_OBJECT_STORAGE_KEY_PREFIX: {{ $os.keyPrefix | default "prod" | quote }}
+  APP_OBJECT_STORAGE_PRESIGN_EXPIRY_SECONDS: {{ $os.presignExpirySeconds | default "3600" | quote }}
   MANAGEMENT_ENDPOINTS_WEB_EXPOSURE_INCLUDE: "health,info,metrics"
   MANAGEMENT_ENDPOINT_HEALTH_PROBES_ENABLED: "true"
   MANAGEMENT_ENDPOINT_HEALTH_SHOW_DETAILS: "when_authorized"

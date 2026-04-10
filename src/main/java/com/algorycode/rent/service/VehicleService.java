@@ -6,7 +6,6 @@ import com.algorycode.rent.api.dto.VehicleDto;
 import com.algorycode.rent.api.error.BadRequestException;
 import com.algorycode.rent.api.error.ConflictException;
 import com.algorycode.rent.api.error.ResourceNotFoundException;
-import com.algorycode.rent.api.mapper.VehicleMapper;
 import com.algorycode.rent.domain.vehicle.Vehicle;
 import com.algorycode.rent.domain.vehicle.VehicleImage;
 import com.algorycode.rent.domain.vehicle.VehicleImageSlot;
@@ -17,6 +16,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.util.EnumSet;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -27,19 +29,30 @@ public class VehicleService {
   private final VehicleRepository vehicleRepository;
   private final CountryRepository countryRepository;
   private final RentalRepository rentalRepository;
+  private final ObjectStorageService objectStorageService;
+  private static final EnumSet<VehicleImageSlot> REQUIRED_IMAGE_SLOTS =
+      EnumSet.of(
+          VehicleImageSlot.front,
+          VehicleImageSlot.rear,
+          VehicleImageSlot.left,
+          VehicleImageSlot.right,
+          VehicleImageSlot.interiorDash,
+          VehicleImageSlot.interiorRear);
 
   public VehicleService(
       VehicleRepository vehicleRepository,
       CountryRepository countryRepository,
-      RentalRepository rentalRepository) {
+      RentalRepository rentalRepository,
+      ObjectStorageService objectStorageService) {
     this.vehicleRepository = vehicleRepository;
     this.countryRepository = countryRepository;
     this.rentalRepository = rentalRepository;
+    this.objectStorageService = objectStorageService;
   }
 
   @Transactional(readOnly = true)
   public List<VehicleDto> listAll() {
-    return vehicleRepository.findAll().stream().map(VehicleMapper::toDto).toList();
+    return vehicleRepository.findAll().stream().map(this::toDto).toList();
   }
 
   @Transactional(readOnly = true)
@@ -48,7 +61,7 @@ public class VehicleService {
         vehicleRepository
             .findById(id)
             .orElseThrow(() -> new ResourceNotFoundException("Vehicle not found: " + id));
-    return VehicleMapper.toDto(v);
+    return toDto(v);
   }
 
   @Transactional
@@ -87,27 +100,13 @@ public class VehicleService {
           .orElseThrow(() -> new ResourceNotFoundException("Ülke bulunamadı: " + code));
       v.setCountryCode(code);
     }
-    Map<String, String> images = req.images();
-    if (images != null) {
-      for (var e : images.entrySet()) {
-        String url = e.getValue();
-        if (url == null || url.isBlank()) {
-          continue;
-        }
-        final VehicleImageSlot slot;
-        try {
-          slot = VehicleImageSlot.valueOf(e.getKey());
-        } catch (IllegalArgumentException ex) {
-          throw new BadRequestException("Geçersiz görsel slotu: " + e.getKey());
-        }
-        VehicleImage img = new VehicleImage();
-        img.setVehicle(v);
-        img.setSlot(slot);
-        img.setImageUrl(url.trim());
-        v.getImages().add(img);
-      }
+    validateRequiredVehicleImages(req.images());
+    v = vehicleRepository.save(v);
+    if (req.images() != null) {
+      applyVehicleImages(v, req.images());
+      v = vehicleRepository.save(v);
     }
-    return VehicleMapper.toDto(vehicleRepository.save(v));
+    return toDto(v);
   }
 
   @Transactional
@@ -169,27 +168,77 @@ public class VehicleService {
     }
 
     if (req.images() != null) {
-      v.getImages().clear();
-      for (var e : req.images().entrySet()) {
-        String url = e.getValue();
-        if (url == null || url.isBlank()) {
-          continue;
-        }
-        final VehicleImageSlot slot;
-        try {
-          slot = VehicleImageSlot.valueOf(e.getKey());
-        } catch (IllegalArgumentException ex) {
-          throw new BadRequestException("Geçersiz görsel slotu: " + e.getKey());
-        }
-        VehicleImage img = new VehicleImage();
-        img.setVehicle(v);
-        img.setSlot(slot);
-        img.setImageUrl(url.trim());
-        v.getImages().add(img);
-      }
+      validateRequiredVehicleImages(req.images());
+      applyVehicleImages(v, req.images());
     }
 
-    return VehicleMapper.toDto(vehicleRepository.save(v));
+    return toDto(vehicleRepository.save(v));
+  }
+
+  /**
+   * Tek görsel slotunu günceller: yeni dosyayı yükler, eski object storage kaydını siler.
+   */
+  @Transactional
+  public VehicleDto replaceImageSlot(UUID vehicleId, VehicleImageSlot slot, String imageValue) {
+    if (imageValue == null || imageValue.isBlank()) {
+      throw new BadRequestException("Görsel verisi zorunludur.");
+    }
+    Vehicle v =
+        vehicleRepository
+            .findById(vehicleId)
+            .orElseThrow(() -> new ResourceNotFoundException("Vehicle not found: " + vehicleId));
+
+    VehicleImage existing = null;
+    for (VehicleImage img : v.getImages()) {
+      if (img.getSlot() == slot) {
+        existing = img;
+        break;
+      }
+    }
+    String newStored =
+        objectStorageService.uploadDataUrl(
+            "vehicles/" + v.getId() + "/" + slot.name(), slot.name(), imageValue.trim());
+    if (newStored == null || newStored.isBlank()) {
+      throw new BadRequestException("Görsel yüklenemedi.");
+    }
+    if (existing != null) {
+      String oldRef = existing.getImageUrl();
+      existing.setImageUrl(newStored);
+      objectStorageService.deleteObjectIfStored(oldRef);
+    } else {
+      VehicleImage img = new VehicleImage();
+      img.setVehicle(v);
+      img.setSlot(slot);
+      img.setImageUrl(newStored);
+      v.getImages().add(img);
+    }
+    return toDto(vehicleRepository.save(v));
+  }
+
+  /**
+   * Tek görsel slotunu kaldırır; object storage’daki nesneyi silmeyi dener.
+   */
+  @Transactional
+  public VehicleDto deleteImageSlot(UUID vehicleId, VehicleImageSlot slot) {
+    Vehicle v =
+        vehicleRepository
+            .findById(vehicleId)
+            .orElseThrow(() -> new ResourceNotFoundException("Vehicle not found: " + vehicleId));
+
+    VehicleImage existing = null;
+    for (VehicleImage img : v.getImages()) {
+      if (img.getSlot() == slot) {
+        existing = img;
+        break;
+      }
+    }
+    if (existing == null) {
+      throw new ResourceNotFoundException("Bu slotta görsel yok: " + slot.name());
+    }
+    objectStorageService.deleteObjectIfStored(existing.getImageUrl());
+    v.getImages().remove(existing);
+    existing.setVehicle(null);
+    return toDto(vehicleRepository.save(v));
   }
 
   @Transactional
@@ -200,6 +249,9 @@ public class VehicleService {
             .orElseThrow(() -> new ResourceNotFoundException("Vehicle not found: " + id));
     if (rentalRepository.existsByVehicle_Id(id)) {
       throw new ConflictException("Bu araca ait kiralama kayıtları olduğu için silinemez.");
+    }
+    for (VehicleImage img : new ArrayList<>(v.getImages())) {
+      objectStorageService.deleteObjectIfStored(img.getImageUrl());
     }
     vehicleRepository.delete(v);
   }
@@ -221,5 +273,81 @@ public class VehicleService {
       v.setCommissionBrokerFullName(null);
       v.setCommissionBrokerPhone(null);
     }
+  }
+
+  private void validateRequiredVehicleImages(Map<String, String> images) {
+    if (images == null) {
+      throw new BadRequestException("Araç görselleri zorunludur (ön, arka, sol, sağ, kokpit, arka koltuk).");
+    }
+    for (VehicleImageSlot requiredSlot : REQUIRED_IMAGE_SLOTS) {
+      String value = images.get(requiredSlot.name());
+      if (value == null || value.isBlank()) {
+        throw new BadRequestException("Araç görsellerinde " + requiredSlot.name() + " zorunludur.");
+      }
+    }
+  }
+
+  private void removeStoredVehicleImages(Vehicle vehicle) {
+    List<VehicleImage> copy = new ArrayList<>(vehicle.getImages());
+    for (VehicleImage img : copy) {
+      objectStorageService.deleteObjectIfStored(img.getImageUrl());
+    }
+    vehicle.getImages().clear();
+  }
+
+  private void applyVehicleImages(Vehicle vehicle, Map<String, String> images) {
+    removeStoredVehicleImages(vehicle);
+    for (var e : images.entrySet()) {
+      String imageValue = e.getValue();
+      if (imageValue == null || imageValue.isBlank()) {
+        continue;
+      }
+      final VehicleImageSlot slot;
+      try {
+        slot = VehicleImageSlot.valueOf(e.getKey());
+      } catch (IllegalArgumentException ex) {
+        throw new BadRequestException("Geçersiz görsel slotu: " + e.getKey());
+      }
+      String storedKey =
+          objectStorageService.uploadDataUrl(
+              "vehicles/" + vehicle.getId() + "/" + slot.name(),
+              slot.name(),
+              imageValue.trim());
+      VehicleImage img = new VehicleImage();
+      img.setVehicle(vehicle);
+      img.setSlot(slot);
+      img.setImageUrl(storedKey);
+      vehicle.getImages().add(img);
+    }
+  }
+
+  private VehicleDto toDto(Vehicle v) {
+    Map<String, String> images = new HashMap<>();
+    for (VehicleImage img : v.getImages()) {
+      if (img.getSlot() == null) {
+        continue;
+      }
+      String resolved = objectStorageService.resolvePublicUrl(img.getImageUrl());
+      if (resolved == null || resolved.isBlank()) {
+        continue;
+      }
+      images.put(img.getSlot().name(), resolved);
+    }
+    return new VehicleDto(
+        v.getId(),
+        v.getPlate(),
+        v.getBrand(),
+        v.getModel(),
+        v.getYear(),
+        v.isMaintenance(),
+        v.isExternal(),
+        v.getExternalCompany(),
+        v.getRentalDailyPrice(),
+        v.isCommissionEnabled(),
+        v.getCommissionRatePercent(),
+        v.getCommissionBrokerFullName(),
+        v.getCommissionBrokerPhone(),
+        v.getCountryCode(),
+        Map.copyOf(images));
   }
 }

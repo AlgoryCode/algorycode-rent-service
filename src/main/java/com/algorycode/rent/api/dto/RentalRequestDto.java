@@ -23,6 +23,11 @@ public record RentalRequestDto(
     String contractPdfPath,
     Instant whatsappContractSentAt,
     String whatsappContractError,
+    /**
+     * {@code true} when status is approved and no contract PDF exists yet — show “generate contract” and then
+     * {@code POST /rental-requests/{id}/contract} (triggers PDF + admin WhatsApp if configured).
+     */
+    boolean contractGenerationAvailable,
     CustomerDto customer,
     List<AdditionalDriverDto> additionalDrivers) {
 

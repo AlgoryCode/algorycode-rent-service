@@ -28,11 +28,15 @@ public class RentalRequestWhatsappContractService {
 
   private final AppWhatsappProperties props;
   private final RentalRequestRepository rentalRequestRepository;
+  private final ObjectStorageService objectStorageService;
 
   public RentalRequestWhatsappContractService(
-      AppWhatsappProperties props, RentalRequestRepository rentalRequestRepository) {
+      AppWhatsappProperties props,
+      RentalRequestRepository rentalRequestRepository,
+      ObjectStorageService objectStorageService) {
     this.props = props;
     this.rentalRequestRepository = rentalRequestRepository;
+    this.objectStorageService = objectStorageService;
   }
 
   /**
@@ -53,16 +57,18 @@ public class RentalRequestWhatsappContractService {
       markError(request, "WhatsApp: PDF yolu yok");
       return;
     }
-    Path pdfPath = Path.of(pdfPathStr);
-    if (!Files.isRegularFile(pdfPath)) {
-      markError(request, "WhatsApp: PDF dosyası bulunamadı");
-      return;
-    }
-
     byte[] pdfBytes;
     try {
-      pdfBytes = Files.readAllBytes(pdfPath);
+      Path pdfPath = Path.of(pdfPathStr);
+      if (Files.isRegularFile(pdfPath)) {
+        pdfBytes = Files.readAllBytes(pdfPath);
+      } else {
+        pdfBytes = objectStorageService.readObjectBytes(pdfPathStr);
+      }
     } catch (IOException e) {
+      markError(request, truncate("PDF okunamadı: " + e.getMessage(), 500));
+      return;
+    } catch (Exception e) {
       markError(request, truncate("PDF okunamadı: " + e.getMessage(), 500));
       return;
     }

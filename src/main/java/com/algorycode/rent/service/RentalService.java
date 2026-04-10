@@ -29,10 +29,15 @@ public class RentalService {
 
   private final RentalRepository rentalRepository;
   private final VehicleRepository vehicleRepository;
+  private final ObjectStorageService objectStorageService;
 
-  public RentalService(RentalRepository rentalRepository, VehicleRepository vehicleRepository) {
+  public RentalService(
+      RentalRepository rentalRepository,
+      VehicleRepository vehicleRepository,
+      ObjectStorageService objectStorageService) {
     this.rentalRepository = rentalRepository;
     this.vehicleRepository = vehicleRepository;
+    this.objectStorageService = objectStorageService;
   }
 
   @Transactional(readOnly = true)
@@ -60,7 +65,7 @@ public class RentalService {
                     r.getEndDate(),
                     startDate,
                     endDate))
-        .map(RentalMapper::toDto)
+        .map(r -> RentalMapper.toDto(r, objectStorageService::resolvePublicUrl))
         .toList();
   }
 
@@ -70,7 +75,7 @@ public class RentalService {
         rentalRepository
             .findById(id)
             .orElseThrow(() -> new ResourceNotFoundException("Rental not found: " + id));
-    return RentalMapper.toDto(r);
+    return RentalMapper.toDto(r, objectStorageService::resolvePublicUrl);
   }
 
   @Transactional
@@ -85,10 +90,11 @@ public class RentalService {
     if (vehicle.isMaintenance()) {
       throw new ConflictException("Bakımdaki araç kiralanamaz.");
     }
-    if (req.commissionAmount().compareTo(BigDecimal.ZERO) <= 0) {
-      throw new BadRequestException("Komisyon tutarı sıfırdan büyük olmalıdır.");
+    if (req.commissionAmount().compareTo(BigDecimal.ZERO) < 0) {
+      throw new BadRequestException("Komisyon tutarı negatif olamaz.");
     }
     if (req.commissionFlow() == RentalCommissionFlow.pay
+        && req.commissionAmount().compareTo(BigDecimal.ZERO) > 0
         && (req.commissionCompany() == null || req.commissionCompany().isBlank())) {
       throw new BadRequestException("Komisyon ödemesinde firma adı zorunludur.");
     }
@@ -109,7 +115,8 @@ public class RentalService {
     CustomerSnapshot c = new CustomerSnapshot();
     c.setFullName(req.customer().fullName().trim());
     c.setNationalId(req.customer().nationalId() != null ? req.customer().nationalId().trim() : "");
-    c.setPassportNo(req.customer().passportNo().trim());
+    c.setPassportNo(
+        req.customer().passportNo() != null ? req.customer().passportNo().trim() : "");
     c.setPhone(req.customer().phone().trim());
     c.setEmail(req.customer().email() != null ? req.customer().email().trim() : null);
     c.setBirthDate(req.customer().birthDate());
@@ -130,14 +137,18 @@ public class RentalService {
         ad.setRental(rental);
         ad.setFullName(d.fullName().trim());
         ad.setBirthDate(d.birthDate());
-        ad.setDriverLicenseNo(d.driverLicenseNo().trim());
-        ad.setPassportNo(d.passportNo().trim());
+        ad.setDriverLicenseNo(
+            d.driverLicenseNo() != null ? d.driverLicenseNo().trim() : "");
+        ad.setPassportNo(d.passportNo() != null ? d.passportNo().trim() : "");
         ad.setDriverLicenseImageDataUrl(d.driverLicenseImageDataUrl().trim());
         ad.setPassportImageDataUrl(d.passportImageDataUrl().trim());
         rental.getAdditionalDrivers().add(ad);
       }
     }
-    return RentalMapper.toDto(rentalRepository.save(rental));
+    rental = rentalRepository.save(rental);
+    persistRentalMediaToObjectStorage(rental);
+    rental = rentalRepository.save(rental);
+    return RentalMapper.toDto(rental, objectStorageService::resolvePublicUrl);
   }
 
   @Transactional
@@ -157,8 +168,8 @@ public class RentalService {
 
     BigDecimal nextCommission =
         req.commissionAmount() != null ? req.commissionAmount() : rental.getCommissionAmount();
-    if (nextCommission.compareTo(BigDecimal.ZERO) <= 0) {
-      throw new BadRequestException("Komisyon tutarı sıfırdan büyük olmalıdır.");
+    if (nextCommission.compareTo(BigDecimal.ZERO) < 0) {
+      throw new BadRequestException("Komisyon tutarı negatif olamaz.");
     }
     nextCommission = nextCommission.setScale(2, RoundingMode.HALF_UP);
 
@@ -166,7 +177,9 @@ public class RentalService {
         req.commissionFlow() != null ? req.commissionFlow() : rental.getCommissionFlow();
     String nextCompany =
         req.commissionCompany() != null ? cleanOrNull(req.commissionCompany()) : rental.getCommissionCompany();
-    if (nextFlow == RentalCommissionFlow.pay && (nextCompany == null || nextCompany.isBlank())) {
+    if (nextFlow == RentalCommissionFlow.pay
+        && nextCommission.compareTo(BigDecimal.ZERO) > 0
+        && (nextCompany == null || nextCompany.isBlank())) {
       throw new BadRequestException("Komisyon ödemesinde firma adı zorunludur.");
     }
 
@@ -191,10 +204,51 @@ public class RentalService {
       if (req.customer().email() != null) c.setEmail(cleanOrNull(req.customer().email()));
       if (req.customer().birthDate() != null) c.setBirthDate(req.customer().birthDate());
       if (req.customer().driverLicenseNo() != null) c.setDriverLicenseNo(cleanOrNull(req.customer().driverLicenseNo()));
+      if (req.customer().passportImageDataUrl() != null && !req.customer().passportImageDataUrl().isBlank()) {
+        c.setPassportImageDataUrl(
+            objectStorageService.uploadDataUrl(
+                "rentals/" + rental.getId() + "/customer/passport",
+                "passport",
+                req.customer().passportImageDataUrl().trim()));
+      }
+      if (req.customer().driverLicenseImageDataUrl() != null && !req.customer().driverLicenseImageDataUrl().isBlank()) {
+        c.setDriverLicenseImageDataUrl(
+            objectStorageService.uploadDataUrl(
+                "rentals/" + rental.getId() + "/customer/license",
+                "license",
+                req.customer().driverLicenseImageDataUrl().trim()));
+      }
       rental.setCustomer(c);
     }
 
-    return RentalMapper.toDto(rentalRepository.save(rental));
+    return RentalMapper.toDto(rentalRepository.save(rental), objectStorageService::resolvePublicUrl);
+  }
+
+  private void persistRentalMediaToObjectStorage(Rental rental) {
+    CustomerSnapshot c = rental.getCustomer();
+    c.setPassportImageDataUrl(
+        objectStorageService.uploadDataUrl(
+            "rentals/" + rental.getId() + "/customer/passport",
+            "passport",
+            c.getPassportImageDataUrl()));
+    c.setDriverLicenseImageDataUrl(
+        objectStorageService.uploadDataUrl(
+            "rentals/" + rental.getId() + "/customer/license",
+            "license",
+            c.getDriverLicenseImageDataUrl()));
+
+    for (RentalAdditionalDriver driver : rental.getAdditionalDrivers()) {
+      driver.setPassportImageDataUrl(
+          objectStorageService.uploadDataUrl(
+              "rentals/" + rental.getId() + "/drivers/" + driver.getId() + "/passport",
+              "passport",
+              driver.getPassportImageDataUrl()));
+      driver.setDriverLicenseImageDataUrl(
+          objectStorageService.uploadDataUrl(
+              "rentals/" + rental.getId() + "/drivers/" + driver.getId() + "/license",
+              "license",
+              driver.getDriverLicenseImageDataUrl()));
+    }
   }
 
   private static boolean datesOverlap(LocalDate aStart, LocalDate aEnd, LocalDate bStart, LocalDate bEnd) {

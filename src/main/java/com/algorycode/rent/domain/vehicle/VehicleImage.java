@@ -7,6 +7,7 @@ import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.JoinColumn;
+import jakarta.persistence.Lob;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
@@ -29,7 +30,8 @@ public class VehicleImage extends AbstractAuditableUuidEntity {
   @Column(nullable = false, length = 32)
   private VehicleImageSlot slot;
 
-  /** URL veya object storage anahtarı */
-  @Column(nullable = false, length = 4096)
+  /** URL/object key veya fallback data URL */
+  @Lob
+  @Column(nullable = false, columnDefinition = "LONGTEXT")
   private String imageUrl;
 }

@@ -19,7 +19,7 @@ public record CreateRentalRequest(
     @NotNull LocalDate startDate,
     @NotNull LocalDate endDate,
     @NotNull @Valid CustomerBody customer,
-    @NotNull @DecimalMin(value = "0.01", inclusive = true) BigDecimal commissionAmount,
+    @NotNull @DecimalMin(value = "0", inclusive = true) BigDecimal commissionAmount,
     @NotNull RentalCommissionFlow commissionFlow,
     @Size(max = 255) String commissionCompany,
     @Size(max = 1)
@@ -29,7 +29,7 @@ public record CreateRentalRequest(
   public record CustomerBody(
       @NotBlank @Size(max = 255) String fullName,
       @Size(max = 32) String nationalId,
-      @NotBlank @Size(max = 32) String passportNo,
+      @Size(max = 32) String passportNo,
       @NotBlank @Size(max = 32) String phone,
       @Email @Size(max = 255) String email,
       LocalDate birthDate,
@@ -40,8 +40,8 @@ public record CreateRentalRequest(
   public record AdditionalDriverBody(
       @NotBlank @Size(max = 255) String fullName,
       @NotNull LocalDate birthDate,
-      @NotBlank @Size(max = 64) String driverLicenseNo,
-      @NotBlank @Size(max = 64) String passportNo,
+      @Size(max = 64) String driverLicenseNo,
+      @Size(max = 64) String passportNo,
       @NotBlank @Size(max = 6_000_000) String driverLicenseImageDataUrl,
       @NotBlank @Size(max = 6_000_000) String passportImageDataUrl) {}
 }

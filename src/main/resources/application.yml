@@ -51,10 +51,20 @@ app:
     # Yurt dışı çıkış seçilirse otomatik eklenen yeşil sigorta ücreti.
     green-insurance-fee: 75.00
   contract:
-    # Kullanıcının verdiği sözleşme şablonu (2 sayfa olsa da ilk sayfa baz alınır).
-    template-path: "/home/tarik/İndirilenler/KURU GLOBAL SÖZLEŞME.pdf"
-    # Çıkan PDF dosyaları backend kökünde bu klasöre yazılır.
+    # Boş: PDF tamamen uygulama içi İngilizce yetkilendirme şablonu ile üretilir.
+    template-path: ""
     output-dir: ./generated-contracts
+    authorization:
+      taxable-person-name: "KURU GLOBAL"
+      nipt-number: "M51406058A"
+      representative-name: "TARIK KURU"
+      representative-birth-place: "ISTANBUL"
+      representative-residence: "TIRAN"
+      representative-birth-date: "21/07/2000"
+      representative-passport-no: "U36724300"
+      footer-company: "KURU GLOBAL"
+      footer-address: "RINAS AIRPORT - Rinas, Albania."
+      roadside-assistance-phone: "+90 510 220 553"
   whatsapp:
     # Talep oluşturulunca sözleşme PDF’i yöneticiye iletilmesi (webhook: JSON + documentBase64).
     enabled: true
@@ -63,6 +73,14 @@ app:
     webhook-auth-bearer: ${APP_WHATSAPP_WEBHOOK_BEARER:}
     # PDF için webhook yoksa isteğe bağlı metin bildirimi (CallMeBot ücretsiz API — PDF göndermez).
     callmebot-api-key: ${APP_WHATSAPP_CALLMEBOT_API_KEY:}
+  object-storage:
+    enabled: ${APP_OBJECT_STORAGE_ENABLED:true}
+    endpoint: ${APP_OBJECT_STORAGE_ENDPOINT:https://s3.algorycode.com}
+    bucket: ${APP_OBJECT_STORAGE_BUCKET:rent}
+    access-key: ${APP_OBJECT_STORAGE_ACCESS_KEY:ld88HanEcv4q2BR0}
+    secret-key: ${APP_OBJECT_STORAGE_SECRET_KEY:DuE4w8K3jONhT8FfTd2ZaUzkszlJ4r0i}
+    key-prefix: ${APP_OBJECT_STORAGE_KEY_PREFIX:prod}
+    presign-expiry-seconds: ${APP_OBJECT_STORAGE_PRESIGN_EXPIRY_SECONDS:3600}
 
 info:
   app:

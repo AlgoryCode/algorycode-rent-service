@@ -26,16 +26,16 @@ public record CreateRentalRequestFormRequest(
       @NotBlank @Email @Size(max = 255) String email,
       @NotNull LocalDate birthDate,
       @Size(max = 32) String nationalId,
-      @NotBlank @Size(max = 64) String passportNo,
-      @NotBlank @Size(max = 64) String driverLicenseNo,
+      @Size(max = 64) String passportNo,
+      @Size(max = 64) String driverLicenseNo,
       @NotBlank @Size(max = 6_000_000) String passportImageDataUrl,
       @NotBlank @Size(max = 6_000_000) String driverLicenseImageDataUrl) {}
 
   public record AdditionalDriverBody(
       @NotBlank @Size(max = 255) String fullName,
       @NotNull LocalDate birthDate,
-      @NotBlank @Size(max = 64) String driverLicenseNo,
-      @NotBlank @Size(max = 64) String passportNo,
+      @Size(max = 64) String driverLicenseNo,
+      @Size(max = 64) String passportNo,
       @NotBlank @Size(max = 6_000_000) String passportImageDataUrl,
       @NotBlank @Size(max = 6_000_000) String driverLicenseImageDataUrl) {}
 }

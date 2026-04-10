@@ -3,15 +3,17 @@ package com.algorycode.rent.api.mapper;
 import com.algorycode.rent.api.dto.RentalRequestDto;
 import com.algorycode.rent.domain.request.RentalRequest;
 import com.algorycode.rent.domain.request.RentalRequestAdditionalDriver;
+import com.algorycode.rent.domain.request.RentalRequestStatus;
 
 import java.util.List;
 import java.util.UUID;
+import java.util.function.Function;
 
 public final class RentalRequestMapper {
 
   private RentalRequestMapper() {}
 
-  public static RentalRequestDto toDto(RentalRequest r) {
+  public static RentalRequestDto toDto(RentalRequest r, Function<String, String> assetResolver) {
     var c = r.getCustomer();
     var customer =
         new RentalRequestDto.CustomerDto(
@@ -22,13 +24,17 @@ public final class RentalRequestMapper {
             c.getNationalId(),
             c.getPassportNo(),
             c.getDriverLicenseNo(),
-            c.getPassportImageDataUrl(),
-            c.getDriverLicenseImageDataUrl());
+            assetResolver.apply(c.getPassportImageDataUrl()),
+            assetResolver.apply(c.getDriverLicenseImageDataUrl()));
 
     List<RentalRequestDto.AdditionalDriverDto> additional =
-        r.getAdditionalDrivers().stream().map(RentalRequestMapper::toAdditionalDriverDto).toList();
+        r.getAdditionalDrivers().stream().map(d -> toAdditionalDriverDto(d, assetResolver)).toList();
 
     UUID vehicleId = r.getVehicle() != null ? r.getVehicle().getId() : null;
+
+    boolean contractGenerationAvailable =
+        r.getStatus() == RentalRequestStatus.approved
+            && (r.getContractPdfPath() == null || r.getContractPdfPath().isBlank());
 
     return new RentalRequestDto(
         r.getId(),
@@ -42,21 +48,23 @@ public final class RentalRequestMapper {
         r.isOutsideCountryTravel(),
         r.getGreenInsuranceFee(),
         r.getNote(),
-        r.getContractPdfPath(),
+        assetResolver.apply(r.getContractPdfPath()),
         r.getWhatsappContractSentAt(),
         r.getWhatsappContractError(),
+        contractGenerationAvailable,
         customer,
         additional);
   }
 
-  private static RentalRequestDto.AdditionalDriverDto toAdditionalDriverDto(RentalRequestAdditionalDriver d) {
+  private static RentalRequestDto.AdditionalDriverDto toAdditionalDriverDto(
+      RentalRequestAdditionalDriver d, Function<String, String> assetResolver) {
     return new RentalRequestDto.AdditionalDriverDto(
         d.getId(),
         d.getFullName(),
         d.getBirthDate(),
         d.getDriverLicenseNo(),
         d.getPassportNo(),
-        d.getPassportImageDataUrl(),
-        d.getDriverLicenseImageDataUrl());
+        assetResolver.apply(d.getPassportImageDataUrl()),
+        assetResolver.apply(d.getDriverLicenseImageDataUrl()));
   }
 }

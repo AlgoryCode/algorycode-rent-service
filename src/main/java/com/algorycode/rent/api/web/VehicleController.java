@@ -1,18 +1,14 @@
 package com.algorycode.rent.api.web;
 
+import com.algorycode.rent.api.error.BadRequestException;
 import com.algorycode.rent.api.dto.CreateVehicleRequest;
+import com.algorycode.rent.api.dto.UpdateVehicleImageRequest;
 import com.algorycode.rent.api.dto.UpdateVehicleRequest;
 import com.algorycode.rent.api.dto.VehicleDto;
+import com.algorycode.rent.domain.vehicle.VehicleImageSlot;
 import com.algorycode.rent.service.VehicleService;
 import jakarta.validation.Valid;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PatchMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.UUID;
@@ -50,5 +46,28 @@ public class VehicleController {
   @DeleteMapping("/{id}")
   public void delete(@PathVariable UUID id) {
     vehicleService.delete(id);
+  }
+
+  /** Tek slot görseli: data URL veya mevcut object referansı ile günceller, eski nesneyi S3’ten siler. */
+  @PutMapping("/{id}/images/{slot}")
+  public VehicleDto replaceImage(
+      @PathVariable UUID id,
+      @PathVariable String slot,
+      @Valid @RequestBody UpdateVehicleImageRequest body) {
+    return vehicleService.replaceImageSlot(id, parseImageSlot(slot), body.image());
+  }
+
+  /** Tek slot görselini kaldırır (DB + object storage). */
+  @DeleteMapping("/{id}/images/{slot}")
+  public VehicleDto deleteImage(@PathVariable UUID id, @PathVariable String slot) {
+    return vehicleService.deleteImageSlot(id, parseImageSlot(slot));
+  }
+
+  private static VehicleImageSlot parseImageSlot(String slot) {
+    try {
+      return VehicleImageSlot.valueOf(slot);
+    } catch (IllegalArgumentException e) {
+      throw new BadRequestException("Geçersiz görsel slotu: " + slot);
+    }
   }
 }

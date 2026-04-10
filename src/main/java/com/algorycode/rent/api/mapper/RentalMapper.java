@@ -14,12 +14,13 @@ import com.algorycode.rent.domain.rental.RentalFeedback;
 import com.algorycode.rent.domain.rental.RentalPhoto;
 
 import java.util.List;
+import java.util.function.Function;
 
 public final class RentalMapper {
 
   private RentalMapper() {}
 
-  public static RentalDto toDto(Rental r) {
+  public static RentalDto toDto(Rental r, Function<String, String> assetResolver) {
     var c = r.getCustomer();
     var customer =
         new CustomerDto(
@@ -30,19 +31,19 @@ public final class RentalMapper {
             c.getEmail(),
             c.getBirthDate(),
             c.getDriverLicenseNo(),
-            c.getDriverLicenseImageDataUrl(),
-            c.getPassportImageDataUrl());
+            assetResolver.apply(c.getDriverLicenseImageDataUrl()),
+            assetResolver.apply(c.getPassportImageDataUrl()));
     FeedbackDto fb = null;
     RentalFeedback rf = r.getFeedback();
     if (rf != null) {
       fb = new FeedbackDto(rf.getAt(), rf.getText());
     }
     List<AdditionalDriverDto> additionalDrivers =
-        r.getAdditionalDrivers().stream().map(RentalMapper::additionalDriverDto).toList();
+        r.getAdditionalDrivers().stream().map(d -> additionalDriverDto(d, assetResolver)).toList();
     List<RentalPhotoDto> photos =
-        r.getPhotos().stream().map(RentalMapper::photoDto).toList();
+        r.getPhotos().stream().map(p -> photoDto(p, assetResolver)).toList();
     List<AccidentReportDto> accidents =
-        r.getAccidentReports().stream().map(RentalMapper::accidentDto).toList();
+        r.getAccidentReports().stream().map(a -> accidentDto(a, assetResolver)).toList();
     return new RentalDto(
         r.getId(),
         r.getVehicle().getId(),
@@ -60,30 +61,30 @@ public final class RentalMapper {
         accidents);
   }
 
-  private static AdditionalDriverDto additionalDriverDto(RentalAdditionalDriver d) {
+  private static AdditionalDriverDto additionalDriverDto(RentalAdditionalDriver d, Function<String, String> assetResolver) {
     return new AdditionalDriverDto(
         d.getId(),
         d.getFullName(),
         d.getBirthDate(),
         d.getDriverLicenseNo(),
         d.getPassportNo(),
-        d.getDriverLicenseImageDataUrl(),
-        d.getPassportImageDataUrl());
+        assetResolver.apply(d.getDriverLicenseImageDataUrl()),
+        assetResolver.apply(d.getPassportImageDataUrl()));
   }
 
-  private static RentalPhotoDto photoDto(RentalPhoto p) {
-    return new RentalPhotoDto(p.getId().toString(), p.getUrl(), p.getCaption());
+  private static RentalPhotoDto photoDto(RentalPhoto p, Function<String, String> assetResolver) {
+    return new RentalPhotoDto(p.getId().toString(), assetResolver.apply(p.getUrl()), p.getCaption());
   }
 
-  private static AccidentReportDto accidentDto(AccidentReport ar) {
+  private static AccidentReportDto accidentDto(AccidentReport ar, Function<String, String> assetResolver) {
     List<RentalPhotoDto> ap =
         ar.getPhotos().stream()
-            .map(RentalMapper::accidentPhotoDto)
+            .map(p -> accidentPhotoDto(p, assetResolver))
             .toList();
     return new AccidentReportDto(ar.getId(), ar.getAt(), ar.getDescription(), ap);
   }
 
-  private static RentalPhotoDto accidentPhotoDto(AccidentPhoto p) {
-    return new RentalPhotoDto(p.getId().toString(), p.getUrl(), p.getCaption());
+  private static RentalPhotoDto accidentPhotoDto(AccidentPhoto p, Function<String, String> assetResolver) {
+    return new RentalPhotoDto(p.getId().toString(), assetResolver.apply(p.getUrl()), p.getCaption());
   }
 }
