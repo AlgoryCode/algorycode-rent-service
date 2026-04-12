@@ -9,3 +9,7 @@
    curl -s http://127.0.0.1:{{ .Values.service.port }}/actuator/health
 
 4. Üretimde secret değerlerini asla values.yaml'a işlemeyin; ayrı bir dosya veya CI secret kullanın.
+
+5. Eureka başka namespace’teyse: values’ta eureka.crossNamespace.enabled=true ve
+   k8sServiceName / k8sNamespace / port’u Eureka Kubernetes Service’ine göre ayarlayın
+   (kubectl get svc -n <eureka-ns>). Tam URL vermek isterseniz eureka.clientServiceUrlDefaultZone kullanın.

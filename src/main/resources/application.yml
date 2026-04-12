@@ -38,6 +38,16 @@ management:
     health:
       show-details: when_authorized
 
+# Gateway: lb://ALGORYCODE-RENT-SERVICE — spring.application.name ile Eureka’da aynı isim (büyük harf) kullanılır.
+eureka:
+  instance:
+    preferIpAddress: true
+  client:
+    fetchRegistry: true
+    registerWithEureka: true
+    serviceUrl:
+      defaultZone: ${EUREKA_CLIENT_SERVICEURL_DEFAULTZONE:http://localhost:8070/eureka/}
+
 app:
   # Gateway CORS veriyorsa false bırakın; aksi halde çift Access-Control-Allow-Origin (tarayıcı CORS hatası).
   # Tarayıcı doğrudan 8090’a gidiyorsa true + allowed-origin-patterns.

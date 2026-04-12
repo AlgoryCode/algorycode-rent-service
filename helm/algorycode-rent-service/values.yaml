@@ -25,6 +25,27 @@ spring:
     ddlAuto: update
     showSql: "false"
 
+# Eureka — rent pod’unun Eureka’ya gidebildiği adres (localhost kullanma).
+#
+# 1) Farklı Kubernetes namespace (senin senaryon): crossNamespace.enabled: true ve
+#    k8sServiceName + k8sNamespace + port’u Eureka Service’ine göre doldur.
+#    Örnek URL üretimi: http://eurekaserver.infra.svc.cluster.local:8070/eureka/
+#
+# 2) Aynı namespace: crossNamespace.enabled: false (varsayılan); sameNamespace ile isim/port.
+#
+# 3) Özel URL (TLS, farklı cluster ingress vb.): clientServiceUrlDefaultZone’u doldur;
+#    doluysa diğerleri yok sayılır.
+eureka:
+  clientServiceUrlDefaultZone: ""
+  crossNamespace:
+    enabled: false
+    k8sServiceName: eurekaserver
+    k8sNamespace: infra
+    port: 8070
+  sameNamespace:
+    serviceName: eurekaserver
+    port: 8070
+
 # Dış broker DNS (A kaydı sunucuya); kümede iç servis kullanılıyorsa host’u değiştirin
 rabbitmq:
   host: rabbitmq.algorycode.com
