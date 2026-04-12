@@ -26,9 +26,9 @@ spring:
     showSql: "false"
 
 # Eureka — doğrudan erişilebilir adres (DNS / LB). Boş bırakılırsa cluster içi sameNamespace / crossNamespace kullanılır.
-# Varsayılan: dış hostname (kubectl --set ile ezilebilir). Port / şema farklıysa URL’yi güncelle (ör. https://…:443/eureka/).
+# Not: eureka.algorycode.com genelde Ingress üzerinden 80/443’tedir; :8070 dışarıdan kapalı olabilir.
 eureka:
-  clientServiceUrlDefaultZone: "http://eureka.algorycode.com:8070/eureka/"
+  clientServiceUrlDefaultZone: "https://eureka.algorycode.com/eureka/"
   crossNamespace:
     enabled: false
     k8sServiceName: eurekaserver
