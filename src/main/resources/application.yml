@@ -39,8 +39,10 @@ management:
       show-details: when_authorized
 
 app:
-  # "*" = tüm Origin; credential (cookie) tarayıcıda yasak. Daraltmak için virgülle domain listesi.
+  # Gateway CORS veriyorsa false bırakın; aksi halde çift Access-Control-Allow-Origin (tarayıcı CORS hatası).
+  # Tarayıcı doğrudan 8090’a gidiyorsa true + allowed-origin-patterns.
   cors:
+    enabled: false
     allowed-origin-patterns: "*"
   mail:
     rabbit:

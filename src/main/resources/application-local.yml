@@ -1,0 +1,5 @@
+# Next.js doğrudan rent API (localhost:3000 → localhost:8090), gateway yok.
+# Çalıştırma: SPRING_PROFILES_ACTIVE=local
+app:
+  cors:
+    enabled: true

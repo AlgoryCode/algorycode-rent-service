@@ -1,6 +1,7 @@
 package com.algorycode.rent.config;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.Customizer;
@@ -20,6 +21,7 @@ import java.util.List;
 public class SecurityConfig {
 
   @Bean
+  @ConditionalOnProperty(prefix = "app.cors", name = "enabled", havingValue = "true", matchIfMissing = false)
   public CorsConfigurationSource corsConfigurationSource(
       @Value("${app.cors.allowed-origin-patterns:*}") String allowedOriginPatterns) {
     String[] patterns =
@@ -50,9 +52,14 @@ public class SecurityConfig {
    * İleride {@code authorizeHttpRequests} ile kısıtlayın.
    */
   @Bean
-  public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
-    http.cors(Customizer.withDefaults())
-        .csrf(AbstractHttpConfigurer::disable)
+  public SecurityFilterChain securityFilterChain(
+      HttpSecurity http, @Value("${app.cors.enabled:false}") boolean corsEnabled) throws Exception {
+    if (corsEnabled) {
+      http.cors(Customizer.withDefaults());
+    } else {
+      http.cors(AbstractHttpConfigurer::disable);
+    }
+    http.csrf(AbstractHttpConfigurer::disable)
         .authorizeHttpRequests(auth -> auth.anyRequest().permitAll());
     return http.build();
   }
