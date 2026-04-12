@@ -6,6 +6,7 @@ import com.algorycode.rent.domain.rental.Rental;
 import com.algorycode.rent.domain.rental.RentalStatus;
 import com.algorycode.rent.domain.vehicle.Vehicle;
 import com.algorycode.rent.repository.RentalRepository;
+import com.algorycode.rent.repository.VehicleRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -27,6 +28,9 @@ import static org.mockito.Mockito.when;
 class RentalServiceTest {
 
   @Mock private RentalRepository rentalRepository;
+  @Mock private VehicleRepository vehicleRepository;
+  @Mock private ObjectStorageService objectStorageService;
+  @Mock private CustomerRecordService customerRecordService;
 
   @InjectMocks private RentalService rentalService;
 
@@ -34,7 +38,7 @@ class RentalServiceTest {
   void list_withoutFilters_usesFindAllByOrder() {
     when(rentalRepository.findAllByOrderByCreatedAtDesc()).thenReturn(List.of());
 
-    rentalService.list(null, null);
+    rentalService.list(null, null, null, null);
 
     verify(rentalRepository).findAllByOrderByCreatedAtDesc();
   }
@@ -44,7 +48,7 @@ class RentalServiceTest {
     var vid = UUID.randomUUID();
     when(rentalRepository.findByVehicle_IdOrderByCreatedAtDesc(vid)).thenReturn(List.of());
 
-    rentalService.list(vid, null);
+    rentalService.list(vid, null, null, null);
 
     verify(rentalRepository).findByVehicle_IdOrderByCreatedAtDesc(vid);
   }
@@ -54,7 +58,7 @@ class RentalServiceTest {
     when(rentalRepository.findByStatusOrderByCreatedAtDesc(RentalStatus.pending))
         .thenReturn(List.of());
 
-    rentalService.list(null, RentalStatus.pending);
+    rentalService.list(null, RentalStatus.pending, null, null);
 
     verify(rentalRepository).findByStatusOrderByCreatedAtDesc(RentalStatus.pending);
   }
@@ -65,7 +69,7 @@ class RentalServiceTest {
     when(rentalRepository.findByVehicle_IdAndStatusOrderByCreatedAtDesc(vid, RentalStatus.active))
         .thenReturn(List.of(sampleRental(vid)));
 
-    var rows = rentalService.list(vid, RentalStatus.active);
+    var rows = rentalService.list(vid, RentalStatus.active, null, null);
 
     assertThat(rows).hasSize(1);
     assertThat(rows.getFirst().status()).isEqualTo(RentalStatus.active);

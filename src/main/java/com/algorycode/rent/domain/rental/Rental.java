@@ -21,6 +21,7 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 @Getter
 @Setter
@@ -44,6 +45,9 @@ public class Rental extends AbstractAuditableUuidEntity {
 
   @Embedded
   private CustomerSnapshot customer;
+
+  @Column(name = "user_id")
+  private UUID userId;
 
   @Column(name = "commission_amount", nullable = false, precision = 12, scale = 2)
   private BigDecimal commissionAmount = BigDecimal.ZERO;

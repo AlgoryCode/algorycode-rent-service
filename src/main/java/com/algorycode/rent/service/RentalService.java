@@ -30,14 +30,17 @@ public class RentalService {
   private final RentalRepository rentalRepository;
   private final VehicleRepository vehicleRepository;
   private final ObjectStorageService objectStorageService;
+  private final CustomerRecordService customerRecordService;
 
   public RentalService(
       RentalRepository rentalRepository,
       VehicleRepository vehicleRepository,
-      ObjectStorageService objectStorageService) {
+      ObjectStorageService objectStorageService,
+      CustomerRecordService customerRecordService) {
     this.rentalRepository = rentalRepository;
     this.vehicleRepository = vehicleRepository;
     this.objectStorageService = objectStorageService;
+    this.customerRecordService = customerRecordService;
   }
 
   @Transactional(readOnly = true)
@@ -103,6 +106,7 @@ public class RentalService {
     ensureNoOverlap(sameVehicle, req.startDate(), req.endDate(), null);
     Rental rental = new Rental();
     rental.setVehicle(vehicle);
+    rental.setUserId(req.userId());
     rental.setStartDate(req.startDate());
     rental.setEndDate(req.endDate());
     rental.setStatus(status);
@@ -131,6 +135,7 @@ public class RentalService {
             ? req.customer().passportImageDataUrl().trim()
             : null);
     rental.setCustomer(c);
+    customerRecordService.assertCustomerActive(c);
     if (req.additionalDrivers() != null) {
       for (var d : req.additionalDrivers()) {
         RentalAdditionalDriver ad = new RentalAdditionalDriver();
@@ -219,6 +224,7 @@ public class RentalService {
                 req.customer().driverLicenseImageDataUrl().trim()));
       }
       rental.setCustomer(c);
+      customerRecordService.assertCustomerActive(c);
     }
 
     return RentalMapper.toDto(rentalRepository.save(rental), objectStorageService::resolvePublicUrl);

@@ -1,9 +1,13 @@
 package com.algorycode.rent.domain.vehicle;
 
 import com.algorycode.rent.domain.AbstractAuditableUuidEntity;
+import com.algorycode.rent.domain.location.City;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
 import lombok.Getter;
@@ -61,9 +65,22 @@ public class Vehicle extends AbstractAuditableUuidEntity {
   @Column(name = "commission_broker_phone", length = 32)
   private String commissionBrokerPhone;
 
-  /** ISO 3166-1 alpha-2; ülke listesi / satır rengi için. */
+  /** Geçici geriye uyumluluk alanı (yeni modelde country city üzerinden okunur). */
   @Column(name = "country_code", length = 2)
   private String countryCode;
+
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "city_id")
+  private City city;
+
+  @Column(name = "engine", length = 255)
+  private String engine;
+
+  @Column(name = "seats")
+  private Integer seats;
+
+  @Column(name = "luggage")
+  private Integer luggage;
 
   @OneToMany(mappedBy = "vehicle", cascade = CascadeType.ALL, orphanRemoval = true)
   private List<VehicleImage> images = new ArrayList<>();

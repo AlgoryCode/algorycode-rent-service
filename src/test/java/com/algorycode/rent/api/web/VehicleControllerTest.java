@@ -42,7 +42,28 @@ class VehicleControllerTest {
     var id = UUID.randomUUID();
     when(vehicleService.listAll())
         .thenReturn(
-            List.of(new VehicleDto(id, "34 A 1", "Toyota", "Corolla", 2023, false, false, null, null, null, Map.of())));
+            List.of(new VehicleDto(
+                id,
+                "34 A 1",
+                "Toyota",
+                "Corolla",
+                2023,
+                false,
+                false,
+                null,
+                null,
+                false,
+                null,
+                null,
+                null,
+                "TR",
+                "Türkiye",
+                null,
+                null,
+                null,
+                null,
+                null,
+                Map.of())));
 
     mockMvc
         .perform(get("/vehicles").accept(MediaType.APPLICATION_JSON))

@@ -43,6 +43,7 @@ public final class RentalRequestMapper {
         r.getStatus(),
         r.getStatusMessage(),
         vehicleId,
+        r.getUserId(),
         r.getStartDate(),
         r.getEndDate(),
         r.isOutsideCountryTravel(),

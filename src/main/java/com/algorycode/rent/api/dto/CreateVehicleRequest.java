@@ -9,6 +9,7 @@ import jakarta.validation.constraints.Size;
 
 import java.math.BigDecimal;
 import java.util.Map;
+import java.util.UUID;
 
 public record CreateVehicleRequest(
     @NotBlank @Size(max = 32) String plate,
@@ -24,6 +25,8 @@ public record CreateVehicleRequest(
     @DecimalMin(value = "0.0", inclusive = true)
     BigDecimal commissionRatePercent,
     @Size(max = 32) String commissionBrokerPhone,
-    /** ISO 3166-1 alpha-2; kayıtlı ülke kodu veya boş. */
-    @Size(min = 2, max = 2) String countryCode,
-    Map<String, String> images) {}
+    @NotNull UUID cityId,
+    Map<String, String> images,
+    @Size(max = 255) String engine,
+    @Min(1) @Max(20) Integer seats,
+    @Min(0) Integer luggage) {}

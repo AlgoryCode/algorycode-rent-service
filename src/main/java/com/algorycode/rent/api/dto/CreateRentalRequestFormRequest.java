@@ -12,6 +12,7 @@ import java.util.UUID;
 
 public record CreateRentalRequestFormRequest(
     UUID vehicleId,
+    UUID userId,
     @NotNull LocalDate startDate,
     @NotNull LocalDate endDate,
     boolean outsideCountryTravel,

@@ -1,5 +1,6 @@
 package com.algorycode.rent.service;
 
+import com.algorycode.rent.api.error.ResourceNotFoundException;
 import com.algorycode.rent.domain.user.PanelUser;
 import com.algorycode.rent.domain.user.PanelUserRole;
 import com.algorycode.rent.repository.PanelUserRepository;
@@ -14,6 +15,8 @@ import java.util.List;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -41,5 +44,25 @@ class PanelUserServiceTest {
     assertThat(rows).hasSize(1);
     assertThat(rows.getFirst().email()).isEqualTo("a@x.com");
     assertThat(rows.getFirst().role()).isEqualTo(PanelUserRole.admin);
+  }
+
+  @Test
+  void deleteById_deletesWhenExists() {
+    var id = UUID.randomUUID();
+    when(panelUserRepository.existsById(id)).thenReturn(true);
+
+    panelUserService.deleteById(id);
+
+    verify(panelUserRepository).deleteById(id);
+  }
+
+  @Test
+  void deleteById_throwsWhenMissing() {
+    var id = UUID.randomUUID();
+    when(panelUserRepository.existsById(id)).thenReturn(false);
+
+    assertThatThrownBy(() -> panelUserService.deleteById(id))
+        .isInstanceOf(ResourceNotFoundException.class)
+        .hasMessageContaining("bulunamadı");
   }
 }

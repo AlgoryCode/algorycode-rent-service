@@ -2,6 +2,8 @@ package com.algorycode.rent.service;
 
 import com.algorycode.rent.api.error.ResourceNotFoundException;
 import com.algorycode.rent.domain.vehicle.Vehicle;
+import com.algorycode.rent.repository.CityRepository;
+import com.algorycode.rent.repository.RentalRepository;
 import com.algorycode.rent.repository.VehicleRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -22,6 +24,9 @@ import static org.mockito.Mockito.when;
 class VehicleServiceTest {
 
   @Mock private VehicleRepository vehicleRepository;
+  @Mock private CityRepository cityRepository;
+  @Mock private RentalRepository rentalRepository;
+  @Mock private ObjectStorageService objectStorageService;
 
   @InjectMocks private VehicleService vehicleService;
 

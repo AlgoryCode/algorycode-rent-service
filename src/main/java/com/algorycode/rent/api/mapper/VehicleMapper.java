@@ -16,6 +16,9 @@ public final class VehicleMapper {
     for (VehicleImage img : v.getImages()) {
       images.put(img.getSlot().name(), img.getImageUrl());
     }
+    var city = v.getCity();
+    var country = city != null ? city.getCountry() : null;
+
     return new VehicleDto(
         v.getId(),
         v.getPlate(),
@@ -30,7 +33,13 @@ public final class VehicleMapper {
         v.getCommissionRatePercent(),
         v.getCommissionBrokerFullName(),
         v.getCommissionBrokerPhone(),
-        v.getCountryCode(),
+        country != null ? country.getCode() : v.getCountryCode(),
+        country != null ? country.getName() : null,
+        city != null ? city.getId() : null,
+        city != null ? city.getName() : null,
+        v.getEngine(),
+        v.getSeats(),
+        v.getLuggage(),
         Map.copyOf(images));
   }
 }

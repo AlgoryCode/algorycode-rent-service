@@ -12,6 +12,7 @@ import java.util.UUID;
 public record RentalDto(
     UUID id,
     UUID vehicleId,
+    UUID userId,
     LocalDate startDate,
     LocalDate endDate,
     Instant createdAt,

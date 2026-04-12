@@ -15,7 +15,9 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -49,5 +51,13 @@ class PanelUserControllerTest {
         .andExpect(status().isOk())
         .andExpect(jsonPath("$[0].email").value("u@x.com"))
         .andExpect(jsonPath("$[0].role").value("viewer"));
+  }
+
+  @Test
+  void delete_returnsNoContent() throws Exception {
+    var id = UUID.randomUUID();
+    doNothing().when(panelUserService).deleteById(id);
+
+    mockMvc.perform(delete("/panel-users/" + id)).andExpect(status().isOk());
   }
 }

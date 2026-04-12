@@ -47,6 +47,7 @@ public final class RentalMapper {
     return new RentalDto(
         r.getId(),
         r.getVehicle().getId(),
+        r.getUserId(),
         r.getStartDate(),
         r.getEndDate(),
         r.getCreatedAt(),

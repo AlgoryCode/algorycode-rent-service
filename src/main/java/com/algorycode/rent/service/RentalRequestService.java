@@ -49,6 +49,7 @@ public class RentalRequestService {
   private final RentalContractPdfService rentalContractPdfService;
   private final RentalRequestWhatsappContractService rentalRequestWhatsappContractService;
   private final ObjectStorageService objectStorageService;
+  private final CustomerRecordService customerRecordService;
 
   public RentalRequestService(
       RentalRequestRepository rentalRequestRepository,
@@ -56,13 +57,15 @@ public class RentalRequestService {
       AppRentalRequestProperties rentalRequestProperties,
       RentalContractPdfService rentalContractPdfService,
       RentalRequestWhatsappContractService rentalRequestWhatsappContractService,
-      ObjectStorageService objectStorageService) {
+      ObjectStorageService objectStorageService,
+      CustomerRecordService customerRecordService) {
     this.rentalRequestRepository = rentalRequestRepository;
     this.vehicleRepository = vehicleRepository;
     this.rentalRequestProperties = rentalRequestProperties;
     this.rentalContractPdfService = rentalContractPdfService;
     this.rentalRequestWhatsappContractService = rentalRequestWhatsappContractService;
     this.objectStorageService = objectStorageService;
+    this.customerRecordService = customerRecordService;
   }
 
   @Transactional
@@ -82,6 +85,7 @@ public class RentalRequestService {
     entity.setReferenceNo(generateReferenceNo());
     entity.setStatus(RentalRequestStatus.pending);
     entity.setVehicle(vehicle);
+    entity.setUserId(req.userId());
     entity.setStartDate(req.startDate());
     entity.setEndDate(req.endDate());
     entity.setOutsideCountryTravel(req.outsideCountryTravel());
@@ -99,6 +103,7 @@ public class RentalRequestService {
     c.setPassportImageDataUrl(req.customer().passportImageDataUrl().trim());
     c.setDriverLicenseImageDataUrl(req.customer().driverLicenseImageDataUrl().trim());
     entity.setCustomer(c);
+    customerRecordService.assertCustomerActive(c);
 
     if (req.additionalDrivers() != null) {
       for (var d : req.additionalDrivers()) {

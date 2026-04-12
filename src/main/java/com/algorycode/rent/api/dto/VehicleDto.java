@@ -20,4 +20,10 @@ public record VehicleDto(
     String commissionBrokerFullName,
     String commissionBrokerPhone,
     String countryCode,
+    String countryName,
+    UUID cityId,
+    String cityName,
+    String engine,
+    Integer seats,
+    Integer luggage,
     Map<String, String> images) {}

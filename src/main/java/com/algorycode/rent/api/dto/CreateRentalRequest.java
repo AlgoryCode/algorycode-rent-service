@@ -16,6 +16,7 @@ import java.util.UUID;
 
 public record CreateRentalRequest(
     @NotNull UUID vehicleId,
+    UUID userId,
     @NotNull LocalDate startDate,
     @NotNull LocalDate endDate,
     @NotNull @Valid CustomerBody customer,

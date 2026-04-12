@@ -6,10 +6,11 @@ import com.algorycode.rent.api.dto.VehicleDto;
 import com.algorycode.rent.api.error.BadRequestException;
 import com.algorycode.rent.api.error.ConflictException;
 import com.algorycode.rent.api.error.ResourceNotFoundException;
+import com.algorycode.rent.domain.location.City;
 import com.algorycode.rent.domain.vehicle.Vehicle;
 import com.algorycode.rent.domain.vehicle.VehicleImage;
 import com.algorycode.rent.domain.vehicle.VehicleImageSlot;
-import com.algorycode.rent.repository.CountryRepository;
+import com.algorycode.rent.repository.CityRepository;
 import com.algorycode.rent.repository.RentalRepository;
 import com.algorycode.rent.repository.VehicleRepository;
 import org.springframework.stereotype.Service;
@@ -27,7 +28,7 @@ import java.util.UUID;
 public class VehicleService {
 
   private final VehicleRepository vehicleRepository;
-  private final CountryRepository countryRepository;
+  private final CityRepository cityRepository;
   private final RentalRepository rentalRepository;
   private final ObjectStorageService objectStorageService;
   private static final EnumSet<VehicleImageSlot> REQUIRED_IMAGE_SLOTS =
@@ -41,11 +42,11 @@ public class VehicleService {
 
   public VehicleService(
       VehicleRepository vehicleRepository,
-      CountryRepository countryRepository,
+      CityRepository cityRepository,
       RentalRepository rentalRepository,
       ObjectStorageService objectStorageService) {
     this.vehicleRepository = vehicleRepository;
-    this.countryRepository = countryRepository;
+    this.cityRepository = cityRepository;
     this.rentalRepository = rentalRepository;
     this.objectStorageService = objectStorageService;
   }
@@ -92,14 +93,10 @@ public class VehicleService {
     v.setRentalDailyPrice(rentalDailyPrice);
 
     applyCommissionRules(v, req.external(), req.commissionRatePercent(), req.commissionBrokerPhone());
-    String cc = req.countryCode();
-    if (cc != null && !cc.isBlank()) {
-      String code = cc.trim().toUpperCase();
-      countryRepository
-          .findByCodeIgnoreCase(code)
-          .orElseThrow(() -> new ResourceNotFoundException("Ülke bulunamadı: " + code));
-      v.setCountryCode(code);
-    }
+    City city = findCityRequired(req.cityId());
+    v.setCity(city);
+    v.setCountryCode(city.getCountry().getCode());
+    applyOptionalVehicleSpecs(v, req.engine(), req.seats(), req.luggage());
     validateRequiredVehicleImages(req.images());
     v = vehicleRepository.save(v);
     if (req.images() != null) {
@@ -155,16 +152,20 @@ public class VehicleService {
     String nextPhone = req.commissionBrokerPhone() != null ? req.commissionBrokerPhone() : v.getCommissionBrokerPhone();
     applyCommissionRules(v, nextExternal, nextRate, nextPhone);
 
-    if (req.countryCode() != null) {
-      if (req.countryCode().isBlank()) {
-        v.setCountryCode(null);
-      } else {
-        String code = req.countryCode().trim().toUpperCase();
-        countryRepository
-            .findByCodeIgnoreCase(code)
-            .orElseThrow(() -> new ResourceNotFoundException("Ülke bulunamadı: " + code));
-        v.setCountryCode(code);
-      }
+    if (req.cityId() != null) {
+      City city = findCityRequired(req.cityId());
+      v.setCity(city);
+      v.setCountryCode(city.getCountry().getCode());
+    }
+
+    if (req.engine() != null) {
+      v.setEngine(req.engine().isBlank() ? null : req.engine().trim());
+    }
+    if (req.seats() != null) {
+      v.setSeats(req.seats());
+    }
+    if (req.luggage() != null) {
+      v.setLuggage(req.luggage());
     }
 
     if (req.images() != null) {
@@ -256,6 +257,18 @@ public class VehicleService {
     vehicleRepository.delete(v);
   }
 
+  private City findCityRequired(UUID cityId) {
+    return cityRepository
+        .findById(cityId)
+        .orElseThrow(() -> new ResourceNotFoundException("Şehir bulunamadı: " + cityId));
+  }
+
+  private void applyOptionalVehicleSpecs(Vehicle v, String engine, Integer seats, Integer luggage) {
+    v.setEngine(engine == null || engine.isBlank() ? null : engine.trim());
+    v.setSeats(seats);
+    v.setLuggage(luggage);
+  }
+
   private void applyCommissionRules(Vehicle v, boolean external, BigDecimal commissionRatePercent, String brokerPhone) {
     v.setCommissionEnabled(external);
     if (external) {
@@ -333,6 +346,9 @@ public class VehicleService {
       }
       images.put(img.getSlot().name(), resolved);
     }
+    City city = v.getCity();
+    var country = city != null ? city.getCountry() : null;
+
     return new VehicleDto(
         v.getId(),
         v.getPlate(),
@@ -347,7 +363,13 @@ public class VehicleService {
         v.getCommissionRatePercent(),
         v.getCommissionBrokerFullName(),
         v.getCommissionBrokerPhone(),
-        v.getCountryCode(),
+        country != null ? country.getCode() : v.getCountryCode(),
+        country != null ? country.getName() : null,
+        city != null ? city.getId() : null,
+        city != null ? city.getName() : null,
+        v.getEngine(),
+        v.getSeats(),
+        v.getLuggage(),
         Map.copyOf(images));
   }
 }

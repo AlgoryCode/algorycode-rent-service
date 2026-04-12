@@ -21,6 +21,7 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 @Getter
 @Setter
@@ -68,6 +69,9 @@ public class RentalRequest extends AbstractAuditableUuidEntity {
 
   @Embedded
   private RentalRequestCustomerSnapshot customer;
+
+  @Column(name = "user_id")
+  private UUID userId;
 
   @OneToMany(mappedBy = "rentalRequest", cascade = CascadeType.ALL, orphanRemoval = true)
   private List<RentalRequestAdditionalDriver> additionalDrivers = new ArrayList<>();

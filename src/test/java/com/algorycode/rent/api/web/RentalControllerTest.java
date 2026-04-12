@@ -48,6 +48,7 @@ class RentalControllerTest {
         new RentalDto(
             UUID.randomUUID(),
             UUID.randomUUID(),
+            null,
             LocalDate.of(2026, 1, 1),
             LocalDate.of(2026, 1, 5),
             Instant.parse("2025-12-01T10:00:00Z"),
@@ -60,7 +61,8 @@ class RentalControllerTest {
             null,
             List.of(),
             List.of());
-    when(rentalService.list(nullable(UUID.class), eq(RentalStatus.pending))).thenReturn(List.of(dto));
+    when(rentalService.list(nullable(UUID.class), eq(RentalStatus.pending), isNull(), isNull()))
+        .thenReturn(List.of(dto));
 
     mockMvc
         .perform(
@@ -73,7 +75,7 @@ class RentalControllerTest {
 
   @Test
   void list_withoutParams_callsServiceWithNulls() throws Exception {
-    when(rentalService.list(isNull(), isNull())).thenReturn(List.of());
+    when(rentalService.list(isNull(), isNull(), isNull(), isNull())).thenReturn(List.of());
 
     mockMvc.perform(get("/rentals")).andExpect(status().isOk()).andExpect(jsonPath("$").isArray());
   }

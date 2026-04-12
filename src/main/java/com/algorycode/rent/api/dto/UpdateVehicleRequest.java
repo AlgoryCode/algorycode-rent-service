@@ -7,6 +7,7 @@ import jakarta.validation.constraints.Size;
 
 import java.math.BigDecimal;
 import java.util.Map;
+import java.util.UUID;
 
 public record UpdateVehicleRequest(
     @Size(max = 32) String plate,
@@ -19,6 +20,8 @@ public record UpdateVehicleRequest(
     @DecimalMin(value = "0.01", inclusive = true) BigDecimal rentalDailyPrice,
     @DecimalMin(value = "0.0", inclusive = true) BigDecimal commissionRatePercent,
     @Size(max = 32) String commissionBrokerPhone,
-    /** ISO 3166-1 alpha-2 veya boş */
-    @Size(min = 2, max = 2) String countryCode,
-    Map<String, String> images) {}
+    UUID cityId,
+    Map<String, String> images,
+    @Size(max = 255) String engine,
+    @Min(1) @Max(20) Integer seats,
+    @Min(0) Integer luggage) {}

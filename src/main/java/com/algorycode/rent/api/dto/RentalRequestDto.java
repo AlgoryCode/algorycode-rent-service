@@ -15,6 +15,7 @@ public record RentalRequestDto(
     RentalRequestStatus status,
     String statusMessage,
     UUID vehicleId,
+    UUID userId,
     LocalDate startDate,
     LocalDate endDate,
     boolean outsideCountryTravel,
