@@ -31,6 +31,8 @@ public record CreateVehicleRequest(
     /** Kiralama başlangıcında kullanılacak varsayılan alış noktası (PICKUP türü). */
     @NotNull UUID defaultPickupHandoverLocationId,
     UUID defaultReturnHandoverLocationId,
+    /** Şablondan kopyalanacak opsiyonlar (sıra korunur); ardından {@code optionDefinitions} eklenir. */
+    @Size(max = 100) List<UUID> optionTemplateIds,
     @Size(max = 100) List<@Valid VehicleOptionDefinitionRequest> optionDefinitions,
     Map<String, String> images,
     @Size(max = 255) String engine,

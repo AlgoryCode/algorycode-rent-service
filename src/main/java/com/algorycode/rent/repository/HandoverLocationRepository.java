@@ -12,4 +12,8 @@ public interface HandoverLocationRepository extends JpaRepository<HandoverLocati
   List<HandoverLocation> findByKindAndActiveTrueOrderByLineOrderAscNameAsc(HandoverLocationKind kind);
 
   List<HandoverLocation> findByActiveTrueOrderByKindAscLineOrderAscNameAsc();
+
+  List<HandoverLocation> findByKindOrderByActiveDescLineOrderAscNameAsc(HandoverLocationKind kind);
+
+  List<HandoverLocation> findAllByOrderByKindAscActiveDescLineOrderAscNameAsc();
 }

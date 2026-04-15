@@ -15,6 +15,7 @@ import com.algorycode.rent.domain.vehicle.Vehicle;
 import com.algorycode.rent.domain.vehicle.VehicleImage;
 import com.algorycode.rent.domain.vehicle.VehicleImageSlot;
 import com.algorycode.rent.domain.vehicle.VehicleOptionDefinition;
+import com.algorycode.rent.domain.vehicle.VehicleOptionTemplate;
 import com.algorycode.rent.repository.CityRepository;
 import com.algorycode.rent.repository.VehicleRepository;
 import org.springframework.stereotype.Service;
@@ -36,6 +37,7 @@ public class VehicleService {
   private final CityRepository cityRepository;
   private final ObjectStorageService objectStorageService;
   private final HandoverLocationService handoverLocationService;
+  private final VehicleOptionTemplateService vehicleOptionTemplateService;
   private static final EnumSet<VehicleImageSlot> REQUIRED_IMAGE_SLOTS =
       EnumSet.of(
           VehicleImageSlot.front,
@@ -49,11 +51,13 @@ public class VehicleService {
       VehicleRepository vehicleRepository,
       CityRepository cityRepository,
       ObjectStorageService objectStorageService,
-      HandoverLocationService handoverLocationService) {
+      HandoverLocationService handoverLocationService,
+      VehicleOptionTemplateService vehicleOptionTemplateService) {
     this.vehicleRepository = vehicleRepository;
     this.cityRepository = cityRepository;
     this.objectStorageService = objectStorageService;
     this.handoverLocationService = handoverLocationService;
+    this.vehicleOptionTemplateService = vehicleOptionTemplateService;
   }
 
   @Transactional(readOnly = true)
@@ -112,8 +116,10 @@ public class VehicleService {
     applyOptionalVehicleSpecs(v, req.engine(), req.seats(), req.luggage());
     validateRequiredVehicleImages(req.images());
     v = vehicleRepository.save(v);
-    if (req.optionDefinitions() != null) {
-      replaceVehicleOptionDefinitions(v, req.optionDefinitions());
+    List<VehicleOptionDefinitionRequest> merged =
+        mergeOptionDefinitions(req.optionTemplateIds(), req.optionDefinitions());
+    if (!merged.isEmpty()) {
+      replaceVehicleOptionDefinitions(v, merged);
       v = vehicleRepository.save(v);
     }
     if (req.images() != null) {
@@ -196,8 +202,12 @@ public class VehicleService {
           handoverLocationService.requireForAssignment(
               req.defaultReturnHandoverLocationId(), HandoverLocationKind.RETURN));
     }
-    if (req.optionDefinitions() != null) {
-      replaceVehicleOptionDefinitions(v, req.optionDefinitions());
+    if (req.optionTemplateIds() != null || req.optionDefinitions() != null) {
+      List<VehicleOptionDefinitionRequest> merged =
+          mergeOptionDefinitions(
+              req.optionTemplateIds() != null ? req.optionTemplateIds() : List.of(),
+              req.optionDefinitions() != null ? req.optionDefinitions() : List.of());
+      replaceVehicleOptionDefinitions(v, merged);
     }
 
     if (req.images() != null) {
@@ -282,6 +292,36 @@ public class VehicleService {
             .orElseThrow(() -> new ResourceNotFoundException("Vehicle not found: " + id));
     v.setDeleted(true);
     vehicleRepository.save(v);
+  }
+
+  private List<VehicleOptionDefinitionRequest> mergeOptionDefinitions(
+      List<UUID> templateIds, List<VehicleOptionDefinitionRequest> manual) {
+    List<VehicleOptionDefinitionRequest> merged = new ArrayList<>();
+    int lo = 0;
+    List<UUID> tids = templateIds != null ? templateIds : List.of();
+    for (UUID tid : tids) {
+      VehicleOptionTemplate t = vehicleOptionTemplateService.requireActive(tid);
+      merged.add(
+          new VehicleOptionDefinitionRequest(
+              t.getTitle(),
+              t.getDescription(),
+              t.getPrice().setScale(2, RoundingMode.HALF_UP),
+              t.getIcon(),
+              lo++,
+              true));
+    }
+    List<VehicleOptionDefinitionRequest> man = manual != null ? manual : List.of();
+    for (VehicleOptionDefinitionRequest r : man) {
+      merged.add(
+          new VehicleOptionDefinitionRequest(
+              r.title(),
+              r.description(),
+              r.price().setScale(2, RoundingMode.HALF_UP),
+              r.icon(),
+              lo++,
+              r.active() == null || Boolean.TRUE.equals(r.active())));
+    }
+    return merged;
   }
 
   private void replaceVehicleOptionDefinitions(Vehicle v, List<VehicleOptionDefinitionRequest> defs) {

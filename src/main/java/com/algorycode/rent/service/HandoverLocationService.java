@@ -30,7 +30,17 @@ public class HandoverLocationService {
   }
 
   @Transactional(readOnly = true)
-  public List<HandoverLocationDto> list(HandoverLocationKind kind) {
+  public List<HandoverLocationDto> list(HandoverLocationKind kind, boolean includeInactive) {
+    if (includeInactive) {
+      if (kind != null) {
+        return handoverLocationRepository.findByKindOrderByActiveDescLineOrderAscNameAsc(kind).stream()
+            .map(HandoverLocationMapper::toDto)
+            .toList();
+      }
+      return handoverLocationRepository.findAllByOrderByKindAscActiveDescLineOrderAscNameAsc().stream()
+          .map(HandoverLocationMapper::toDto)
+          .toList();
+    }
     if (kind != null) {
       return handoverLocationRepository.findByKindAndActiveTrueOrderByLineOrderAscNameAsc(kind).stream()
           .map(HandoverLocationMapper::toDto)

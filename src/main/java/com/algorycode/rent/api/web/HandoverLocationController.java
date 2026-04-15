@@ -32,8 +32,10 @@ public class HandoverLocationController {
   }
 
   @GetMapping
-  public List<HandoverLocationDto> list(@RequestParam(required = false) HandoverLocationKind kind) {
-    return handoverLocationService.list(kind);
+  public List<HandoverLocationDto> list(
+      @RequestParam(required = false) HandoverLocationKind kind,
+      @RequestParam(required = false, defaultValue = "false") boolean includeInactive) {
+    return handoverLocationService.list(kind, includeInactive);
   }
 
   @PostMapping
