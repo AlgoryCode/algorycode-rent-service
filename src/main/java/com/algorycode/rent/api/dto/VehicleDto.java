@@ -1,8 +1,9 @@
 package com.algorycode.rent.api.dto;
 
+import java.math.BigDecimal;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
-import java.math.BigDecimal;
 
 /** AlgoryRent FE {@code Vehicle} ile uyumlu alanlar. */
 public record VehicleDto(
@@ -26,4 +27,7 @@ public record VehicleDto(
     String engine,
     Integer seats,
     Integer luggage,
+    HandoverLocationRefDto defaultPickupHandoverLocation,
+    HandoverLocationRefDto defaultReturnHandoverLocation,
+    List<VehicleOptionDefinitionDto> optionDefinitions,
     Map<String, String> images) {}

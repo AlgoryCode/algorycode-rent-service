@@ -51,6 +51,8 @@ class RentalControllerTest {
             null,
             LocalDate.of(2026, 1, 1),
             LocalDate.of(2026, 1, 5),
+            null,
+            null,
             Instant.parse("2025-12-01T10:00:00Z"),
             RentalStatus.pending,
             java.math.BigDecimal.valueOf(100),
@@ -59,6 +61,7 @@ class RentalControllerTest {
             new RentalDto.CustomerDto("A", "1", "P", "+90", null, null, null, null, null),
             List.of(),
             null,
+            List.of(),
             List.of(),
             List.of());
     when(rentalService.list(nullable(UUID.class), eq(RentalStatus.pending), isNull(), isNull()))

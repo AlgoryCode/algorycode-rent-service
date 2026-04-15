@@ -12,6 +12,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -37,7 +38,7 @@ class PanelUserServiceTest {
     u.setActive(true);
     u.setCreatedAt(Instant.parse("2026-01-01T00:00:00Z"));
     u.setUpdatedAt(Instant.parse("2026-01-01T00:00:00Z"));
-    when(panelUserRepository.findAll()).thenReturn(List.of(u));
+    when(panelUserRepository.findAllByDeletedFalse()).thenReturn(List.of(u));
 
     var rows = panelUserService.listAll();
 
@@ -47,19 +48,23 @@ class PanelUserServiceTest {
   }
 
   @Test
-  void deleteById_deletesWhenExists() {
+  void deleteById_softDeletesWhenActive() {
     var id = UUID.randomUUID();
-    when(panelUserRepository.existsById(id)).thenReturn(true);
+    var u = new PanelUser();
+    u.setId(id);
+    u.setDeleted(false);
+    when(panelUserRepository.findByIdAndDeletedFalse(id)).thenReturn(Optional.of(u));
 
     panelUserService.deleteById(id);
 
-    verify(panelUserRepository).deleteById(id);
+    assertThat(u.isDeleted()).isTrue();
+    verify(panelUserRepository).save(u);
   }
 
   @Test
   void deleteById_throwsWhenMissing() {
     var id = UUID.randomUUID();
-    when(panelUserRepository.existsById(id)).thenReturn(false);
+    when(panelUserRepository.findByIdAndDeletedFalse(id)).thenReturn(Optional.empty());
 
     assertThatThrownBy(() -> panelUserService.deleteById(id))
         .isInstanceOf(ResourceNotFoundException.class)

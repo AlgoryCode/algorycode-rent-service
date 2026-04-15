@@ -1,6 +1,7 @@
 package com.algorycode.rent.domain.request;
 
 import com.algorycode.rent.domain.AbstractAuditableUuidEntity;
+import com.algorycode.rent.domain.location.HandoverLocation;
 import com.algorycode.rent.domain.vehicle.Vehicle;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
@@ -12,6 +13,7 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
+import jakarta.persistence.OrderBy;
 import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.Setter;
@@ -46,6 +48,14 @@ public class RentalRequest extends AbstractAuditableUuidEntity {
   @Column(name = "end_date", nullable = false)
   private LocalDate endDate;
 
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "pickup_handover_location_id")
+  private HandoverLocation pickupHandoverLocation;
+
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "return_handover_location_id")
+  private HandoverLocation returnHandoverLocation;
+
   @Column(name = "outside_country_travel", nullable = false)
   private boolean outsideCountryTravel;
 
@@ -75,4 +85,8 @@ public class RentalRequest extends AbstractAuditableUuidEntity {
 
   @OneToMany(mappedBy = "rentalRequest", cascade = CascadeType.ALL, orphanRemoval = true)
   private List<RentalRequestAdditionalDriver> additionalDrivers = new ArrayList<>();
+
+  @OneToMany(mappedBy = "rentalRequest", cascade = CascadeType.ALL, orphanRemoval = true)
+  @OrderBy("lineOrder ASC")
+  private List<RentalRequestOption> options = new ArrayList<>();
 }

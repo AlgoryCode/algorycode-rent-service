@@ -1,6 +1,7 @@
 package com.algorycode.rent.service;
 
 import com.algorycode.rent.api.dto.CreateRentalRequestFormRequest;
+import com.algorycode.rent.api.dto.RentalOptionRequest;
 import com.algorycode.rent.api.dto.RentalRequestDto;
 import com.algorycode.rent.api.dto.UpdateRentalRequestStatusRequest;
 import com.algorycode.rent.api.error.BadRequestException;
@@ -8,13 +9,18 @@ import com.algorycode.rent.api.error.ResourceNotFoundException;
 import com.algorycode.rent.api.mapper.RentalRequestMapper;
 import com.algorycode.rent.config.AppRentalRequestProperties;
 import com.algorycode.rent.contract.RentalContractPdfService;
+import com.algorycode.rent.domain.location.HandoverLocation;
+import com.algorycode.rent.domain.location.HandoverLocationKind;
 import com.algorycode.rent.domain.request.RentalRequest;
 import com.algorycode.rent.domain.request.RentalRequestAdditionalDriver;
 import com.algorycode.rent.domain.request.RentalRequestCustomerSnapshot;
+import com.algorycode.rent.domain.request.RentalRequestOption;
 import com.algorycode.rent.domain.request.RentalRequestStatus;
 import com.algorycode.rent.domain.vehicle.Vehicle;
 import com.algorycode.rent.repository.RentalRequestRepository;
+import com.algorycode.rent.repository.VehicleOptionDefinitionRepository;
 import com.algorycode.rent.repository.VehicleRepository;
+import com.algorycode.rent.service.support.RentalOptionLineResolution;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -50,6 +56,8 @@ public class RentalRequestService {
   private final RentalRequestWhatsappContractService rentalRequestWhatsappContractService;
   private final ObjectStorageService objectStorageService;
   private final CustomerRecordService customerRecordService;
+  private final HandoverLocationService handoverLocationService;
+  private final VehicleOptionDefinitionRepository vehicleOptionDefinitionRepository;
 
   public RentalRequestService(
       RentalRequestRepository rentalRequestRepository,
@@ -58,7 +66,9 @@ public class RentalRequestService {
       RentalContractPdfService rentalContractPdfService,
       RentalRequestWhatsappContractService rentalRequestWhatsappContractService,
       ObjectStorageService objectStorageService,
-      CustomerRecordService customerRecordService) {
+      CustomerRecordService customerRecordService,
+      HandoverLocationService handoverLocationService,
+      VehicleOptionDefinitionRepository vehicleOptionDefinitionRepository) {
     this.rentalRequestRepository = rentalRequestRepository;
     this.vehicleRepository = vehicleRepository;
     this.rentalRequestProperties = rentalRequestProperties;
@@ -66,6 +76,8 @@ public class RentalRequestService {
     this.rentalRequestWhatsappContractService = rentalRequestWhatsappContractService;
     this.objectStorageService = objectStorageService;
     this.customerRecordService = customerRecordService;
+    this.handoverLocationService = handoverLocationService;
+    this.vehicleOptionDefinitionRepository = vehicleOptionDefinitionRepository;
   }
 
   @Transactional
@@ -77,7 +89,7 @@ public class RentalRequestService {
     if (req.vehicleId() != null) {
       vehicle =
           vehicleRepository
-              .findById(req.vehicleId())
+              .findByIdAndDeletedFalse(req.vehicleId())
               .orElseThrow(() -> new ResourceNotFoundException("Vehicle not found: " + req.vehicleId()));
     }
 
@@ -88,6 +100,8 @@ public class RentalRequestService {
     entity.setUserId(req.userId());
     entity.setStartDate(req.startDate());
     entity.setEndDate(req.endDate());
+    entity.setPickupHandoverLocation(resolvePickupForRequest(vehicle, req.pickupHandoverLocationId()));
+    entity.setReturnHandoverLocation(resolveReturnForRequest(vehicle, req.returnHandoverLocationId()));
     entity.setOutsideCountryTravel(req.outsideCountryTravel());
     entity.setGreenInsuranceFee(resolveGreenInsuranceFee(req.outsideCountryTravel()));
     entity.setNote(req.note() != null ? req.note().trim() : null);
@@ -117,6 +131,10 @@ public class RentalRequestService {
         ad.setDriverLicenseImageDataUrl(d.driverLicenseImageDataUrl().trim());
         entity.getAdditionalDrivers().add(ad);
       }
+    }
+
+    if (req.options() != null) {
+      replaceRequestOptions(entity, req.options());
     }
 
     entity = rentalRequestRepository.save(entity);
@@ -295,5 +313,71 @@ public class RentalRequestService {
       sb.append(ALPHABET.charAt(r.nextInt(ALPHABET.length())));
     }
     return sb.toString();
+  }
+
+  private void replaceRequestOptions(RentalRequest request, List<RentalOptionRequest> options) {
+    request.getOptions().clear();
+    if (options == null || options.isEmpty()) {
+      return;
+    }
+    Vehicle vehicle = request.getVehicle();
+    int i = 0;
+    for (RentalOptionRequest o : options) {
+      RentalOptionLineResolution.Resolved resolved = resolveRequestOptionLine(vehicle, o);
+      RentalRequestOption row = new RentalRequestOption();
+      row.setRentalRequest(request);
+      row.setTitle(resolved.title());
+      row.setDescription(resolved.description());
+      row.setPrice(resolved.price().setScale(2, RoundingMode.HALF_UP));
+      row.setIcon(resolved.icon());
+      row.setLineOrder(i++);
+      request.getOptions().add(row);
+    }
+  }
+
+  private RentalOptionLineResolution.Resolved resolveRequestOptionLine(Vehicle vehicle, RentalOptionRequest o) {
+    if (o.vehicleOptionDefinitionId() != null) {
+      if (vehicle == null) {
+        throw new BadRequestException("Araç seçilmeden araç seçeneği gönderilemez.");
+      }
+      return RentalOptionLineResolution.resolve(vehicle, o, vehicleOptionDefinitionRepository);
+    }
+    if (o.title() == null || o.title().isBlank()) {
+      throw new BadRequestException("Seçenek başlığı zorunludur.");
+    }
+    if (o.price() == null) {
+      throw new BadRequestException("Seçenek fiyatı zorunludur.");
+    }
+    return new RentalOptionLineResolution.Resolved(
+        o.title().trim(),
+        o.description() != null && !o.description().isBlank() ? o.description().trim() : null,
+        o.price(),
+        o.icon() != null && !o.icon().isBlank() ? o.icon().trim() : null);
+  }
+
+  private HandoverLocation resolvePickupForRequest(Vehicle vehicle, UUID requestPickupId) {
+    UUID pickupId = requestPickupId;
+    if (pickupId == null && vehicle != null && vehicle.getDefaultPickupHandoverLocation() != null) {
+      pickupId = vehicle.getDefaultPickupHandoverLocation().getId();
+    }
+    if (pickupId == null) {
+      return null;
+    }
+    return requestPickupId != null
+        ? handoverLocationService.requireForAssignment(pickupId, HandoverLocationKind.PICKUP)
+        : handoverLocationService.requireActive(pickupId);
+  }
+
+  private HandoverLocation resolveReturnForRequest(Vehicle vehicle, UUID requestReturnId) {
+    UUID returnId = requestReturnId;
+    if (returnId == null && vehicle != null && vehicle.getDefaultReturnHandoverLocation() != null) {
+      returnId = vehicle.getDefaultReturnHandoverLocation().getId();
+    }
+    if (returnId == null) {
+      return null;
+    }
+    return requestReturnId != null
+        ? handoverLocationService.requireForAssignment(returnId, HandoverLocationKind.RETURN)
+        : handoverLocationService.requireActive(returnId);
   }
 }

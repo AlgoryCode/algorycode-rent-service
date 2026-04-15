@@ -1,11 +1,16 @@
 package com.algorycode.rent.service;
 
+import com.algorycode.rent.api.dto.UpdateRentalRequest;
 import com.algorycode.rent.api.error.ResourceNotFoundException;
+import com.algorycode.rent.domain.location.HandoverLocation;
+import com.algorycode.rent.domain.location.HandoverLocationKind;
 import com.algorycode.rent.domain.rental.CustomerSnapshot;
 import com.algorycode.rent.domain.rental.Rental;
+import com.algorycode.rent.domain.rental.RentalCommissionFlow;
 import com.algorycode.rent.domain.rental.RentalStatus;
 import com.algorycode.rent.domain.vehicle.Vehicle;
 import com.algorycode.rent.repository.RentalRepository;
+import com.algorycode.rent.repository.VehicleOptionDefinitionRepository;
 import com.algorycode.rent.repository.VehicleRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -13,14 +18,19 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import org.mockito.ArgumentCaptor;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -31,6 +41,8 @@ class RentalServiceTest {
   @Mock private VehicleRepository vehicleRepository;
   @Mock private ObjectStorageService objectStorageService;
   @Mock private CustomerRecordService customerRecordService;
+  @Mock private HandoverLocationService handoverLocationService;
+  @Mock private VehicleOptionDefinitionRepository vehicleOptionDefinitionRepository;
 
   @InjectMocks private RentalService rentalService;
 
@@ -97,6 +109,129 @@ class RentalServiceTest {
     assertThatThrownBy(() -> rentalService.getById(id))
         .isInstanceOf(ResourceNotFoundException.class)
         .hasMessageContaining("Rental not found");
+  }
+
+  @Test
+  void update_whenCompleted_setsVehicleDefaultPickupToReturnHandoverLocation() {
+    UUID rentalId = UUID.randomUUID();
+    UUID vehicleId = UUID.randomUUID();
+
+    HandoverLocation returnLoc = new HandoverLocation();
+    returnLoc.setId(UUID.randomUUID());
+    returnLoc.setKind(HandoverLocationKind.RETURN);
+    returnLoc.setName("Havalimanı teslim");
+    returnLoc.setActive(true);
+    returnLoc.setLineOrder(0);
+
+    HandoverLocation oldDefaultPickup = new HandoverLocation();
+    oldDefaultPickup.setId(UUID.randomUUID());
+    oldDefaultPickup.setKind(HandoverLocationKind.PICKUP);
+    oldDefaultPickup.setName("Ofis");
+    oldDefaultPickup.setActive(true);
+    oldDefaultPickup.setLineOrder(0);
+
+    Vehicle vehicle = new Vehicle();
+    vehicle.setId(vehicleId);
+    vehicle.setPlate("34 T 1");
+    vehicle.setBrand("Toyota");
+    vehicle.setModel("Corolla");
+    vehicle.setYear(2023);
+    vehicle.setMaintenance(false);
+    vehicle.setDefaultPickupHandoverLocation(oldDefaultPickup);
+    vehicle.setCreatedAt(Instant.now());
+    vehicle.setUpdatedAt(Instant.now());
+
+    Rental rental = new Rental();
+    rental.setId(rentalId);
+    rental.setVehicle(vehicle);
+    rental.setStartDate(LocalDate.of(2026, 4, 1));
+    rental.setEndDate(LocalDate.of(2026, 4, 10));
+    rental.setReturnHandoverLocation(returnLoc);
+    rental.setStatus(RentalStatus.active);
+    rental.setCommissionAmount(BigDecimal.ZERO);
+    rental.setCommissionFlow(RentalCommissionFlow.collect);
+    rental.setCreatedAt(Instant.parse("2026-03-01T10:00:00Z"));
+    rental.setUpdatedAt(Instant.parse("2026-03-01T10:00:00Z"));
+
+    var customer = new CustomerSnapshot();
+    customer.setFullName("Ali Veli");
+    customer.setNationalId("11111111111");
+    customer.setPassportNo("P1");
+    customer.setPhone("+90");
+    customer.setDriverLicenseImageDataUrl("dl");
+    customer.setPassportImageDataUrl("pp");
+    rental.setCustomer(customer);
+
+    when(rentalRepository.findById(rentalId)).thenReturn(Optional.of(rental));
+    when(rentalRepository.findByVehicle_IdOrderByCreatedAtDesc(vehicleId)).thenReturn(List.of());
+    when(rentalRepository.save(any(Rental.class))).thenAnswer(invocation -> invocation.getArgument(0));
+    when(objectStorageService.resolvePublicUrl(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+    UpdateRentalRequest req =
+        new UpdateRentalRequest(
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            null,
+            RentalStatus.completed,
+            null,
+            null);
+
+    rentalService.update(rentalId, req);
+
+    ArgumentCaptor<Vehicle> vehicleCaptor = ArgumentCaptor.forClass(Vehicle.class);
+    verify(vehicleRepository).save(vehicleCaptor.capture());
+    assertThat(vehicleCaptor.getValue().getDefaultPickupHandoverLocation()).isSameAs(returnLoc);
+  }
+
+  @Test
+  void update_whenCompleted_withoutReturnLocation_doesNotSaveVehicle() {
+    UUID rentalId = UUID.randomUUID();
+    UUID vehicleId = UUID.randomUUID();
+    Vehicle vehicle = new Vehicle();
+    vehicle.setId(vehicleId);
+    vehicle.setPlate("06 A 2");
+    vehicle.setBrand("VW");
+    vehicle.setModel("Polo");
+    vehicle.setYear(2021);
+    vehicle.setMaintenance(false);
+    vehicle.setCreatedAt(Instant.now());
+    vehicle.setUpdatedAt(Instant.now());
+
+    Rental rental = new Rental();
+    rental.setId(rentalId);
+    rental.setVehicle(vehicle);
+    rental.setStartDate(LocalDate.of(2026, 5, 1));
+    rental.setEndDate(LocalDate.of(2026, 5, 5));
+    rental.setReturnHandoverLocation(null);
+    rental.setStatus(RentalStatus.active);
+    rental.setCommissionAmount(BigDecimal.ZERO);
+    rental.setCommissionFlow(RentalCommissionFlow.collect);
+    rental.setCreatedAt(Instant.now());
+    rental.setUpdatedAt(Instant.now());
+    var customer = new CustomerSnapshot();
+    customer.setFullName("A");
+    customer.setNationalId("1");
+    customer.setPassportNo("P");
+    customer.setPhone("+90");
+    customer.setDriverLicenseImageDataUrl("d");
+    customer.setPassportImageDataUrl("p");
+    rental.setCustomer(customer);
+
+    when(rentalRepository.findById(rentalId)).thenReturn(Optional.of(rental));
+    when(rentalRepository.findByVehicle_IdOrderByCreatedAtDesc(vehicleId)).thenReturn(List.of());
+    when(rentalRepository.save(any(Rental.class))).thenAnswer(invocation -> invocation.getArgument(0));
+    when(objectStorageService.resolvePublicUrl(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+    rentalService.update(
+        rentalId,
+        new UpdateRentalRequest(
+            null, null, null, null, null, null, null, RentalStatus.completed, null, null));
+
+    verify(vehicleRepository, never()).save(any());
   }
 
   private static Rental sampleRental(UUID vehicleId) {

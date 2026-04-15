@@ -19,13 +19,16 @@ public record CreateRentalRequest(
     UUID userId,
     @NotNull LocalDate startDate,
     @NotNull LocalDate endDate,
+    UUID pickupHandoverLocationId,
+    UUID returnHandoverLocationId,
     @NotNull @Valid CustomerBody customer,
     @NotNull @DecimalMin(value = "0", inclusive = true) BigDecimal commissionAmount,
     @NotNull RentalCommissionFlow commissionFlow,
     @Size(max = 255) String commissionCompany,
     @Size(max = 1)
     List<@Valid AdditionalDriverBody> additionalDrivers,
-    RentalStatus status) {
+    RentalStatus status,
+    @Size(max = 100) List<@Valid RentalOptionRequest> options) {
 
   public record CustomerBody(
       @NotBlank @Size(max = 255) String fullName,

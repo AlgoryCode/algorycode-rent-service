@@ -13,6 +13,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -63,6 +64,9 @@ class VehicleControllerTest {
                 null,
                 null,
                 null,
+                null,
+                null,
+                Collections.emptyList(),
                 Map.of())));
 
     mockMvc

@@ -18,6 +18,8 @@ public record RentalRequestDto(
     UUID userId,
     LocalDate startDate,
     LocalDate endDate,
+    HandoverLocationRefDto pickupHandoverLocation,
+    HandoverLocationRefDto returnHandoverLocation,
     boolean outsideCountryTravel,
     BigDecimal greenInsuranceFee,
     String note,
@@ -30,7 +32,8 @@ public record RentalRequestDto(
      */
     boolean contractGenerationAvailable,
     CustomerDto customer,
-    List<AdditionalDriverDto> additionalDrivers) {
+    List<AdditionalDriverDto> additionalDrivers,
+    List<RentalRequestOptionDto> options) {
 
   public record CustomerDto(
       String fullName,
@@ -51,4 +54,11 @@ public record RentalRequestDto(
       String passportNo,
       String passportImageDataUrl,
       String driverLicenseImageDataUrl) {}
+
+  public record RentalRequestOptionDto(
+      UUID id,
+      String title,
+      String description,
+      BigDecimal price,
+      String icon) {}
 }

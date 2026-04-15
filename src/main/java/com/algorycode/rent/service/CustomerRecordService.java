@@ -10,7 +10,6 @@ import com.algorycode.rent.domain.request.RentalRequestCustomerSnapshot;
 import com.algorycode.rent.repository.CustomerRecordStateRepository;
 import com.algorycode.rent.repository.RentalRepository;
 import com.algorycode.rent.repository.RentalRequestRepository;
-import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -37,7 +36,7 @@ public class CustomerRecordService {
 
   @Transactional(readOnly = true)
   public List<CustomerRecordStateDto> listAll() {
-    return stateRepository.findAll(Sort.by("recordKey")).stream()
+    return stateRepository.findAllByDeletedFalseOrderByRecordKeyAsc().stream()
         .map(s -> new CustomerRecordStateDto(s.getRecordKey(), s.isActive()))
         .toList();
   }
@@ -46,8 +45,12 @@ public class CustomerRecordService {
   public CustomerRecordStateDto setActive(String recordKey, boolean active) {
     validateRecordKey(recordKey);
     CustomerRecordState row = stateRepository.findById(recordKey).orElseGet(CustomerRecordState::new);
+    if (row.getRecordKey() != null && row.isDeleted()) {
+      throw new BadRequestException("Silinmiş müşteri kaydı güncellenemez.");
+    }
     row.setRecordKey(recordKey);
     row.setActive(active);
+    row.setDeleted(false);
     row = stateRepository.save(row);
     return new CustomerRecordStateDto(row.getRecordKey(), row.isActive());
   }
@@ -61,10 +64,14 @@ public class CustomerRecordService {
     }
     stateRepository
         .findById(recordKey)
-        .filter(s -> !s.isActive())
         .ifPresent(
             s -> {
-              throw new BadRequestException("Bu müşteri pasif; bu işlem yapılamaz.");
+              if (s.isDeleted()) {
+                throw new BadRequestException("Bu müşteri silinmiş; bu işlem yapılamaz.");
+              }
+              if (!s.isActive()) {
+                throw new BadRequestException("Bu müşteri pasif; bu işlem yapılamaz.");
+              }
             });
   }
 
@@ -84,9 +91,7 @@ public class CustomerRecordService {
   public CustomerRecordDeletionDto deleteCustomerData(String recordKey) {
     validateRecordKey(recordKey);
     if (recordKey.startsWith("manual:")) {
-      if (stateRepository.existsById(recordKey)) {
-        stateRepository.deleteById(recordKey);
-      }
+      softDeleteStateIfPresent(recordKey);
       return new CustomerRecordDeletionDto(0, 0);
     }
     if (!recordKey.startsWith("tc:") && !recordKey.startsWith("ph:")) {
@@ -100,10 +105,18 @@ public class CustomerRecordService {
     for (UUID id : requestIds) {
       rentalRequestRepository.findById(id).ifPresent(rentalRequestRepository::delete);
     }
-    if (stateRepository.existsById(recordKey)) {
-      stateRepository.deleteById(recordKey);
-    }
+    softDeleteStateIfPresent(recordKey);
     return new CustomerRecordDeletionDto(rentalIds.size(), requestIds.size());
+  }
+
+  private void softDeleteStateIfPresent(String recordKey) {
+    stateRepository
+        .findById(recordKey)
+        .ifPresent(
+            s -> {
+              s.setDeleted(true);
+              stateRepository.save(s);
+            });
   }
 
   private static void validateRecordKey(String recordKey) {

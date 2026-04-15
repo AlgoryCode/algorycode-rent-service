@@ -2,6 +2,7 @@ package com.algorycode.rent.domain.vehicle;
 
 import com.algorycode.rent.domain.AbstractAuditableUuidEntity;
 import com.algorycode.rent.domain.location.City;
+import com.algorycode.rent.domain.location.HandoverLocation;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -9,6 +10,7 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
+import jakarta.persistence.OrderBy;
 import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.Setter;
@@ -23,8 +25,12 @@ import java.util.List;
 @Table(name = "vehicles")
 public class Vehicle extends AbstractAuditableUuidEntity {
 
-  @Column(nullable = false, unique = true, length = 32)
+  /** Silinmemiş kayıtlar arasında plaka benzersizliği serviste doğrulanır (yumuşak silinen plaka yeniden kullanılabilir). */
+  @Column(nullable = false, length = 32)
   private String plate;
+
+  @Column(name = "is_deleted", nullable = false)
+  private boolean deleted;
 
   @Column(nullable = false, length = 255)
   private String brand;
@@ -73,6 +79,15 @@ public class Vehicle extends AbstractAuditableUuidEntity {
   @JoinColumn(name = "city_id")
   private City city;
 
+  /** Varsayılan alış noktası; kiralama tamamlanınca son teslim noktasına güncellenebilir. */
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "default_pickup_handover_location_id")
+  private HandoverLocation defaultPickupHandoverLocation;
+
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "default_return_handover_location_id")
+  private HandoverLocation defaultReturnHandoverLocation;
+
   @Column(name = "engine", length = 255)
   private String engine;
 
@@ -84,4 +99,8 @@ public class Vehicle extends AbstractAuditableUuidEntity {
 
   @OneToMany(mappedBy = "vehicle", cascade = CascadeType.ALL, orphanRemoval = true)
   private List<VehicleImage> images = new ArrayList<>();
+
+  @OneToMany(mappedBy = "vehicle", cascade = CascadeType.ALL, orphanRemoval = true)
+  @OrderBy("lineOrder ASC, title ASC")
+  private List<VehicleOptionDefinition> optionDefinitions = new ArrayList<>();
 }

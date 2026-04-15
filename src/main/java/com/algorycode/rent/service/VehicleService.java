@@ -3,20 +3,25 @@ package com.algorycode.rent.service;
 import com.algorycode.rent.api.dto.CreateVehicleRequest;
 import com.algorycode.rent.api.dto.UpdateVehicleRequest;
 import com.algorycode.rent.api.dto.VehicleDto;
+import com.algorycode.rent.api.dto.VehicleOptionDefinitionDto;
+import com.algorycode.rent.api.dto.VehicleOptionDefinitionRequest;
 import com.algorycode.rent.api.error.BadRequestException;
 import com.algorycode.rent.api.error.ConflictException;
 import com.algorycode.rent.api.error.ResourceNotFoundException;
+import com.algorycode.rent.api.mapper.HandoverLocationMapper;
 import com.algorycode.rent.domain.location.City;
+import com.algorycode.rent.domain.location.HandoverLocationKind;
 import com.algorycode.rent.domain.vehicle.Vehicle;
 import com.algorycode.rent.domain.vehicle.VehicleImage;
 import com.algorycode.rent.domain.vehicle.VehicleImageSlot;
+import com.algorycode.rent.domain.vehicle.VehicleOptionDefinition;
 import com.algorycode.rent.repository.CityRepository;
-import com.algorycode.rent.repository.RentalRepository;
 import com.algorycode.rent.repository.VehicleRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.EnumSet;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -29,8 +34,8 @@ public class VehicleService {
 
   private final VehicleRepository vehicleRepository;
   private final CityRepository cityRepository;
-  private final RentalRepository rentalRepository;
   private final ObjectStorageService objectStorageService;
+  private final HandoverLocationService handoverLocationService;
   private static final EnumSet<VehicleImageSlot> REQUIRED_IMAGE_SLOTS =
       EnumSet.of(
           VehicleImageSlot.front,
@@ -43,24 +48,24 @@ public class VehicleService {
   public VehicleService(
       VehicleRepository vehicleRepository,
       CityRepository cityRepository,
-      RentalRepository rentalRepository,
-      ObjectStorageService objectStorageService) {
+      ObjectStorageService objectStorageService,
+      HandoverLocationService handoverLocationService) {
     this.vehicleRepository = vehicleRepository;
     this.cityRepository = cityRepository;
-    this.rentalRepository = rentalRepository;
     this.objectStorageService = objectStorageService;
+    this.handoverLocationService = handoverLocationService;
   }
 
   @Transactional(readOnly = true)
   public List<VehicleDto> listAll() {
-    return vehicleRepository.findAll().stream().map(this::toDto).toList();
+    return vehicleRepository.findAllByDeletedFalse().stream().map(this::toDto).toList();
   }
 
   @Transactional(readOnly = true)
   public VehicleDto getById(UUID id) {
     var v =
         vehicleRepository
-            .findById(id)
+            .findByIdAndDeletedFalse(id)
             .orElseThrow(() -> new ResourceNotFoundException("Vehicle not found: " + id));
     return toDto(v);
   }
@@ -68,7 +73,7 @@ public class VehicleService {
   @Transactional
   public VehicleDto create(CreateVehicleRequest req) {
     String plate = req.plate().trim().replaceAll("\\s+", " ");
-    if (vehicleRepository.existsByPlateIgnoreCase(plate)) {
+    if (vehicleRepository.existsByPlateIgnoreCaseAndDeletedFalse(plate)) {
       throw new ConflictException("Bu plaka zaten kayıtlı.");
     }
     Vehicle v = new Vehicle();
@@ -96,9 +101,21 @@ public class VehicleService {
     City city = findCityRequired(req.cityId());
     v.setCity(city);
     v.setCountryCode(city.getCountry().getCode());
+    v.setDefaultPickupHandoverLocation(
+        handoverLocationService.requireForAssignment(
+            req.defaultPickupHandoverLocationId(), HandoverLocationKind.PICKUP));
+    if (req.defaultReturnHandoverLocationId() != null) {
+      v.setDefaultReturnHandoverLocation(
+          handoverLocationService.requireForAssignment(
+              req.defaultReturnHandoverLocationId(), HandoverLocationKind.RETURN));
+    }
     applyOptionalVehicleSpecs(v, req.engine(), req.seats(), req.luggage());
     validateRequiredVehicleImages(req.images());
     v = vehicleRepository.save(v);
+    if (req.optionDefinitions() != null) {
+      replaceVehicleOptionDefinitions(v, req.optionDefinitions());
+      v = vehicleRepository.save(v);
+    }
     if (req.images() != null) {
       applyVehicleImages(v, req.images());
       v = vehicleRepository.save(v);
@@ -110,7 +127,7 @@ public class VehicleService {
   public VehicleDto update(UUID id, UpdateVehicleRequest req) {
     Vehicle v =
         vehicleRepository
-            .findById(id)
+            .findByIdAndDeletedFalse(id)
             .orElseThrow(() -> new ResourceNotFoundException("Vehicle not found: " + id));
 
     if (req.plate() != null) {
@@ -118,7 +135,8 @@ public class VehicleService {
       if (plate.isBlank()) {
         throw new BadRequestException("Plaka boş olamaz.");
       }
-      if (!plate.equalsIgnoreCase(v.getPlate()) && vehicleRepository.existsByPlateIgnoreCase(plate)) {
+      if (!plate.equalsIgnoreCase(v.getPlate())
+          && vehicleRepository.existsByPlateIgnoreCaseAndDeletedFalseAndIdNot(plate, id)) {
         throw new ConflictException("Bu plaka zaten kayıtlı.");
       }
       v.setPlate(plate);
@@ -168,6 +186,20 @@ public class VehicleService {
       v.setLuggage(req.luggage());
     }
 
+    if (req.defaultPickupHandoverLocationId() != null) {
+      v.setDefaultPickupHandoverLocation(
+          handoverLocationService.requireForAssignment(
+              req.defaultPickupHandoverLocationId(), HandoverLocationKind.PICKUP));
+    }
+    if (req.defaultReturnHandoverLocationId() != null) {
+      v.setDefaultReturnHandoverLocation(
+          handoverLocationService.requireForAssignment(
+              req.defaultReturnHandoverLocationId(), HandoverLocationKind.RETURN));
+    }
+    if (req.optionDefinitions() != null) {
+      replaceVehicleOptionDefinitions(v, req.optionDefinitions());
+    }
+
     if (req.images() != null) {
       validateRequiredVehicleImages(req.images());
       applyVehicleImages(v, req.images());
@@ -186,7 +218,7 @@ public class VehicleService {
     }
     Vehicle v =
         vehicleRepository
-            .findById(vehicleId)
+            .findByIdAndDeletedFalse(vehicleId)
             .orElseThrow(() -> new ResourceNotFoundException("Vehicle not found: " + vehicleId));
 
     VehicleImage existing = null;
@@ -223,7 +255,7 @@ public class VehicleService {
   public VehicleDto deleteImageSlot(UUID vehicleId, VehicleImageSlot slot) {
     Vehicle v =
         vehicleRepository
-            .findById(vehicleId)
+            .findByIdAndDeletedFalse(vehicleId)
             .orElseThrow(() -> new ResourceNotFoundException("Vehicle not found: " + vehicleId));
 
     VehicleImage existing = null;
@@ -246,15 +278,41 @@ public class VehicleService {
   public void delete(UUID id) {
     Vehicle v =
         vehicleRepository
-            .findById(id)
+            .findByIdAndDeletedFalse(id)
             .orElseThrow(() -> new ResourceNotFoundException("Vehicle not found: " + id));
-    if (rentalRepository.existsByVehicle_Id(id)) {
-      throw new ConflictException("Bu araca ait kiralama kayıtları olduğu için silinemez.");
+    v.setDeleted(true);
+    vehicleRepository.save(v);
+  }
+
+  private void replaceVehicleOptionDefinitions(Vehicle v, List<VehicleOptionDefinitionRequest> defs) {
+    v.getOptionDefinitions().clear();
+    for (VehicleOptionDefinitionRequest r : defs) {
+      VehicleOptionDefinition e = new VehicleOptionDefinition();
+      e.setVehicle(v);
+      e.setTitle(r.title().trim());
+      e.setDescription(
+          r.description() != null && !r.description().isBlank() ? r.description().trim() : null);
+      e.setPrice(r.price().setScale(2, RoundingMode.HALF_UP));
+      e.setIcon(r.icon() != null && !r.icon().isBlank() ? r.icon().trim() : null);
+      e.setLineOrder(r.lineOrder());
+      e.setActive(r.active() == null || Boolean.TRUE.equals(r.active()));
+      v.getOptionDefinitions().add(e);
     }
-    for (VehicleImage img : new ArrayList<>(v.getImages())) {
-      objectStorageService.deleteObjectIfStored(img.getImageUrl());
-    }
-    vehicleRepository.delete(v);
+  }
+
+  private static List<VehicleOptionDefinitionDto> mapOptionDefinitions(Vehicle v) {
+    return v.getOptionDefinitions().stream()
+        .map(
+            d ->
+                new VehicleOptionDefinitionDto(
+                    d.getId(),
+                    d.getTitle(),
+                    d.getDescription(),
+                    d.getPrice(),
+                    d.getIcon(),
+                    d.getLineOrder(),
+                    d.isActive()))
+        .toList();
   }
 
   private City findCityRequired(UUID cityId) {
@@ -370,6 +428,9 @@ public class VehicleService {
         v.getEngine(),
         v.getSeats(),
         v.getLuggage(),
+        HandoverLocationMapper.toRef(v.getDefaultPickupHandoverLocation()),
+        HandoverLocationMapper.toRef(v.getDefaultReturnHandoverLocation()),
+        mapOptionDefinitions(v),
         Map.copyOf(images));
   }
 }

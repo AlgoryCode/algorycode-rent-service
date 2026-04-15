@@ -3,7 +3,6 @@ package com.algorycode.rent.service;
 import com.algorycode.rent.api.error.ResourceNotFoundException;
 import com.algorycode.rent.domain.vehicle.Vehicle;
 import com.algorycode.rent.repository.CityRepository;
-import com.algorycode.rent.repository.RentalRepository;
 import com.algorycode.rent.repository.VehicleRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -25,15 +24,15 @@ class VehicleServiceTest {
 
   @Mock private VehicleRepository vehicleRepository;
   @Mock private CityRepository cityRepository;
-  @Mock private RentalRepository rentalRepository;
   @Mock private ObjectStorageService objectStorageService;
+  @Mock private HandoverLocationService handoverLocationService;
 
   @InjectMocks private VehicleService vehicleService;
 
   @Test
   void listAll_mapsAllVehicles() {
     var v = sampleVehicle();
-    when(vehicleRepository.findAll()).thenReturn(List.of(v));
+    when(vehicleRepository.findAllByDeletedFalse()).thenReturn(List.of(v));
 
     var result = vehicleService.listAll();
 
@@ -47,7 +46,7 @@ class VehicleServiceTest {
     var id = UUID.randomUUID();
     var v = sampleVehicle();
     v.setId(id);
-    when(vehicleRepository.findById(id)).thenReturn(Optional.of(v));
+    when(vehicleRepository.findByIdAndDeletedFalse(id)).thenReturn(Optional.of(v));
 
     var dto = vehicleService.getById(id);
 
@@ -57,7 +56,7 @@ class VehicleServiceTest {
   @Test
   void getById_throwsWhenMissing() {
     var id = UUID.randomUUID();
-    when(vehicleRepository.findById(id)).thenReturn(Optional.empty());
+    when(vehicleRepository.findByIdAndDeletedFalse(id)).thenReturn(Optional.empty());
 
     assertThatThrownBy(() -> vehicleService.getById(id))
         .isInstanceOf(ResourceNotFoundException.class)

@@ -37,5 +37,8 @@ class VehicleMapperTest {
 
     assertThat(dto.images()).containsEntry("front", "https://example.com/a.jpg");
     assertThat(dto.maintenance()).isTrue();
+    assertThat(dto.defaultPickupHandoverLocation()).isNull();
+    assertThat(dto.defaultReturnHandoverLocation()).isNull();
+    assertThat(dto.optionDefinitions()).isEmpty();
   }
 }

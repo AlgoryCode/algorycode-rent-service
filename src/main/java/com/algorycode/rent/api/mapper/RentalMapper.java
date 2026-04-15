@@ -5,12 +5,14 @@ import com.algorycode.rent.api.dto.RentalDto.AccidentReportDto;
 import com.algorycode.rent.api.dto.RentalDto.AdditionalDriverDto;
 import com.algorycode.rent.api.dto.RentalDto.CustomerDto;
 import com.algorycode.rent.api.dto.RentalDto.FeedbackDto;
+import com.algorycode.rent.api.dto.RentalDto.RentalOptionDto;
 import com.algorycode.rent.api.dto.RentalDto.RentalPhotoDto;
 import com.algorycode.rent.domain.rental.AccidentPhoto;
 import com.algorycode.rent.domain.rental.AccidentReport;
 import com.algorycode.rent.domain.rental.RentalAdditionalDriver;
 import com.algorycode.rent.domain.rental.Rental;
 import com.algorycode.rent.domain.rental.RentalFeedback;
+import com.algorycode.rent.domain.rental.RentalOption;
 import com.algorycode.rent.domain.rental.RentalPhoto;
 
 import java.util.List;
@@ -44,12 +46,15 @@ public final class RentalMapper {
         r.getPhotos().stream().map(p -> photoDto(p, assetResolver)).toList();
     List<AccidentReportDto> accidents =
         r.getAccidentReports().stream().map(a -> accidentDto(a, assetResolver)).toList();
+    List<RentalOptionDto> options = r.getOptions().stream().map(RentalMapper::optionDto).toList();
     return new RentalDto(
         r.getId(),
         r.getVehicle().getId(),
         r.getUserId(),
         r.getStartDate(),
         r.getEndDate(),
+        HandoverLocationMapper.toRef(r.getPickupHandoverLocation()),
+        HandoverLocationMapper.toRef(r.getReturnHandoverLocation()),
         r.getCreatedAt(),
         r.getStatus(),
         r.getCommissionAmount(),
@@ -59,7 +64,13 @@ public final class RentalMapper {
         additionalDrivers,
         fb,
         photos,
-        accidents);
+        accidents,
+        options);
+  }
+
+  private static RentalOptionDto optionDto(RentalOption o) {
+    return new RentalOptionDto(
+        o.getId(), o.getTitle(), o.getDescription(), o.getPrice(), o.getIcon());
   }
 
   private static AdditionalDriverDto additionalDriverDto(RentalAdditionalDriver d, Function<String, String> assetResolver) {

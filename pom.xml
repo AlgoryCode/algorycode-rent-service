@@ -18,6 +18,7 @@
   <description>Rent-a-car yönetim API (AlgoryRent FE)</description>
 
   <properties>
+    <!-- Tam JDK (javac) gerekir; yalnızca JRE kurulu sistemlerde `mvn compile/test` başarısız olabilir. -->
     <java.version>25</java.version>
     <lombok.version>1.18.38</lombok.version>
     <spring-cloud.version>2025.1.1</spring-cloud.version>

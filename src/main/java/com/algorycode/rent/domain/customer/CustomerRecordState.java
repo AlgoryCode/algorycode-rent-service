@@ -20,4 +20,8 @@ public class CustomerRecordState {
   /** {@code false} = pasif; yeni kiralama / talep ve müşteri güncellemeleri engellenir. */
   @Column(nullable = false)
   private boolean active = true;
+
+  /** Yumuşak silinmiş müşteri kayıtları listelerde dönmez. */
+  @Column(name = "is_deleted", nullable = false)
+  private boolean deleted;
 }

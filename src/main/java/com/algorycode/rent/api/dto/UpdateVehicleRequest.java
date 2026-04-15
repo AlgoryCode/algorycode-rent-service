@@ -1,11 +1,13 @@
 package com.algorycode.rent.api.dto;
 
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Size;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -21,6 +23,9 @@ public record UpdateVehicleRequest(
     @DecimalMin(value = "0.0", inclusive = true) BigDecimal commissionRatePercent,
     @Size(max = 32) String commissionBrokerPhone,
     UUID cityId,
+    UUID defaultPickupHandoverLocationId,
+    UUID defaultReturnHandoverLocationId,
+    @Size(max = 100) List<@Valid VehicleOptionDefinitionRequest> optionDefinitions,
     Map<String, String> images,
     @Size(max = 255) String engine,
     @Min(1) @Max(20) Integer seats,

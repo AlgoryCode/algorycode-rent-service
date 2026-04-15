@@ -8,16 +8,21 @@ import jakarta.validation.constraints.Size;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.List;
+import java.util.UUID;
 
 public record UpdateRentalRequest(
     LocalDate startDate,
     LocalDate endDate,
+    UUID pickupHandoverLocationId,
+    UUID returnHandoverLocationId,
     /** Sıfır geçerlidir (kendi aracı, komisyonsuz kapatma vb.). */
     @DecimalMin(value = "0", inclusive = true) BigDecimal commissionAmount,
     RentalCommissionFlow commissionFlow,
     @Size(max = 255) String commissionCompany,
     RentalStatus status,
-    @Valid CustomerBody customer) {
+    @Valid CustomerBody customer,
+    @Size(max = 100) List<@Valid RentalOptionRequest> options) {
 
   public record CustomerBody(
       @Size(max = 255) String fullName,

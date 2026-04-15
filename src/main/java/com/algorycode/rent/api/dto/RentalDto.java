@@ -1,7 +1,7 @@
 package com.algorycode.rent.api.dto;
 
-import com.algorycode.rent.domain.rental.RentalStatus;
 import com.algorycode.rent.domain.rental.RentalCommissionFlow;
+import com.algorycode.rent.domain.rental.RentalStatus;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -15,6 +15,8 @@ public record RentalDto(
     UUID userId,
     LocalDate startDate,
     LocalDate endDate,
+    HandoverLocationRefDto pickupHandoverLocation,
+    HandoverLocationRefDto returnHandoverLocation,
     Instant createdAt,
     RentalStatus status,
     BigDecimal commissionAmount,
@@ -24,7 +26,8 @@ public record RentalDto(
     List<AdditionalDriverDto> additionalDrivers,
     FeedbackDto feedback,
     List<RentalPhotoDto> photos,
-    List<AccidentReportDto> accidentReports) {
+    List<AccidentReportDto> accidentReports,
+    List<RentalOptionDto> options) {
 
   public record CustomerDto(
       String fullName,
@@ -52,4 +55,12 @@ public record RentalDto(
 
   public record AccidentReportDto(
       UUID id, Instant at, String description, List<RentalPhotoDto> photos) {}
+
+  public record RentalOptionDto(
+      UUID id,
+      String title,
+      String description,
+      BigDecimal price,
+      /** İkon; null olabilir. */
+      String icon) {}
 }

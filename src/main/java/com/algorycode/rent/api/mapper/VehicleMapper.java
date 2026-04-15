@@ -1,6 +1,7 @@
 package com.algorycode.rent.api.mapper;
 
 import com.algorycode.rent.api.dto.VehicleDto;
+import com.algorycode.rent.api.dto.VehicleOptionDefinitionDto;
 import com.algorycode.rent.domain.vehicle.Vehicle;
 import com.algorycode.rent.domain.vehicle.VehicleImage;
 
@@ -40,6 +41,20 @@ public final class VehicleMapper {
         v.getEngine(),
         v.getSeats(),
         v.getLuggage(),
+        HandoverLocationMapper.toRef(v.getDefaultPickupHandoverLocation()),
+        HandoverLocationMapper.toRef(v.getDefaultReturnHandoverLocation()),
+        v.getOptionDefinitions().stream()
+            .map(
+                d ->
+                    new VehicleOptionDefinitionDto(
+                        d.getId(),
+                        d.getTitle(),
+                        d.getDescription(),
+                        d.getPrice(),
+                        d.getIcon(),
+                        d.getLineOrder(),
+                        d.isActive()))
+            .toList(),
         Map.copyOf(images));
   }
 }

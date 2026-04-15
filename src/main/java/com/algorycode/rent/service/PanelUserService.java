@@ -21,14 +21,16 @@ public class PanelUserService {
 
   @Transactional(readOnly = true)
   public List<PanelUserDto> listAll() {
-    return panelUserRepository.findAll().stream().map(PanelUserMapper::toDto).toList();
+    return panelUserRepository.findAllByDeletedFalse().stream().map(PanelUserMapper::toDto).toList();
   }
 
   @Transactional
   public void deleteById(UUID id) {
-    if (!panelUserRepository.existsById(id)) {
-      throw new ResourceNotFoundException("Panel kullanıcısı bulunamadı: " + id);
-    }
-    panelUserRepository.deleteById(id);
+    var user =
+        panelUserRepository
+            .findByIdAndDeletedFalse(id)
+            .orElseThrow(() -> new ResourceNotFoundException("Panel kullanıcısı bulunamadı: " + id));
+    user.setDeleted(true);
+    panelUserRepository.save(user);
   }
 }

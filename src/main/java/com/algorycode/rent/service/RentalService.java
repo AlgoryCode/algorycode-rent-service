@@ -2,6 +2,7 @@ package com.algorycode.rent.service;
 
 import com.algorycode.rent.api.dto.CreateRentalRequest;
 import com.algorycode.rent.api.dto.RentalDto;
+import com.algorycode.rent.api.dto.RentalOptionRequest;
 import com.algorycode.rent.api.dto.UpdateRentalRequest;
 import com.algorycode.rent.api.error.BadRequestException;
 import com.algorycode.rent.api.error.ConflictException;
@@ -9,12 +10,17 @@ import com.algorycode.rent.api.error.ResourceNotFoundException;
 import com.algorycode.rent.api.mapper.RentalMapper;
 import com.algorycode.rent.domain.rental.RentalAdditionalDriver;
 import com.algorycode.rent.domain.rental.CustomerSnapshot;
+import com.algorycode.rent.domain.location.HandoverLocation;
+import com.algorycode.rent.domain.location.HandoverLocationKind;
 import com.algorycode.rent.domain.rental.Rental;
 import com.algorycode.rent.domain.rental.RentalCommissionFlow;
+import com.algorycode.rent.domain.rental.RentalOption;
 import com.algorycode.rent.domain.rental.RentalStatus;
 import com.algorycode.rent.domain.vehicle.Vehicle;
 import com.algorycode.rent.repository.RentalRepository;
+import com.algorycode.rent.repository.VehicleOptionDefinitionRepository;
 import com.algorycode.rent.repository.VehicleRepository;
+import com.algorycode.rent.service.support.RentalOptionLineResolution;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,16 +37,22 @@ public class RentalService {
   private final VehicleRepository vehicleRepository;
   private final ObjectStorageService objectStorageService;
   private final CustomerRecordService customerRecordService;
+  private final HandoverLocationService handoverLocationService;
+  private final VehicleOptionDefinitionRepository vehicleOptionDefinitionRepository;
 
   public RentalService(
       RentalRepository rentalRepository,
       VehicleRepository vehicleRepository,
       ObjectStorageService objectStorageService,
-      CustomerRecordService customerRecordService) {
+      CustomerRecordService customerRecordService,
+      HandoverLocationService handoverLocationService,
+      VehicleOptionDefinitionRepository vehicleOptionDefinitionRepository) {
     this.rentalRepository = rentalRepository;
     this.vehicleRepository = vehicleRepository;
     this.objectStorageService = objectStorageService;
     this.customerRecordService = customerRecordService;
+    this.handoverLocationService = handoverLocationService;
+    this.vehicleOptionDefinitionRepository = vehicleOptionDefinitionRepository;
   }
 
   @Transactional(readOnly = true)
@@ -88,7 +100,7 @@ public class RentalService {
     }
     Vehicle vehicle =
         vehicleRepository
-            .findById(req.vehicleId())
+            .findByIdAndDeletedFalse(req.vehicleId())
             .orElseThrow(() -> new ResourceNotFoundException("Vehicle not found: " + req.vehicleId()));
     if (vehicle.isMaintenance()) {
       throw new ConflictException("Bakımdaki araç kiralanamaz.");
@@ -109,6 +121,10 @@ public class RentalService {
     rental.setUserId(req.userId());
     rental.setStartDate(req.startDate());
     rental.setEndDate(req.endDate());
+    rental.setPickupHandoverLocation(
+        resolvePickupHandover(vehicle, req.pickupHandoverLocationId()));
+    rental.setReturnHandoverLocation(
+        resolveReturnHandover(vehicle, req.returnHandoverLocationId()));
     rental.setStatus(status);
     rental.setCommissionAmount(req.commissionAmount().setScale(2, RoundingMode.HALF_UP));
     rental.setCommissionFlow(req.commissionFlow());
@@ -149,6 +165,9 @@ public class RentalService {
         ad.setPassportImageDataUrl(d.passportImageDataUrl().trim());
         rental.getAdditionalDrivers().add(ad);
       }
+    }
+    if (req.options() != null) {
+      replaceRentalOptions(rental, req.options());
     }
     rental = rentalRepository.save(rental);
     persistRentalMediaToObjectStorage(rental);
@@ -195,6 +214,16 @@ public class RentalService {
 
     rental.setStartDate(nextStart);
     rental.setEndDate(nextEnd);
+    if (req.pickupHandoverLocationId() != null) {
+      rental.setPickupHandoverLocation(
+          handoverLocationService.requireForAssignment(
+              req.pickupHandoverLocationId(), HandoverLocationKind.PICKUP));
+    }
+    if (req.returnHandoverLocationId() != null) {
+      rental.setReturnHandoverLocation(
+          handoverLocationService.requireForAssignment(
+              req.returnHandoverLocationId(), HandoverLocationKind.RETURN));
+    }
     rental.setStatus(nextStatus);
     rental.setCommissionAmount(nextCommission);
     rental.setCommissionFlow(nextFlow);
@@ -227,7 +256,19 @@ public class RentalService {
       customerRecordService.assertCustomerActive(c);
     }
 
-    return RentalMapper.toDto(rentalRepository.save(rental), objectStorageService::resolvePublicUrl);
+    if (req.options() != null) {
+      replaceRentalOptions(rental, req.options());
+    }
+
+    Rental saved = rentalRepository.save(rental);
+    if (nextStatus == RentalStatus.completed) {
+      Vehicle v = saved.getVehicle();
+      if (v != null && saved.getReturnHandoverLocation() != null) {
+        v.setDefaultPickupHandoverLocation(saved.getReturnHandoverLocation());
+        vehicleRepository.save(v);
+      }
+    }
+    return RentalMapper.toDto(saved, objectStorageService::resolvePublicUrl);
   }
 
   private void persistRentalMediaToObjectStorage(Rental rental) {
@@ -296,5 +337,52 @@ public class RentalService {
     if (input == null) return null;
     String s = input.trim();
     return s.isBlank() ? null : s;
+  }
+
+  private void replaceRentalOptions(Rental rental, List<RentalOptionRequest> options) {
+    rental.getOptions().clear();
+    if (options == null || options.isEmpty()) {
+      return;
+    }
+    Vehicle vehicle = rental.getVehicle();
+    int i = 0;
+    for (RentalOptionRequest o : options) {
+      RentalOptionLineResolution.Resolved resolved =
+          RentalOptionLineResolution.resolve(vehicle, o, vehicleOptionDefinitionRepository);
+      RentalOption row = new RentalOption();
+      row.setRental(rental);
+      row.setTitle(resolved.title());
+      row.setDescription(resolved.description());
+      row.setPrice(resolved.price().setScale(2, RoundingMode.HALF_UP));
+      row.setIcon(resolved.icon());
+      row.setLineOrder(i++);
+      rental.getOptions().add(row);
+    }
+  }
+
+  private HandoverLocation resolvePickupHandover(Vehicle vehicle, UUID requestPickupId) {
+    UUID pickupId = requestPickupId;
+    if (pickupId == null && vehicle.getDefaultPickupHandoverLocation() != null) {
+      pickupId = vehicle.getDefaultPickupHandoverLocation().getId();
+    }
+    if (pickupId == null) {
+      return null;
+    }
+    return requestPickupId != null
+        ? handoverLocationService.requireForAssignment(pickupId, HandoverLocationKind.PICKUP)
+        : handoverLocationService.requireActive(pickupId);
+  }
+
+  private HandoverLocation resolveReturnHandover(Vehicle vehicle, UUID requestReturnId) {
+    UUID returnId = requestReturnId;
+    if (returnId == null && vehicle.getDefaultReturnHandoverLocation() != null) {
+      returnId = vehicle.getDefaultReturnHandoverLocation().getId();
+    }
+    if (returnId == null) {
+      return null;
+    }
+    return requestReturnId != null
+        ? handoverLocationService.requireForAssignment(returnId, HandoverLocationKind.RETURN)
+        : handoverLocationService.requireActive(returnId);
   }
 }

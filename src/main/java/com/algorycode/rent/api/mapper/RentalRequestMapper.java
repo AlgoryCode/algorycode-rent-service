@@ -1,8 +1,10 @@
 package com.algorycode.rent.api.mapper;
 
 import com.algorycode.rent.api.dto.RentalRequestDto;
+import com.algorycode.rent.api.dto.RentalRequestDto.RentalRequestOptionDto;
 import com.algorycode.rent.domain.request.RentalRequest;
 import com.algorycode.rent.domain.request.RentalRequestAdditionalDriver;
+import com.algorycode.rent.domain.request.RentalRequestOption;
 import com.algorycode.rent.domain.request.RentalRequestStatus;
 
 import java.util.List;
@@ -30,6 +32,9 @@ public final class RentalRequestMapper {
     List<RentalRequestDto.AdditionalDriverDto> additional =
         r.getAdditionalDrivers().stream().map(d -> toAdditionalDriverDto(d, assetResolver)).toList();
 
+    List<RentalRequestOptionDto> options =
+        r.getOptions().stream().map(RentalRequestMapper::requestOptionDto).toList();
+
     UUID vehicleId = r.getVehicle() != null ? r.getVehicle().getId() : null;
 
     boolean contractGenerationAvailable =
@@ -46,6 +51,8 @@ public final class RentalRequestMapper {
         r.getUserId(),
         r.getStartDate(),
         r.getEndDate(),
+        HandoverLocationMapper.toRef(r.getPickupHandoverLocation()),
+        HandoverLocationMapper.toRef(r.getReturnHandoverLocation()),
         r.isOutsideCountryTravel(),
         r.getGreenInsuranceFee(),
         r.getNote(),
@@ -54,7 +61,13 @@ public final class RentalRequestMapper {
         r.getWhatsappContractError(),
         contractGenerationAvailable,
         customer,
-        additional);
+        additional,
+        options);
+  }
+
+  private static RentalRequestOptionDto requestOptionDto(RentalRequestOption o) {
+    return new RentalRequestOptionDto(
+        o.getId(), o.getTitle(), o.getDescription(), o.getPrice(), o.getIcon());
   }
 
   private static RentalRequestDto.AdditionalDriverDto toAdditionalDriverDto(

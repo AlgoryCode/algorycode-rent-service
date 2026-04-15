@@ -15,11 +15,14 @@ public record CreateRentalRequestFormRequest(
     UUID userId,
     @NotNull LocalDate startDate,
     @NotNull LocalDate endDate,
+    UUID pickupHandoverLocationId,
+    UUID returnHandoverLocationId,
     boolean outsideCountryTravel,
     @Size(max = 1000) String note,
     @NotNull @Valid CustomerBody customer,
     @Size(max = 1)
-    List<@Valid AdditionalDriverBody> additionalDrivers) {
+    List<@Valid AdditionalDriverBody> additionalDrivers,
+    @Size(max = 100) List<@Valid RentalOptionRequest> options) {
 
   public record CustomerBody(
       @NotBlank @Size(max = 255) String fullName,
