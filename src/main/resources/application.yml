@@ -23,7 +23,7 @@ spring:
           preferred_uuid_jdbc_type: CHAR
   # AuthService / mail-service ile aynı broker (DNS: rabbitmq.algorycode.com veya küme içi servis)
   rabbitmq:
-    host: rabbitmq.algorycode.com
+    host: rabbitmq.default.svc.cluster.local
     port: 5672
     username: admin
     password: GuvenliSifre123
