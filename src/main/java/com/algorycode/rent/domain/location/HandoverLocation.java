@@ -12,6 +12,8 @@ import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.math.BigDecimal;
+
 @Getter
 @Setter
 @Entity
@@ -40,4 +42,8 @@ public class HandoverLocation extends AbstractAuditableUuidEntity {
 
   @Column(name = "line_order", nullable = false)
   private int lineOrder;
+
+  /** Bu nokta seçildiğinde (rolü: alış veya iade) eklenecek sabit ek ücret (EUR). */
+  @Column(name = "surcharge_eur", nullable = false, precision = 10, scale = 2)
+  private BigDecimal surchargeEur = BigDecimal.ZERO;
 }

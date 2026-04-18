@@ -1,11 +1,16 @@
 package com.algorycode.rent.api.mapper;
 
+import com.algorycode.rent.api.dto.HandoverLocationRefDto;
 import com.algorycode.rent.api.dto.VehicleDto;
 import com.algorycode.rent.api.dto.VehicleOptionDefinitionDto;
 import com.algorycode.rent.domain.vehicle.Vehicle;
+import com.algorycode.rent.domain.vehicle.VehicleAllowedReturnHandover;
+import com.algorycode.rent.domain.vehicle.VehicleHighlight;
 import com.algorycode.rent.domain.vehicle.VehicleImage;
 
+import java.util.Comparator;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public final class VehicleMapper {
@@ -19,6 +24,16 @@ public final class VehicleMapper {
     }
     var city = v.getCity();
     var country = city != null ? city.getCountry() : null;
+
+    List<HandoverLocationRefDto> returnRefs =
+        v.getAllowedReturnHandovers().stream()
+            .sorted(
+                Comparator.comparingInt(VehicleAllowedReturnHandover::getLineOrder)
+                    .thenComparing(
+                        VehicleAllowedReturnHandover::getId, Comparator.nullsLast(Comparator.naturalOrder())))
+            .map(l -> HandoverLocationMapper.toRef(l.getHandoverLocation()))
+            .toList();
+    HandoverLocationRefDto firstReturn = returnRefs.isEmpty() ? null : returnRefs.get(0);
 
     return new VehicleDto(
         v.getId(),
@@ -42,7 +57,8 @@ public final class VehicleMapper {
         v.getSeats(),
         v.getLuggage(),
         HandoverLocationMapper.toRef(v.getDefaultPickupHandoverLocation()),
-        HandoverLocationMapper.toRef(v.getDefaultReturnHandoverLocation()),
+        firstReturn,
+        returnRefs,
         v.getOptionDefinitions().stream()
             .map(
                 d ->
@@ -54,6 +70,10 @@ public final class VehicleMapper {
                         d.getIcon(),
                         d.getLineOrder(),
                         d.isActive()))
+            .toList(),
+        v.getHighlights().stream()
+            .sorted((a, b) -> Integer.compare(a.getLineOrder(), b.getLineOrder()))
+            .map(VehicleHighlight::getText)
             .toList(),
         Map.copyOf(images));
   }

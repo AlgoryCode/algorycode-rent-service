@@ -3,6 +3,7 @@ package com.algorycode.rent.api.dto;
 import com.algorycode.rent.domain.location.HandoverLocationKind;
 import jakarta.validation.constraints.Size;
 
+import java.math.BigDecimal;
 import java.util.UUID;
 
 public record UpdateHandoverLocationRequest(
@@ -14,4 +15,5 @@ public record UpdateHandoverLocationRequest(
     /** {@code true} ise {@code cityId} yok sayılır ve şehir bağlantısı kaldırılır. */
     Boolean clearCity,
     Boolean active,
-    Integer lineOrder) {}
+    Integer lineOrder,
+    BigDecimal surchargeEur) {}

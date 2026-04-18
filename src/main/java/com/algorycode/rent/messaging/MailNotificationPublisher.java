@@ -6,5 +6,5 @@ package com.algorycode.rent.messaging;
 @FunctionalInterface
 public interface MailNotificationPublisher {
 
-  void publish(MailSendRequestedEvent event);
+  void publish(QueuedMailMessage message);
 }

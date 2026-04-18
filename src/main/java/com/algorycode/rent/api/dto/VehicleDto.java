@@ -28,6 +28,11 @@ public record VehicleDto(
     Integer seats,
     Integer luggage,
     HandoverLocationRefDto defaultPickupHandoverLocation,
+    /** İlk izin verilen teslim noktası (kirada varsayılan); liste boşsa null. */
     HandoverLocationRefDto defaultReturnHandoverLocation,
+    /** İzin verilen tüm teslim (RETURN) noktaları, gösterim sırasıyla. */
+    List<HandoverLocationRefDto> returnHandoverLocations,
     List<VehicleOptionDefinitionDto> optionDefinitions,
+    /** Öne çıkan metinler (sıralı). */
+    List<String> highlights,
     Map<String, String> images) {}

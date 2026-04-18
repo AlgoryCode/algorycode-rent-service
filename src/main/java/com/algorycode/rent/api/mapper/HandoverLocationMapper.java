@@ -5,6 +5,7 @@ import com.algorycode.rent.api.dto.HandoverLocationRefDto;
 import com.algorycode.rent.domain.location.City;
 import com.algorycode.rent.domain.location.HandoverLocation;
 
+import java.math.BigDecimal;
 import java.util.UUID;
 
 public final class HandoverLocationMapper {
@@ -23,7 +24,8 @@ public final class HandoverLocationMapper {
         u.cityName,
         u.countryCode,
         e.isActive(),
-        e.getLineOrder());
+        e.getLineOrder(),
+        e.getSurchargeEur() != null ? e.getSurchargeEur() : BigDecimal.ZERO);
   }
 
   public static HandoverLocationRefDto toRef(HandoverLocation e) {
@@ -39,7 +41,8 @@ public final class HandoverLocationMapper {
         e.getAddressLine(),
         u.cityId,
         u.cityName,
-        u.countryCode);
+        u.countryCode,
+        e.getSurchargeEur() != null ? e.getSurchargeEur() : BigDecimal.ZERO);
   }
 
   private record UUIDAndNames(UUID cityId, String cityName, String countryCode) {}

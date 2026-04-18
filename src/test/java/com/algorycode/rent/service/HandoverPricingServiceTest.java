@@ -1,0 +1,65 @@
+package com.algorycode.rent.service;
+
+import com.algorycode.rent.api.dto.HandoverPricingQuoteDto;
+import com.algorycode.rent.domain.country.Country;
+import com.algorycode.rent.domain.location.City;
+import com.algorycode.rent.domain.location.HandoverLocation;
+import com.algorycode.rent.domain.location.HandoverLocationKind;
+import com.algorycode.rent.repository.HandoverLocationRepository;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.math.BigDecimal;
+import java.util.Optional;
+import java.util.UUID;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.when;
+
+@ExtendWith(MockitoExtension.class)
+class HandoverPricingServiceTest {
+
+  @Mock private HandoverLocationRepository handoverLocationRepository;
+
+  @InjectMocks private HandoverPricingService handoverPricingService;
+
+  @Test
+  void quote_sameId_returnsZero() {
+    UUID id = UUID.randomUUID();
+    HandoverPricingQuoteDto q = handoverPricingService.quote(id, id);
+    assertThat(q.totalEur()).isEqualByComparingTo(BigDecimal.ZERO);
+    assertThat(q.applied()).isFalse();
+  }
+
+  @Test
+  void quote_alToXK_route60_plus_legs() {
+    UUID pId = UUID.randomUUID();
+    UUID rId = UUID.randomUUID();
+    when(handoverLocationRepository.findByIdWithCityAndCountry(pId)).thenReturn(Optional.of(loc(pId, "AL", new BigDecimal("25"))));
+    when(handoverLocationRepository.findByIdWithCityAndCountry(rId)).thenReturn(Optional.of(loc(rId, "XK", new BigDecimal("0"))));
+    HandoverPricingQuoteDto q = handoverPricingService.quote(pId, rId);
+    assertThat(q.pickupLegEur()).isEqualByComparingTo("25.00");
+    assertThat(q.returnLegEur()).isEqualByComparingTo("0.00");
+    assertThat(q.routeEur()).isEqualByComparingTo("60.00");
+    assertThat(q.totalEur()).isEqualByComparingTo("85.00");
+    assertThat(q.applied()).isTrue();
+  }
+
+  private static HandoverLocation loc(UUID id, String countryCode, BigDecimal surcharge) {
+    Country c = new Country();
+    c.setCode(countryCode);
+    City city = new City();
+    city.setCountry(c);
+    HandoverLocation h = new HandoverLocation();
+    h.setId(id);
+    h.setKind(HandoverLocationKind.PICKUP);
+    h.setName("Test");
+    h.setLineOrder(0);
+    h.setCity(city);
+    h.setSurchargeEur(surcharge);
+    return h;
+  }
+}

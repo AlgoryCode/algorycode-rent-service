@@ -31,6 +31,10 @@ public record RentalRequestDto(
      * {@code POST /rental-requests/{id}/contract} (triggers PDF + admin WhatsApp if configured).
      */
     boolean contractGenerationAvailable,
+    BigDecimal handoverPickupLegEur,
+    BigDecimal handoverReturnLegEur,
+    BigDecimal handoverRouteEur,
+    BigDecimal handoverTotalEur,
     CustomerDto customer,
     List<AdditionalDriverDto> additionalDrivers,
     List<RentalRequestOptionDto> options) {

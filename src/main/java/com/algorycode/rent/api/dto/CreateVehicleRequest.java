@@ -30,11 +30,19 @@ public record CreateVehicleRequest(
     @NotNull UUID cityId,
     /** Kiralama başlangıcında kullanılacak varsayılan alış noktası (PICKUP türü). */
     @NotNull UUID defaultPickupHandoverLocationId,
+    /** Geriye uyumluluk: tek teslim noktası; {@code returnHandoverLocationIds} doluysa yok sayılır. */
     UUID defaultReturnHandoverLocationId,
+    /**
+     * Bu araca izin verilen teslim (RETURN) noktaları; sıra korunur. Boş veya null: araç bazlı teslim kısıtı yok
+     * (yalnızca {@code defaultReturnHandoverLocationId} doluysa tek elemanlı liste gibi davranır).
+     */
+    @Size(max = 50) List<UUID> returnHandoverLocationIds,
     /** Şablondan kopyalanacak opsiyonlar (sıra korunur); ardından {@code optionDefinitions} eklenir. */
     @Size(max = 100) List<UUID> optionTemplateIds,
     @Size(max = 100) List<@Valid VehicleOptionDefinitionRequest> optionDefinitions,
     Map<String, String> images,
     @Size(max = 255) String engine,
     @Min(1) @Max(20) Integer seats,
-    @Min(0) Integer luggage) {}
+    @Min(0) Integer luggage,
+    /** Acente tarafından opsiyonel; liste sırası gösterim sırasıdır. */
+    @Size(max = 30) List<@NotBlank @Size(max = 500) String> highlights) {}

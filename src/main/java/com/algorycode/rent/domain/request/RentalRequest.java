@@ -89,4 +89,17 @@ public class RentalRequest extends AbstractAuditableUuidEntity {
   @OneToMany(mappedBy = "rentalRequest", cascade = CascadeType.ALL, orphanRemoval = true)
   @OrderBy("lineOrder ASC")
   private List<RentalRequestOption> options = new ArrayList<>();
+
+  /** Talep oluşturulurken hesaplanan alış noktası ek ücreti (EUR). */
+  @Column(name = "handover_pickup_leg_eur", nullable = false, precision = 10, scale = 2)
+  private BigDecimal handoverPickupLegEur = BigDecimal.ZERO;
+
+  @Column(name = "handover_return_leg_eur", nullable = false, precision = 10, scale = 2)
+  private BigDecimal handoverReturnLegEur = BigDecimal.ZERO;
+
+  @Column(name = "handover_route_eur", nullable = false, precision = 10, scale = 2)
+  private BigDecimal handoverRouteEur = BigDecimal.ZERO;
+
+  @Column(name = "handover_total_eur", nullable = false, precision = 10, scale = 2)
+  private BigDecimal handoverTotalEur = BigDecimal.ZERO;
 }

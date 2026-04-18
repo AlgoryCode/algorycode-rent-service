@@ -1,0 +1,11 @@
+Merhaba [[${customerName}]],
+
+Rezervasyon talebinizin durumu güncellendi.
+
+Referans: [[${referenceNo}]]
+Yeni durum: [[${statusDisplay}]]
+[# th:if="${hasStatusMessage}"]
+Açıklama: [[${statusMessage}]]
+[/]
+
+Bu e-posta otomatik gönderilmiştir; lütfen yanıtlamayınız.

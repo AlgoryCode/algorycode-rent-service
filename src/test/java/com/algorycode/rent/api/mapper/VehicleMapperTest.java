@@ -39,6 +39,8 @@ class VehicleMapperTest {
     assertThat(dto.maintenance()).isTrue();
     assertThat(dto.defaultPickupHandoverLocation()).isNull();
     assertThat(dto.defaultReturnHandoverLocation()).isNull();
+    assertThat(dto.returnHandoverLocations()).isEmpty();
     assertThat(dto.optionDefinitions()).isEmpty();
+    assertThat(dto.highlights()).isEmpty();
   }
 }

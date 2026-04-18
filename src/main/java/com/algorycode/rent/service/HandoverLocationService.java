@@ -14,6 +14,8 @@ import com.algorycode.rent.repository.HandoverLocationRepository;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.List;
 import java.util.UUID;
 
@@ -98,6 +100,10 @@ public class HandoverLocationService {
     e.setCity(resolveCity(req.cityId()));
     e.setActive(req.active() == null || Boolean.TRUE.equals(req.active()));
     e.setLineOrder(req.lineOrder());
+    e.setSurchargeEur(
+        req.surchargeEur() != null
+            ? req.surchargeEur().setScale(2, RoundingMode.HALF_UP)
+            : BigDecimal.ZERO);
     return HandoverLocationMapper.toDto(handoverLocationRepository.save(e));
   }
 
@@ -129,6 +135,9 @@ public class HandoverLocationService {
     }
     if (req.lineOrder() != null) {
       e.setLineOrder(req.lineOrder());
+    }
+    if (req.surchargeEur() != null) {
+      e.setSurchargeEur(req.surchargeEur().setScale(2, RoundingMode.HALF_UP));
     }
     return HandoverLocationMapper.toDto(handoverLocationRepository.save(e));
   }

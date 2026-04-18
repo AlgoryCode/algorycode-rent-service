@@ -2,8 +2,10 @@ package com.algorycode.rent.service.support;
 
 import com.algorycode.rent.api.dto.RentalOptionRequest;
 import com.algorycode.rent.api.error.BadRequestException;
+import com.algorycode.rent.domain.catalog.ReservationExtraOptionTemplate;
 import com.algorycode.rent.domain.vehicle.Vehicle;
 import com.algorycode.rent.domain.vehicle.VehicleOptionDefinition;
+import com.algorycode.rent.repository.ReservationExtraOptionTemplateRepository;
 import com.algorycode.rent.repository.VehicleOptionDefinitionRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -22,6 +24,7 @@ import static org.mockito.Mockito.when;
 class RentalOptionLineResolutionTest {
 
   @Mock private VehicleOptionDefinitionRepository definitionRepository;
+  @Mock private ReservationExtraOptionTemplateRepository templateRepository;
 
   @Test
   void resolve_copiesFieldsFromVehicleOptionDefinition() {
@@ -40,9 +43,9 @@ class RentalOptionLineResolutionTest {
 
     when(definitionRepository.findByIdAndVehicle_Id(defId, vehicleId)).thenReturn(Optional.of(def));
 
-    RentalOptionRequest req = new RentalOptionRequest(defId, null, null, null, null);
+    RentalOptionRequest req = new RentalOptionRequest(defId, null, null, null, null, null);
     RentalOptionLineResolution.Resolved r =
-        RentalOptionLineResolution.resolve(vehicle, req, definitionRepository);
+        RentalOptionLineResolution.resolve(vehicle, req, definitionRepository, templateRepository);
 
     assertThat(r.title()).isEqualTo("Bebek koltuğu");
     assertThat(r.description()).isEqualTo("ISO fix");
@@ -63,8 +66,8 @@ class RentalOptionLineResolutionTest {
     def.setVehicle(vehicle);
     when(definitionRepository.findByIdAndVehicle_Id(defId, vehicleId)).thenReturn(Optional.of(def));
 
-    RentalOptionRequest req = new RentalOptionRequest(defId, null, null, null, null);
-    assertThatThrownBy(() -> RentalOptionLineResolution.resolve(vehicle, req, definitionRepository))
+    RentalOptionRequest req = new RentalOptionRequest(defId, null, null, null, null, null);
+    assertThatThrownBy(() -> RentalOptionLineResolution.resolve(vehicle, req, definitionRepository, templateRepository))
         .isInstanceOf(BadRequestException.class)
         .hasMessageContaining("artık kullanılamaz");
   }
@@ -74,10 +77,10 @@ class RentalOptionLineResolutionTest {
     Vehicle vehicle = new Vehicle();
     vehicle.setId(UUID.randomUUID());
     RentalOptionRequest req =
-        new RentalOptionRequest(null, "Serbest satır", "Açıklama", new BigDecimal("5"), "ic");
+        new RentalOptionRequest(null, null, "Serbest satır", "Açıklama", new BigDecimal("5"), "ic");
 
     RentalOptionLineResolution.Resolved r =
-        RentalOptionLineResolution.resolve(vehicle, req, definitionRepository);
+        RentalOptionLineResolution.resolve(vehicle, req, definitionRepository, templateRepository);
 
     assertThat(r.title()).isEqualTo("Serbest satır");
     assertThat(r.description()).isEqualTo("Açıklama");
@@ -89,9 +92,41 @@ class RentalOptionLineResolutionTest {
   void resolve_throwsWhenManualTitleMissing() {
     Vehicle vehicle = new Vehicle();
     vehicle.setId(UUID.randomUUID());
-    RentalOptionRequest req = new RentalOptionRequest(null, "  ", null, BigDecimal.ONE, null);
-    assertThatThrownBy(() -> RentalOptionLineResolution.resolve(vehicle, req, definitionRepository))
+    RentalOptionRequest req = new RentalOptionRequest(null, null, "  ", null, BigDecimal.ONE, null);
+    assertThatThrownBy(() -> RentalOptionLineResolution.resolve(vehicle, req, definitionRepository, templateRepository))
         .isInstanceOf(BadRequestException.class)
         .hasMessageContaining("başlığı");
+  }
+
+  @Test
+  void resolve_usesReservationExtraTemplate() {
+    UUID templateId = UUID.randomUUID();
+    ReservationExtraOptionTemplate t = new ReservationExtraOptionTemplate();
+    t.setTitle("Ek şöför");
+    t.setDescription("Açıklama");
+    t.setPrice(new BigDecimal("99.00"));
+    t.setIcon("ico");
+    t.setActive(true);
+    when(templateRepository.findById(templateId)).thenReturn(Optional.of(t));
+
+    RentalOptionRequest req = new RentalOptionRequest(null, templateId, null, null, null, null);
+    RentalOptionLineResolution.Resolved r =
+        RentalOptionLineResolution.resolve(null, req, definitionRepository, templateRepository);
+
+    assertThat(r.title()).isEqualTo("Ek şöför");
+    assertThat(r.description()).isEqualTo("Açıklama");
+    assertThat(r.price()).isEqualByComparingTo("99.00");
+    assertThat(r.icon()).isEqualTo("ico");
+  }
+
+  @Test
+  void resolve_throwsWhenBothVehicleDefAndTemplate() {
+    Vehicle vehicle = new Vehicle();
+    vehicle.setId(UUID.randomUUID());
+    RentalOptionRequest req =
+        new RentalOptionRequest(UUID.randomUUID(), UUID.randomUUID(), null, null, null, null);
+    assertThatThrownBy(() -> RentalOptionLineResolution.resolve(vehicle, req, definitionRepository, templateRepository))
+        .isInstanceOf(BadRequestException.class)
+        .hasMessageContaining("Aynı satırda");
   }
 }

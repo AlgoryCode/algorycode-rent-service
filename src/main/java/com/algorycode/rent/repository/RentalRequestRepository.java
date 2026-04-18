@@ -17,6 +17,10 @@ public interface RentalRequestRepository extends JpaRepository<RentalRequest, UU
   @EntityGraph(attributePaths = {"vehicle", "additionalDrivers"})
   Optional<RentalRequest> findByReferenceNoIgnoreCase(String referenceNo);
 
+  @EntityGraph(attributePaths = {"vehicle"})
+  @Query("select r from RentalRequest r where r.id = :id")
+  Optional<RentalRequest> findByIdWithVehicle(@Param("id") UUID id);
+
   @Query(
       """
       select rr.id from RentalRequest rr where

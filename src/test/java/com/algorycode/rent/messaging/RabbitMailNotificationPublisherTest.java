@@ -1,15 +1,17 @@
 package com.algorycode.rent.messaging;
 
 import com.algorycode.rent.config.AppMailProperties;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.amqp.core.Message;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 
-import java.util.Map;
+import java.nio.charset.StandardCharsets;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.eq;
@@ -26,20 +28,20 @@ class RabbitMailNotificationPublisherTest {
   void setUp() {
     var props =
         new AppMailProperties(new AppMailProperties.Rabbit("ex.test", "rk.test", "dlq.test"));
-    publisher = new RabbitMailNotificationPublisher(rabbitTemplate, props);
+    publisher = new RabbitMailNotificationPublisher(rabbitTemplate, props, new ObjectMapper());
   }
 
   @Test
-  void publish_sendsToConfiguredExchangeAndRoutingKey() {
-    var event =
-        MailSendRequestedEvent.of(
-            "user@test.com", "Konu", "RENTAL_CONFIRM", Map.of("rentalId", "abc"));
+  void publish_sendsJsonUtf8ToConfiguredExchangeAndRoutingKey() {
+    var msg = QueuedMailMessage.plain("user@test.com", "Konu", "Gövde metni");
 
-    publisher.publish(event);
+    publisher.publish(msg);
 
-    var captor = ArgumentCaptor.forClass(MailSendRequestedEvent.class);
-    verify(rabbitTemplate).convertAndSend(eq("ex.test"), eq("rk.test"), captor.capture());
-    assertThat(captor.getValue().to()).isEqualTo("user@test.com");
-    assertThat(captor.getValue().templateCode()).isEqualTo("RENTAL_CONFIRM");
+    var captor = ArgumentCaptor.forClass(Message.class);
+    verify(rabbitTemplate).send(eq("ex.test"), eq("rk.test"), captor.capture());
+    Message sent = captor.getValue();
+    assertThat(sent.getMessageProperties().getContentType()).contains("json");
+    String json = new String(sent.getBody(), StandardCharsets.UTF_8);
+    assertThat(json).contains("user@test.com").contains("Konu").contains("Gövde metni");
   }
 }

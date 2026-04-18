@@ -7,6 +7,7 @@ import com.algorycode.rent.domain.request.RentalRequestAdditionalDriver;
 import com.algorycode.rent.domain.request.RentalRequestOption;
 import com.algorycode.rent.domain.request.RentalRequestStatus;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
 import java.util.function.Function;
@@ -60,9 +61,17 @@ public final class RentalRequestMapper {
         r.getWhatsappContractSentAt(),
         r.getWhatsappContractError(),
         contractGenerationAvailable,
+        nz(r.getHandoverPickupLegEur()),
+        nz(r.getHandoverReturnLegEur()),
+        nz(r.getHandoverRouteEur()),
+        nz(r.getHandoverTotalEur()),
         customer,
         additional,
         options);
+  }
+
+  private static BigDecimal nz(BigDecimal v) {
+    return v != null ? v : BigDecimal.ZERO;
   }
 
   private static RentalRequestOptionDto requestOptionDto(RentalRequestOption o) {

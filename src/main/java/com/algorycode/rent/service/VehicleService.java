@@ -1,6 +1,7 @@
 package com.algorycode.rent.service;
 
 import com.algorycode.rent.api.dto.CreateVehicleRequest;
+import com.algorycode.rent.api.dto.HandoverLocationRefDto;
 import com.algorycode.rent.api.dto.UpdateVehicleRequest;
 import com.algorycode.rent.api.dto.VehicleDto;
 import com.algorycode.rent.api.dto.VehicleOptionDefinitionDto;
@@ -10,8 +11,11 @@ import com.algorycode.rent.api.error.ConflictException;
 import com.algorycode.rent.api.error.ResourceNotFoundException;
 import com.algorycode.rent.api.mapper.HandoverLocationMapper;
 import com.algorycode.rent.domain.location.City;
+import com.algorycode.rent.domain.location.HandoverLocation;
 import com.algorycode.rent.domain.location.HandoverLocationKind;
 import com.algorycode.rent.domain.vehicle.Vehicle;
+import com.algorycode.rent.domain.vehicle.VehicleAllowedReturnHandover;
+import com.algorycode.rent.domain.vehicle.VehicleHighlight;
 import com.algorycode.rent.domain.vehicle.VehicleImage;
 import com.algorycode.rent.domain.vehicle.VehicleImageSlot;
 import com.algorycode.rent.domain.vehicle.VehicleOptionDefinition;
@@ -25,7 +29,9 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.EnumSet;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -108,12 +114,9 @@ public class VehicleService {
     v.setDefaultPickupHandoverLocation(
         handoverLocationService.requireForAssignment(
             req.defaultPickupHandoverLocationId(), HandoverLocationKind.PICKUP));
-    if (req.defaultReturnHandoverLocationId() != null) {
-      v.setDefaultReturnHandoverLocation(
-          handoverLocationService.requireForAssignment(
-              req.defaultReturnHandoverLocationId(), HandoverLocationKind.RETURN));
-    }
+    replaceVehicleReturnHandovers(v, resolveCreateReturnHandoverIds(req));
     applyOptionalVehicleSpecs(v, req.engine(), req.seats(), req.luggage());
+    replaceVehicleHighlights(v, req.highlights());
     validateRequiredVehicleImages(req.images());
     v = vehicleRepository.save(v);
     List<VehicleOptionDefinitionRequest> merged =
@@ -197,10 +200,10 @@ public class VehicleService {
           handoverLocationService.requireForAssignment(
               req.defaultPickupHandoverLocationId(), HandoverLocationKind.PICKUP));
     }
-    if (req.defaultReturnHandoverLocationId() != null) {
-      v.setDefaultReturnHandoverLocation(
-          handoverLocationService.requireForAssignment(
-              req.defaultReturnHandoverLocationId(), HandoverLocationKind.RETURN));
+    if (req.returnHandoverLocationIds() != null) {
+      replaceVehicleReturnHandovers(v, req.returnHandoverLocationIds());
+    } else if (req.defaultReturnHandoverLocationId() != null) {
+      replaceVehicleReturnHandovers(v, List.of(req.defaultReturnHandoverLocationId()));
     }
     if (req.optionTemplateIds() != null || req.optionDefinitions() != null) {
       List<VehicleOptionDefinitionRequest> merged =
@@ -213,6 +216,10 @@ public class VehicleService {
     if (req.images() != null) {
       validateRequiredVehicleImages(req.images());
       applyVehicleImages(v, req.images());
+    }
+
+    if (req.highlights() != null) {
+      replaceVehicleHighlights(v, req.highlights());
     }
 
     return toDto(vehicleRepository.save(v));
@@ -324,6 +331,24 @@ public class VehicleService {
     return merged;
   }
 
+  private void replaceVehicleHighlights(Vehicle v, List<String> lines) {
+    v.getHighlights().clear();
+    if (lines == null || lines.isEmpty()) {
+      return;
+    }
+    int order = 0;
+    for (String line : lines) {
+      if (line == null || line.isBlank()) {
+        continue;
+      }
+      VehicleHighlight h = new VehicleHighlight();
+      h.setVehicle(v);
+      h.setLineOrder(order++);
+      h.setText(line.trim());
+      v.getHighlights().add(h);
+    }
+  }
+
   private void replaceVehicleOptionDefinitions(Vehicle v, List<VehicleOptionDefinitionRequest> defs) {
     v.getOptionDefinitions().clear();
     for (VehicleOptionDefinitionRequest r : defs) {
@@ -353,6 +378,39 @@ public class VehicleService {
                     d.getLineOrder(),
                     d.isActive()))
         .toList();
+  }
+
+  private static List<UUID> resolveCreateReturnHandoverIds(CreateVehicleRequest req) {
+    if (req.returnHandoverLocationIds() != null && !req.returnHandoverLocationIds().isEmpty()) {
+      return req.returnHandoverLocationIds();
+    }
+    if (req.defaultReturnHandoverLocationId() != null) {
+      return List.of(req.defaultReturnHandoverLocationId());
+    }
+    return List.of();
+  }
+
+  private void replaceVehicleReturnHandovers(Vehicle v, List<UUID> ids) {
+    v.getAllowedReturnHandovers().clear();
+    if (ids == null || ids.isEmpty()) {
+      return;
+    }
+    LinkedHashSet<UUID> seen = new LinkedHashSet<>();
+    for (UUID hid : ids) {
+      if (hid != null) {
+        seen.add(hid);
+      }
+    }
+    int order = 0;
+    for (UUID hid : seen) {
+      HandoverLocation loc =
+          handoverLocationService.requireForAssignment(hid, HandoverLocationKind.RETURN);
+      VehicleAllowedReturnHandover link = new VehicleAllowedReturnHandover();
+      link.setVehicle(v);
+      link.setHandoverLocation(loc);
+      link.setLineOrder(order++);
+      v.getAllowedReturnHandovers().add(link);
+    }
   }
 
   private City findCityRequired(UUID cityId) {
@@ -447,6 +505,16 @@ public class VehicleService {
     City city = v.getCity();
     var country = city != null ? city.getCountry() : null;
 
+    List<HandoverLocationRefDto> returnRefs =
+        v.getAllowedReturnHandovers().stream()
+            .sorted(
+                Comparator.comparingInt(VehicleAllowedReturnHandover::getLineOrder)
+                    .thenComparing(
+                        VehicleAllowedReturnHandover::getId, Comparator.nullsLast(Comparator.naturalOrder())))
+            .map(l -> HandoverLocationMapper.toRef(l.getHandoverLocation()))
+            .toList();
+    HandoverLocationRefDto firstReturn = returnRefs.isEmpty() ? null : returnRefs.get(0);
+
     return new VehicleDto(
         v.getId(),
         v.getPlate(),
@@ -469,8 +537,13 @@ public class VehicleService {
         v.getSeats(),
         v.getLuggage(),
         HandoverLocationMapper.toRef(v.getDefaultPickupHandoverLocation()),
-        HandoverLocationMapper.toRef(v.getDefaultReturnHandoverLocation()),
+        firstReturn,
+        returnRefs,
         mapOptionDefinitions(v),
+        v.getHighlights().stream()
+            .sorted((a, b) -> Integer.compare(a.getLineOrder(), b.getLineOrder()))
+            .map(VehicleHighlight::getText)
+            .toList(),
         Map.copyOf(images));
   }
 }

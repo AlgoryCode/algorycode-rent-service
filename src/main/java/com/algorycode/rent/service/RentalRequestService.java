@@ -17,10 +17,13 @@ import com.algorycode.rent.domain.request.RentalRequestCustomerSnapshot;
 import com.algorycode.rent.domain.request.RentalRequestOption;
 import com.algorycode.rent.domain.request.RentalRequestStatus;
 import com.algorycode.rent.domain.vehicle.Vehicle;
+import com.algorycode.rent.events.RentalRequestCreatedMailEvent;
 import com.algorycode.rent.repository.RentalRequestRepository;
+import com.algorycode.rent.repository.ReservationExtraOptionTemplateRepository;
 import com.algorycode.rent.repository.VehicleOptionDefinitionRepository;
 import com.algorycode.rent.repository.VehicleRepository;
 import com.algorycode.rent.service.support.RentalOptionLineResolution;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -57,7 +60,10 @@ public class RentalRequestService {
   private final ObjectStorageService objectStorageService;
   private final CustomerRecordService customerRecordService;
   private final HandoverLocationService handoverLocationService;
+  private final HandoverPricingService handoverPricingService;
   private final VehicleOptionDefinitionRepository vehicleOptionDefinitionRepository;
+  private final ReservationExtraOptionTemplateRepository reservationExtraOptionTemplateRepository;
+  private final ApplicationEventPublisher applicationEventPublisher;
 
   public RentalRequestService(
       RentalRequestRepository rentalRequestRepository,
@@ -68,7 +74,10 @@ public class RentalRequestService {
       ObjectStorageService objectStorageService,
       CustomerRecordService customerRecordService,
       HandoverLocationService handoverLocationService,
-      VehicleOptionDefinitionRepository vehicleOptionDefinitionRepository) {
+      HandoverPricingService handoverPricingService,
+      VehicleOptionDefinitionRepository vehicleOptionDefinitionRepository,
+      ReservationExtraOptionTemplateRepository reservationExtraOptionTemplateRepository,
+      ApplicationEventPublisher applicationEventPublisher) {
     this.rentalRequestRepository = rentalRequestRepository;
     this.vehicleRepository = vehicleRepository;
     this.rentalRequestProperties = rentalRequestProperties;
@@ -77,7 +86,10 @@ public class RentalRequestService {
     this.objectStorageService = objectStorageService;
     this.customerRecordService = customerRecordService;
     this.handoverLocationService = handoverLocationService;
+    this.handoverPricingService = handoverPricingService;
     this.vehicleOptionDefinitionRepository = vehicleOptionDefinitionRepository;
+    this.reservationExtraOptionTemplateRepository = reservationExtraOptionTemplateRepository;
+    this.applicationEventPublisher = applicationEventPublisher;
   }
 
   @Transactional
@@ -102,6 +114,13 @@ public class RentalRequestService {
     entity.setEndDate(req.endDate());
     entity.setPickupHandoverLocation(resolvePickupForRequest(vehicle, req.pickupHandoverLocationId()));
     entity.setReturnHandoverLocation(resolveReturnForRequest(vehicle, req.returnHandoverLocationId()));
+    var handoverQuote =
+        handoverPricingService.quoteForPersistedPair(
+            entity.getPickupHandoverLocation(), entity.getReturnHandoverLocation());
+    entity.setHandoverPickupLegEur(handoverQuote.pickupLegEur());
+    entity.setHandoverReturnLegEur(handoverQuote.returnLegEur());
+    entity.setHandoverRouteEur(handoverQuote.routeEur());
+    entity.setHandoverTotalEur(handoverQuote.totalEur());
     entity.setOutsideCountryTravel(req.outsideCountryTravel());
     entity.setGreenInsuranceFee(resolveGreenInsuranceFee(req.outsideCountryTravel()));
     entity.setNote(req.note() != null ? req.note().trim() : null);
@@ -141,9 +160,9 @@ public class RentalRequestService {
     persistRequestMediaToObjectStorage(entity);
     entity = rentalRequestRepository.save(entity);
 
-    // E-posta kuyruğu geçici kapalı (SimpleMessageConverter + MailSendRequestedEvent uyumsuzluğu).
     RentalRequest refreshed =
         rentalRequestRepository.findById(entity.getId()).orElseThrow();
+    applicationEventPublisher.publishEvent(new RentalRequestCreatedMailEvent(refreshed.getId()));
     return RentalRequestMapper.toDto(refreshed, objectStorageService::resolvePublicUrl);
   }
 
@@ -336,23 +355,8 @@ public class RentalRequestService {
   }
 
   private RentalOptionLineResolution.Resolved resolveRequestOptionLine(Vehicle vehicle, RentalOptionRequest o) {
-    if (o.vehicleOptionDefinitionId() != null) {
-      if (vehicle == null) {
-        throw new BadRequestException("Araç seçilmeden araç seçeneği gönderilemez.");
-      }
-      return RentalOptionLineResolution.resolve(vehicle, o, vehicleOptionDefinitionRepository);
-    }
-    if (o.title() == null || o.title().isBlank()) {
-      throw new BadRequestException("Seçenek başlığı zorunludur.");
-    }
-    if (o.price() == null) {
-      throw new BadRequestException("Seçenek fiyatı zorunludur.");
-    }
-    return new RentalOptionLineResolution.Resolved(
-        o.title().trim(),
-        o.description() != null && !o.description().isBlank() ? o.description().trim() : null,
-        o.price(),
-        o.icon() != null && !o.icon().isBlank() ? o.icon().trim() : null);
+    return RentalOptionLineResolution.resolve(
+        vehicle, o, vehicleOptionDefinitionRepository, reservationExtraOptionTemplateRepository);
   }
 
   private HandoverLocation resolvePickupForRequest(Vehicle vehicle, UUID requestPickupId) {
@@ -369,15 +373,21 @@ public class RentalRequestService {
   }
 
   private HandoverLocation resolveReturnForRequest(Vehicle vehicle, UUID requestReturnId) {
+    List<UUID> allowed =
+        vehicle != null ? vehicle.orderedReturnHandoverLocationIds() : List.of();
+    boolean inferred = requestReturnId == null;
     UUID returnId = requestReturnId;
-    if (returnId == null && vehicle != null && vehicle.getDefaultReturnHandoverLocation() != null) {
-      returnId = vehicle.getDefaultReturnHandoverLocation().getId();
+    if (returnId == null && vehicle != null && !allowed.isEmpty()) {
+      returnId = allowed.get(0);
     }
     if (returnId == null) {
       return null;
     }
-    return requestReturnId != null
-        ? handoverLocationService.requireForAssignment(returnId, HandoverLocationKind.RETURN)
-        : handoverLocationService.requireActive(returnId);
+    if (!allowed.isEmpty() && !allowed.contains(returnId)) {
+      throw new BadRequestException("Bu araç için seçilen teslim noktası geçerli değil.");
+    }
+    return inferred
+        ? handoverLocationService.requireActive(returnId)
+        : handoverLocationService.requireForAssignment(returnId, HandoverLocationKind.RETURN);
   }
 }

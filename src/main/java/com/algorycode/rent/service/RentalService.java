@@ -18,6 +18,7 @@ import com.algorycode.rent.domain.rental.RentalOption;
 import com.algorycode.rent.domain.rental.RentalStatus;
 import com.algorycode.rent.domain.vehicle.Vehicle;
 import com.algorycode.rent.repository.RentalRepository;
+import com.algorycode.rent.repository.ReservationExtraOptionTemplateRepository;
 import com.algorycode.rent.repository.VehicleOptionDefinitionRepository;
 import com.algorycode.rent.repository.VehicleRepository;
 import com.algorycode.rent.service.support.RentalOptionLineResolution;
@@ -39,6 +40,7 @@ public class RentalService {
   private final CustomerRecordService customerRecordService;
   private final HandoverLocationService handoverLocationService;
   private final VehicleOptionDefinitionRepository vehicleOptionDefinitionRepository;
+  private final ReservationExtraOptionTemplateRepository reservationExtraOptionTemplateRepository;
 
   public RentalService(
       RentalRepository rentalRepository,
@@ -46,13 +48,15 @@ public class RentalService {
       ObjectStorageService objectStorageService,
       CustomerRecordService customerRecordService,
       HandoverLocationService handoverLocationService,
-      VehicleOptionDefinitionRepository vehicleOptionDefinitionRepository) {
+      VehicleOptionDefinitionRepository vehicleOptionDefinitionRepository,
+      ReservationExtraOptionTemplateRepository reservationExtraOptionTemplateRepository) {
     this.rentalRepository = rentalRepository;
     this.vehicleRepository = vehicleRepository;
     this.objectStorageService = objectStorageService;
     this.customerRecordService = customerRecordService;
     this.handoverLocationService = handoverLocationService;
     this.vehicleOptionDefinitionRepository = vehicleOptionDefinitionRepository;
+    this.reservationExtraOptionTemplateRepository = reservationExtraOptionTemplateRepository;
   }
 
   @Transactional(readOnly = true)
@@ -220,9 +224,14 @@ public class RentalService {
               req.pickupHandoverLocationId(), HandoverLocationKind.PICKUP));
     }
     if (req.returnHandoverLocationId() != null) {
+      Vehicle v = rental.getVehicle();
+      List<UUID> allowedReturns = v.orderedReturnHandoverLocationIds();
+      UUID rid = req.returnHandoverLocationId();
+      if (!allowedReturns.isEmpty() && !allowedReturns.contains(rid)) {
+        throw new BadRequestException("Bu araç için seçilen teslim noktası geçerli değil.");
+      }
       rental.setReturnHandoverLocation(
-          handoverLocationService.requireForAssignment(
-              req.returnHandoverLocationId(), HandoverLocationKind.RETURN));
+          handoverLocationService.requireForAssignment(rid, HandoverLocationKind.RETURN));
     }
     rental.setStatus(nextStatus);
     rental.setCommissionAmount(nextCommission);
@@ -348,7 +357,8 @@ public class RentalService {
     int i = 0;
     for (RentalOptionRequest o : options) {
       RentalOptionLineResolution.Resolved resolved =
-          RentalOptionLineResolution.resolve(vehicle, o, vehicleOptionDefinitionRepository);
+          RentalOptionLineResolution.resolve(
+              vehicle, o, vehicleOptionDefinitionRepository, reservationExtraOptionTemplateRepository);
       RentalOption row = new RentalOption();
       row.setRental(rental);
       row.setTitle(resolved.title());
@@ -374,15 +384,20 @@ public class RentalService {
   }
 
   private HandoverLocation resolveReturnHandover(Vehicle vehicle, UUID requestReturnId) {
+    List<UUID> allowed = vehicle.orderedReturnHandoverLocationIds();
+    boolean inferred = requestReturnId == null;
     UUID returnId = requestReturnId;
-    if (returnId == null && vehicle.getDefaultReturnHandoverLocation() != null) {
-      returnId = vehicle.getDefaultReturnHandoverLocation().getId();
+    if (returnId == null && !allowed.isEmpty()) {
+      returnId = allowed.get(0);
     }
     if (returnId == null) {
       return null;
     }
-    return requestReturnId != null
-        ? handoverLocationService.requireForAssignment(returnId, HandoverLocationKind.RETURN)
-        : handoverLocationService.requireActive(returnId);
+    if (!allowed.isEmpty() && !allowed.contains(returnId)) {
+      throw new BadRequestException("Bu araç için seçilen teslim noktası geçerli değil.");
+    }
+    return inferred
+        ? handoverLocationService.requireActive(returnId)
+        : handoverLocationService.requireForAssignment(returnId, HandoverLocationKind.RETURN);
   }
 }

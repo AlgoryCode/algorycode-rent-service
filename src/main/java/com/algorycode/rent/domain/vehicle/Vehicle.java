@@ -17,7 +17,9 @@ import lombok.Setter;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
+import java.util.UUID;
 
 @Getter
 @Setter
@@ -84,9 +86,10 @@ public class Vehicle extends AbstractAuditableUuidEntity {
   @JoinColumn(name = "default_pickup_handover_location_id")
   private HandoverLocation defaultPickupHandoverLocation;
 
-  @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "default_return_handover_location_id")
-  private HandoverLocation defaultReturnHandoverLocation;
+  /** Bu araç için müşterinin seçebileceği teslim (RETURN) noktaları; sıra {@code lineOrder}. */
+  @OneToMany(mappedBy = "vehicle", cascade = CascadeType.ALL, orphanRemoval = true)
+  @OrderBy("lineOrder ASC, id ASC")
+  private List<VehicleAllowedReturnHandover> allowedReturnHandovers = new ArrayList<>();
 
   @Column(name = "engine", length = 255)
   private String engine;
@@ -103,4 +106,22 @@ public class Vehicle extends AbstractAuditableUuidEntity {
   @OneToMany(mappedBy = "vehicle", cascade = CascadeType.ALL, orphanRemoval = true)
   @OrderBy("lineOrder ASC, title ASC")
   private List<VehicleOptionDefinition> optionDefinitions = new ArrayList<>();
+
+  /** Öne çıkanlar (acente kaydında opsiyonel; sıra line_order). */
+  @OneToMany(mappedBy = "vehicle", cascade = CascadeType.ALL, orphanRemoval = true)
+  @OrderBy("lineOrder ASC")
+  private List<VehicleHighlight> highlights = new ArrayList<>();
+
+  /** Kiralama / talep çözümlemesi için izin verilen RETURN handover kimlikleri (sıralı). */
+  public List<UUID> orderedReturnHandoverLocationIds() {
+    if (allowedReturnHandovers == null || allowedReturnHandovers.isEmpty()) {
+      return List.of();
+    }
+    return allowedReturnHandovers.stream()
+        .sorted(
+            Comparator.comparingInt(VehicleAllowedReturnHandover::getLineOrder)
+                .thenComparing(VehicleAllowedReturnHandover::getId, Comparator.nullsLast(Comparator.naturalOrder())))
+        .map(l -> l.getHandoverLocation().getId())
+        .toList();
+  }
 }

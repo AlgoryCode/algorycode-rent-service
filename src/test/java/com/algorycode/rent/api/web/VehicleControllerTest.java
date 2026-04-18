@@ -67,6 +67,8 @@ class VehicleControllerTest {
                 null,
                 null,
                 Collections.emptyList(),
+                Collections.emptyList(),
+                Collections.emptyList(),
                 Map.of())));
 
     mockMvc

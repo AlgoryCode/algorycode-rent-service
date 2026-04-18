@@ -5,6 +5,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
+import java.math.BigDecimal;
 import java.util.UUID;
 
 public record CreateHandoverLocationRequest(
@@ -15,4 +16,6 @@ public record CreateHandoverLocationRequest(
     UUID cityId,
     /** {@code null} veya {@code true}: aktif; yalnızca {@code false} pasif kayıt oluşturur. */
     Boolean active,
-    int lineOrder) {}
+    int lineOrder,
+    /** Alış/teslim rolünde bu nokta seçildiğinde eklenecek ek ücret (EUR); {@code null} → 0. */
+    BigDecimal surchargeEur) {}

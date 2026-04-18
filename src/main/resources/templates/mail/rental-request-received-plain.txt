@@ -1,0 +1,10 @@
+Merhaba [[${customerName}]],
+
+Rezervasyon talebiniz başarıyla alınmıştır. Kaydınız incelenmektedir; sonuç size bu e-posta adresi üzerinden iletilecektir.
+
+Özet
+Referans: [[${referenceNo}]]
+Alış – iade: [[${startDateFormatted}]] – [[${endDateFormatted}]]
+Araç: [[${vehicleLine}]]
+
+Bu e-posta otomatik gönderilmiştir; lütfen yanıtlamayınız.

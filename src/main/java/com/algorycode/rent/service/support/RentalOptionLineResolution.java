@@ -2,8 +2,10 @@ package com.algorycode.rent.service.support;
 
 import com.algorycode.rent.api.dto.RentalOptionRequest;
 import com.algorycode.rent.api.error.BadRequestException;
+import com.algorycode.rent.domain.catalog.ReservationExtraOptionTemplate;
 import com.algorycode.rent.domain.vehicle.Vehicle;
 import com.algorycode.rent.domain.vehicle.VehicleOptionDefinition;
+import com.algorycode.rent.repository.ReservationExtraOptionTemplateRepository;
 import com.algorycode.rent.repository.VehicleOptionDefinitionRepository;
 
 import java.math.BigDecimal;
@@ -15,8 +17,19 @@ public final class RentalOptionLineResolution {
   private RentalOptionLineResolution() {}
 
   public static Resolved resolve(
-      Vehicle vehicle, RentalOptionRequest o, VehicleOptionDefinitionRepository definitionRepository) {
-    if (o.vehicleOptionDefinitionId() != null) {
+      Vehicle vehicle,
+      RentalOptionRequest o,
+      VehicleOptionDefinitionRepository definitionRepository,
+      ReservationExtraOptionTemplateRepository reservationExtraTemplateRepository) {
+    boolean hasVehicleDef = o.vehicleOptionDefinitionId() != null;
+    boolean hasReservationTemplate = o.reservationExtraTemplateId() != null;
+    if (hasVehicleDef && hasReservationTemplate) {
+      throw new BadRequestException("Aynı satırda hem araç seçeneği hem rezervasyon şablonu verilemez.");
+    }
+    if (hasVehicleDef) {
+      if (vehicle == null) {
+        throw new BadRequestException("Araç seçilmeden araç seçeneği gönderilemez.");
+      }
       VehicleOptionDefinition def =
           definitionRepository
               .findByIdAndVehicle_Id(o.vehicleOptionDefinitionId(), vehicle.getId())
@@ -29,6 +42,20 @@ public final class RentalOptionLineResolution {
           def.getDescription() != null && !def.getDescription().isBlank() ? def.getDescription().trim() : null,
           def.getPrice(),
           def.getIcon() != null && !def.getIcon().isBlank() ? def.getIcon().trim() : null);
+    }
+    if (hasReservationTemplate) {
+      ReservationExtraOptionTemplate t =
+          reservationExtraTemplateRepository
+              .findById(o.reservationExtraTemplateId())
+              .orElseThrow(() -> new BadRequestException("Geçersiz rezervasyon ek seçeneği."));
+      if (!t.isActive()) {
+        throw new BadRequestException("Seçilen rezervasyon ek seçeneği artık kullanılamaz.");
+      }
+      return new Resolved(
+          t.getTitle(),
+          t.getDescription() != null && !t.getDescription().isBlank() ? t.getDescription().trim() : null,
+          t.getPrice(),
+          t.getIcon() != null && !t.getIcon().isBlank() ? t.getIcon().trim() : null);
     }
     if (o.title() == null || o.title().isBlank()) {
       throw new BadRequestException("Seçenek başlığı zorunludur.");
