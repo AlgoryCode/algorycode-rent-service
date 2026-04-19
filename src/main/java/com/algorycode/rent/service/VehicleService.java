@@ -10,24 +10,34 @@ import com.algorycode.rent.api.error.BadRequestException;
 import com.algorycode.rent.api.error.ConflictException;
 import com.algorycode.rent.api.error.ResourceNotFoundException;
 import com.algorycode.rent.api.mapper.HandoverLocationMapper;
+import com.algorycode.rent.domain.country.Country;
 import com.algorycode.rent.domain.location.City;
 import com.algorycode.rent.domain.location.HandoverLocation;
 import com.algorycode.rent.domain.location.HandoverLocationKind;
 import com.algorycode.rent.domain.vehicle.Vehicle;
 import com.algorycode.rent.domain.vehicle.VehicleAllowedReturnHandover;
+import com.algorycode.rent.domain.vehicle.VehicleBodyStyle;
+import com.algorycode.rent.domain.vehicle.VehicleFuelType;
+import com.algorycode.rent.domain.vehicle.VehicleTransmissionType;
 import com.algorycode.rent.domain.vehicle.VehicleHighlight;
 import com.algorycode.rent.domain.vehicle.VehicleImage;
 import com.algorycode.rent.domain.vehicle.VehicleImageSlot;
 import com.algorycode.rent.domain.vehicle.VehicleOptionDefinition;
 import com.algorycode.rent.domain.vehicle.VehicleOptionTemplate;
 import com.algorycode.rent.repository.CityRepository;
+import com.algorycode.rent.repository.CountryRepository;
+import com.algorycode.rent.logging.AuditLog;
+import com.algorycode.rent.repository.VehicleBodyStyleRepository;
+import com.algorycode.rent.repository.VehicleFuelTypeRepository;
 import com.algorycode.rent.repository.VehicleRepository;
+import com.algorycode.rent.repository.VehicleTransmissionTypeRepository;
+import com.algorycode.rent.service.support.Text;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.util.EnumSet;
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -40,35 +50,72 @@ import java.util.UUID;
 public class VehicleService {
 
   private final VehicleRepository vehicleRepository;
+  private final VehicleBodyStyleRepository vehicleBodyStyleRepository;
+  private final VehicleFuelTypeRepository vehicleFuelTypeRepository;
+  private final VehicleTransmissionTypeRepository vehicleTransmissionTypeRepository;
+  private final CountryRepository countryRepository;
   private final CityRepository cityRepository;
   private final ObjectStorageService objectStorageService;
   private final HandoverLocationService handoverLocationService;
   private final VehicleOptionTemplateService vehicleOptionTemplateService;
-  private static final EnumSet<VehicleImageSlot> REQUIRED_IMAGE_SLOTS =
-      EnumSet.of(
-          VehicleImageSlot.front,
-          VehicleImageSlot.rear,
-          VehicleImageSlot.left,
-          VehicleImageSlot.right,
-          VehicleImageSlot.interiorDash,
-          VehicleImageSlot.interiorRear);
+  private final VehicleAvailabilityService vehicleAvailabilityService;
+  private final VehicleImageService vehicleImageService;
+  private final AuditLog auditLog;
 
   public VehicleService(
       VehicleRepository vehicleRepository,
+      VehicleBodyStyleRepository vehicleBodyStyleRepository,
+      VehicleFuelTypeRepository vehicleFuelTypeRepository,
+      VehicleTransmissionTypeRepository vehicleTransmissionTypeRepository,
+      CountryRepository countryRepository,
       CityRepository cityRepository,
       ObjectStorageService objectStorageService,
       HandoverLocationService handoverLocationService,
-      VehicleOptionTemplateService vehicleOptionTemplateService) {
+      VehicleOptionTemplateService vehicleOptionTemplateService,
+      VehicleAvailabilityService vehicleAvailabilityService,
+      VehicleImageService vehicleImageService,
+      AuditLog auditLog) {
     this.vehicleRepository = vehicleRepository;
+    this.vehicleBodyStyleRepository = vehicleBodyStyleRepository;
+    this.vehicleFuelTypeRepository = vehicleFuelTypeRepository;
+    this.vehicleTransmissionTypeRepository = vehicleTransmissionTypeRepository;
+    this.countryRepository = countryRepository;
     this.cityRepository = cityRepository;
     this.objectStorageService = objectStorageService;
     this.handoverLocationService = handoverLocationService;
     this.vehicleOptionTemplateService = vehicleOptionTemplateService;
+    this.vehicleAvailabilityService = vehicleAvailabilityService;
+    this.vehicleImageService = vehicleImageService;
+    this.auditLog = auditLog;
   }
 
   @Transactional(readOnly = true)
   public List<VehicleDto> listAll() {
     return vehicleRepository.findAllByDeletedFalse().stream().map(this::toDto).toList();
+  }
+
+  /**
+   * Kiralama uygunluğu: iptal olmayan kiralamalarla çakışma yok + bitiş gününün ertesi takvim günü
+   * tamamen boş (araç hazırlık tamponu). İsteğe bağlı alış ({@code defaultPickup}) ve izinli teslim
+   * noktalarına göre süzülür.
+   */
+  @Transactional(readOnly = true)
+  public List<VehicleDto> listWithAvailabilityFilter(
+      LocalDate availableFrom,
+      LocalDate availableTo,
+      UUID pickupHandoverLocationId,
+      UUID returnHandoverLocationId,
+      boolean includePartialAvailability) {
+    return vehicleAvailabilityService
+        .listVehiclesMatchingAvailability(
+            availableFrom,
+            availableTo,
+            pickupHandoverLocationId,
+            returnHandoverLocationId,
+            includePartialAvailability)
+        .stream()
+        .map(this::toDto)
+        .toList();
   }
 
   @Transactional(readOnly = true)
@@ -108,16 +155,18 @@ public class VehicleService {
     v.setRentalDailyPrice(rentalDailyPrice);
 
     applyCommissionRules(v, req.external(), req.commissionRatePercent(), req.commissionBrokerPhone());
-    City city = findCityRequired(req.cityId());
-    v.setCity(city);
-    v.setCountryCode(city.getCountry().getCode());
+    applyCountryAndOptionalCity(v, req.countryCode(), req.cityId());
     v.setDefaultPickupHandoverLocation(
         handoverLocationService.requireForAssignment(
             req.defaultPickupHandoverLocationId(), HandoverLocationKind.PICKUP));
     replaceVehicleReturnHandovers(v, resolveCreateReturnHandoverIds(req));
     applyOptionalVehicleSpecs(v, req.engine(), req.seats(), req.luggage());
+    v.setFuelType(resolveFuelTypeOrNull(req.fuelType()));
+    v.setBodyColor(Text.trimOrNull(req.bodyColor()));
+    v.setTransmissionType(resolveTransmissionTypeOrNull(req.transmissionType()));
+    v.setBodyStyleCode(resolveBodyStyleCodeOrNull(req.bodyStyleCode()));
     replaceVehicleHighlights(v, req.highlights());
-    validateRequiredVehicleImages(req.images());
+    vehicleImageService.validateRequiredVehicleImages(req.images());
     v = vehicleRepository.save(v);
     List<VehicleOptionDefinitionRequest> merged =
         mergeOptionDefinitions(req.optionTemplateIds(), req.optionDefinitions());
@@ -126,9 +175,10 @@ public class VehicleService {
       v = vehicleRepository.save(v);
     }
     if (req.images() != null) {
-      applyVehicleImages(v, req.images());
+      vehicleImageService.applyVehicleImages(v, req.images());
       v = vehicleRepository.save(v);
     }
+    auditLog.infoEvent("vehicle_created", Map.of("vehicleId", v.getId().toString()));
     return toDto(v);
   }
 
@@ -188,11 +238,23 @@ public class VehicleService {
     if (req.engine() != null) {
       v.setEngine(req.engine().isBlank() ? null : req.engine().trim());
     }
+    if (req.fuelType() != null) {
+      v.setFuelType(resolveFuelTypeOrNull(req.fuelType()));
+    }
+    if (req.bodyColor() != null) {
+      v.setBodyColor(Text.trimOrNull(req.bodyColor()));
+    }
     if (req.seats() != null) {
       v.setSeats(req.seats());
     }
     if (req.luggage() != null) {
       v.setLuggage(req.luggage());
+    }
+    if (req.transmissionType() != null) {
+      v.setTransmissionType(resolveTransmissionTypeOrNull(req.transmissionType()));
+    }
+    if (req.bodyStyleCode() != null) {
+      v.setBodyStyleCode(resolveBodyStyleCodeOrNull(req.bodyStyleCode()));
     }
 
     if (req.defaultPickupHandoverLocationId() != null) {
@@ -214,8 +276,8 @@ public class VehicleService {
     }
 
     if (req.images() != null) {
-      validateRequiredVehicleImages(req.images());
-      applyVehicleImages(v, req.images());
+      vehicleImageService.validateRequiredVehicleImages(req.images());
+      vehicleImageService.applyVehicleImages(v, req.images());
     }
 
     if (req.highlights() != null) {
@@ -230,39 +292,7 @@ public class VehicleService {
    */
   @Transactional
   public VehicleDto replaceImageSlot(UUID vehicleId, VehicleImageSlot slot, String imageValue) {
-    if (imageValue == null || imageValue.isBlank()) {
-      throw new BadRequestException("Görsel verisi zorunludur.");
-    }
-    Vehicle v =
-        vehicleRepository
-            .findByIdAndDeletedFalse(vehicleId)
-            .orElseThrow(() -> new ResourceNotFoundException("Vehicle not found: " + vehicleId));
-
-    VehicleImage existing = null;
-    for (VehicleImage img : v.getImages()) {
-      if (img.getSlot() == slot) {
-        existing = img;
-        break;
-      }
-    }
-    String newStored =
-        objectStorageService.uploadDataUrl(
-            "vehicles/" + v.getId() + "/" + slot.name(), slot.name(), imageValue.trim());
-    if (newStored == null || newStored.isBlank()) {
-      throw new BadRequestException("Görsel yüklenemedi.");
-    }
-    if (existing != null) {
-      String oldRef = existing.getImageUrl();
-      existing.setImageUrl(newStored);
-      objectStorageService.deleteObjectIfStored(oldRef);
-    } else {
-      VehicleImage img = new VehicleImage();
-      img.setVehicle(v);
-      img.setSlot(slot);
-      img.setImageUrl(newStored);
-      v.getImages().add(img);
-    }
-    return toDto(vehicleRepository.save(v));
+    return toDto(vehicleImageService.replaceImageSlot(vehicleId, slot, imageValue));
   }
 
   /**
@@ -270,25 +300,7 @@ public class VehicleService {
    */
   @Transactional
   public VehicleDto deleteImageSlot(UUID vehicleId, VehicleImageSlot slot) {
-    Vehicle v =
-        vehicleRepository
-            .findByIdAndDeletedFalse(vehicleId)
-            .orElseThrow(() -> new ResourceNotFoundException("Vehicle not found: " + vehicleId));
-
-    VehicleImage existing = null;
-    for (VehicleImage img : v.getImages()) {
-      if (img.getSlot() == slot) {
-        existing = img;
-        break;
-      }
-    }
-    if (existing == null) {
-      throw new ResourceNotFoundException("Bu slotta görsel yok: " + slot.name());
-    }
-    objectStorageService.deleteObjectIfStored(existing.getImageUrl());
-    v.getImages().remove(existing);
-    existing.setVehicle(null);
-    return toDto(vehicleRepository.save(v));
+    return toDto(vehicleImageService.deleteImageSlot(vehicleId, slot));
   }
 
   @Transactional
@@ -413,10 +425,67 @@ public class VehicleService {
     }
   }
 
+  private void applyCountryAndOptionalCity(Vehicle v, String countryCodeRaw, UUID cityId) {
+    if (countryCodeRaw == null || countryCodeRaw.isBlank()) {
+      throw new BadRequestException("Ülke kodu zorunludur.");
+    }
+    String code = countryCodeRaw.trim().toUpperCase();
+    if (code.length() != 2) {
+      throw new BadRequestException("Ülke kodu iki harfli ISO kod olmalıdır.");
+    }
+    Country country =
+        countryRepository
+            .findByCodeIgnoreCase(code)
+            .orElseThrow(() -> new BadRequestException("Kayıtlı ülke bulunamadı: " + code));
+    v.setCountryCode(country.getCode());
+    if (cityId != null) {
+      City city = findCityRequired(cityId);
+      if (!city.getCountry().getId().equals(country.getId())) {
+        throw new BadRequestException("Seçilen şehir, seçilen ülkeye ait değil.");
+      }
+      v.setCity(city);
+    } else {
+      v.setCity(null);
+    }
+  }
+
   private City findCityRequired(UUID cityId) {
     return cityRepository
         .findById(cityId)
         .orElseThrow(() -> new ResourceNotFoundException("Şehir bulunamadı: " + cityId));
+  }
+
+  private String resolveBodyStyleCodeOrNull(String raw) {
+    String c = Text.trimOrNull(raw);
+    if (c == null) {
+      return null;
+    }
+    return vehicleBodyStyleRepository
+        .findByCodeIgnoreCase(c)
+        .map(VehicleBodyStyle::getCode)
+        .orElseThrow(() -> new BadRequestException("Geçersiz araç türü: " + raw));
+  }
+
+  private String resolveFuelTypeOrNull(String raw) {
+    String t = Text.trimOrNull(raw);
+    if (t == null) {
+      return null;
+    }
+    return vehicleFuelTypeRepository
+        .findByCodeIgnoreCase(t)
+        .map(VehicleFuelType::getCode)
+        .orElseThrow(() -> new BadRequestException("Geçersiz yakıt türü: " + raw));
+  }
+
+  private String resolveTransmissionTypeOrNull(String raw) {
+    String t = Text.trimOrNull(raw);
+    if (t == null) {
+      return null;
+    }
+    return vehicleTransmissionTypeRepository
+        .findByCodeIgnoreCase(t)
+        .map(VehicleTransmissionType::getCode)
+        .orElseThrow(() -> new BadRequestException("Geçersiz vites türü: " + raw));
   }
 
   private void applyOptionalVehicleSpecs(Vehicle v, String engine, Integer seats, Integer luggage) {
@@ -441,52 +510,6 @@ public class VehicleService {
       v.setCommissionRatePercent(null);
       v.setCommissionBrokerFullName(null);
       v.setCommissionBrokerPhone(null);
-    }
-  }
-
-  private void validateRequiredVehicleImages(Map<String, String> images) {
-    if (images == null) {
-      throw new BadRequestException("Araç görselleri zorunludur (ön, arka, sol, sağ, kokpit, arka koltuk).");
-    }
-    for (VehicleImageSlot requiredSlot : REQUIRED_IMAGE_SLOTS) {
-      String value = images.get(requiredSlot.name());
-      if (value == null || value.isBlank()) {
-        throw new BadRequestException("Araç görsellerinde " + requiredSlot.name() + " zorunludur.");
-      }
-    }
-  }
-
-  private void removeStoredVehicleImages(Vehicle vehicle) {
-    List<VehicleImage> copy = new ArrayList<>(vehicle.getImages());
-    for (VehicleImage img : copy) {
-      objectStorageService.deleteObjectIfStored(img.getImageUrl());
-    }
-    vehicle.getImages().clear();
-  }
-
-  private void applyVehicleImages(Vehicle vehicle, Map<String, String> images) {
-    removeStoredVehicleImages(vehicle);
-    for (var e : images.entrySet()) {
-      String imageValue = e.getValue();
-      if (imageValue == null || imageValue.isBlank()) {
-        continue;
-      }
-      final VehicleImageSlot slot;
-      try {
-        slot = VehicleImageSlot.valueOf(e.getKey());
-      } catch (IllegalArgumentException ex) {
-        throw new BadRequestException("Geçersiz görsel slotu: " + e.getKey());
-      }
-      String storedKey =
-          objectStorageService.uploadDataUrl(
-              "vehicles/" + vehicle.getId() + "/" + slot.name(),
-              slot.name(),
-              imageValue.trim());
-      VehicleImage img = new VehicleImage();
-      img.setVehicle(vehicle);
-      img.setSlot(slot);
-      img.setImageUrl(storedKey);
-      vehicle.getImages().add(img);
     }
   }
 
@@ -515,6 +538,14 @@ public class VehicleService {
             .toList();
     HandoverLocationRefDto firstReturn = returnRefs.isEmpty() ? null : returnRefs.get(0);
 
+    String bodyStyleLabel =
+        v.getBodyStyleCode() == null || v.getBodyStyleCode().isBlank()
+            ? null
+            : vehicleBodyStyleRepository
+                .findByCodeIgnoreCase(v.getBodyStyleCode().trim())
+                .map(VehicleBodyStyle::getLabelTr)
+                .orElse(null);
+
     return new VehicleDto(
         v.getId(),
         v.getPlate(),
@@ -534,8 +565,13 @@ public class VehicleService {
         city != null ? city.getId() : null,
         city != null ? city.getName() : null,
         v.getEngine(),
+        v.getFuelType(),
+        v.getBodyColor(),
         v.getSeats(),
         v.getLuggage(),
+        v.getTransmissionType(),
+        v.getBodyStyleCode(),
+        bodyStyleLabel,
         HandoverLocationMapper.toRef(v.getDefaultPickupHandoverLocation()),
         firstReturn,
         returnRefs,

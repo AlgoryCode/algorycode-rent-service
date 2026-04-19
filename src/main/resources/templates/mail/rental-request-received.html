@@ -2,6 +2,7 @@
 <html lang="tr" xmlns:th="http://www.thymeleaf.org">
 <head>
   <meta charset="UTF-8"/>
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
   <title th:text="${mailSubject}">Rezervasyon</title>
 </head>
@@ -18,7 +19,7 @@
         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f9fafb;border-radius:10px;border:1px solid #eef0f3;">
           <tr><td colspan="2" style="padding:14px 16px 6px 16px;font-size:13px;font-weight:600;color:#6b7280;text-transform:uppercase;letter-spacing:.04em;">Özet</td></tr>
           <tr><td style="padding:6px 16px 4px 16px;color:#6b7280;font-size:13px;width:38%;">Referans</td><td style="padding:6px 16px 4px 16px;color:#111827;font-size:14px;font-weight:600;" th:text="${referenceNo}">—</td></tr>
-          <tr><td style="padding:6px 16px 4px 16px;color:#6b7280;font-size:13px;">Alış – iade</td><td style="padding:6px 16px 4px 16px;color:#111827;font-size:14px;"><span th:text="${startDateFormatted}">—</span> – <span th:text="${endDateFormatted}">—</span></td></tr>
+          <tr><td style="padding:6px 16px 4px 16px;color:#6b7280;font-size:13px;">Alış / İade</td><td style="padding:6px 16px 4px 16px;color:#111827;font-size:14px;"><span th:text="${startDateFormatted}">—</span> – <span th:text="${endDateFormatted}">—</span></td></tr>
           <tr><td style="padding:6px 16px 14px 16px;color:#6b7280;font-size:13px;">Araç</td><td style="padding:6px 16px 14px 16px;color:#111827;font-size:14px;" th:text="${vehicleLine}">—</td></tr>
         </table>
       </td></tr>

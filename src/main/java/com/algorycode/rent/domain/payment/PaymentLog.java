@@ -1,6 +1,7 @@
 package com.algorycode.rent.domain.payment;
 
 import com.algorycode.rent.domain.AbstractAuditableUuidEntity;
+import com.algorycode.rent.domain.rental.Rental;
 import com.algorycode.rent.domain.vehicle.Vehicle;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -25,6 +26,10 @@ public class PaymentLog extends AbstractAuditableUuidEntity {
   private BigDecimal amountTry;
 
   @Enumerated(EnumType.STRING)
+  @Column(name = "money_flow", nullable = false, length = 16)
+  private PaymentMoneyFlow moneyFlow = PaymentMoneyFlow.inbound;
+
+  @Enumerated(EnumType.STRING)
   @Column(nullable = false, length = 24)
   private PaymentLogStatus status;
 
@@ -37,6 +42,14 @@ public class PaymentLog extends AbstractAuditableUuidEntity {
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "vehicle_id")
   private Vehicle vehicle;
+
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "rental_id")
+  private Rental rental;
+
+  /** Kiralama anindaki toplam gelir (EUR): gunluk fiyat * gun + opsiyonlar. */
+  @Column(name = "rental_revenue_eur", precision = 14, scale = 2)
+  private BigDecimal rentalRevenueEur;
 
   @Column(name = "customer_name", nullable = false)
   private String customerName;

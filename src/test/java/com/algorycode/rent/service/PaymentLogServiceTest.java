@@ -2,7 +2,9 @@ package com.algorycode.rent.service;
 
 import com.algorycode.rent.domain.payment.PaymentLog;
 import com.algorycode.rent.domain.payment.PaymentLogStatus;
+import com.algorycode.rent.domain.payment.PaymentMoneyFlow;
 import com.algorycode.rent.repository.PaymentLogRepository;
+import com.algorycode.rent.repository.RentalRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -22,6 +24,8 @@ class PaymentLogServiceTest {
 
   @Mock private PaymentLogRepository paymentLogRepository;
 
+  @Mock private RentalRepository rentalRepository;
+
   @InjectMocks private PaymentLogService paymentLogService;
 
   @Test
@@ -29,6 +33,7 @@ class PaymentLogServiceTest {
     var p = new PaymentLog();
     p.setId(UUID.randomUUID());
     p.setAmountTry(new BigDecimal("99.50"));
+    p.setMoneyFlow(PaymentMoneyFlow.inbound);
     p.setStatus(PaymentLogStatus.completed);
     p.setMethod("card");
     p.setPlate("34 A 1");
@@ -37,7 +42,7 @@ class PaymentLogServiceTest {
     p.setNote(null);
     p.setCreatedAt(Instant.parse("2026-04-01T12:00:00Z"));
     p.setUpdatedAt(Instant.parse("2026-04-01T12:00:00Z"));
-    when(paymentLogRepository.findAll()).thenReturn(List.of(p));
+    when(paymentLogRepository.findAllForListingOrderByCreatedAtDesc()).thenReturn(List.of(p));
 
     var rows = paymentLogService.listAll();
 

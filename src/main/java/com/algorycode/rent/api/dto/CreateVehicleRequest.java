@@ -27,7 +27,10 @@ public record CreateVehicleRequest(
     @DecimalMin(value = "0.0", inclusive = true)
     BigDecimal commissionRatePercent,
     @Size(max = 32) String commissionBrokerPhone,
-    @NotNull UUID cityId,
+    /** ISO 3166-1 alpha-2 (örn. TR); zorunlu. Şehir yoksa araç yalnızca ülkeye bağlanır. */
+    @NotBlank @Size(min = 2, max = 2) String countryCode,
+    /** Opsiyonel; doluysa {@code countryCode} ile aynı ülkeye ait olmalıdır. */
+    UUID cityId,
     /** Kiralama başlangıcında kullanılacak varsayılan alış noktası (PICKUP türü). */
     @NotNull UUID defaultPickupHandoverLocationId,
     /** Geriye uyumluluk: tek teslim noktası; {@code returnHandoverLocationIds} doluysa yok sayılır. */
@@ -42,7 +45,11 @@ public record CreateVehicleRequest(
     @Size(max = 100) List<@Valid VehicleOptionDefinitionRequest> optionDefinitions,
     Map<String, String> images,
     @Size(max = 255) String engine,
+    @Size(max = 64) String fuelType,
+    @Size(max = 64) String bodyColor,
     @Min(1) @Max(20) Integer seats,
     @Min(0) Integer luggage,
+    @Size(max = 32) String transmissionType,
+    @Size(max = 32) String bodyStyleCode,
     /** Acente tarafından opsiyonel; liste sırası gösterim sırasıdır. */
     @Size(max = 30) List<@NotBlank @Size(max = 500) String> highlights) {}

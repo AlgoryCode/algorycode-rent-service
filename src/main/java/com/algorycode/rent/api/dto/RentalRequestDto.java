@@ -5,6 +5,7 @@ import com.algorycode.rent.domain.request.RentalRequestStatus;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -18,6 +19,8 @@ public record RentalRequestDto(
     UUID userId,
     LocalDate startDate,
     LocalDate endDate,
+    LocalTime startTime,
+    LocalTime returnTime,
     HandoverLocationRefDto pickupHandoverLocation,
     HandoverLocationRefDto returnHandoverLocation,
     boolean outsideCountryTravel,

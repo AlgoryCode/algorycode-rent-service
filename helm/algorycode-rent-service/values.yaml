@@ -49,14 +49,15 @@ app:
     allowedOriginPatterns: "*"
   mail:
     rabbit:
-      exchange: rent.mail
+      exchange: algorycode.mail.exchange
       routingKey: mail.send.requested
-      queueDlq: rent.mail.dlq
+      queueDlq: algorycode.mail.work-queue.dlq
   rentalRequest:
     greenInsuranceFee: "75.00"
   contract:
     templatePath: ""
     outputDir: /app/generated-contracts
+    pdfLineVatPercent: "20"
     authorization:
       taxablePersonName: "KURU GLOBAL"
       niptNumber: "M51406058A"

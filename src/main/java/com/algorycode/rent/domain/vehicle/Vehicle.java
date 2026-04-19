@@ -94,11 +94,25 @@ public class Vehicle extends AbstractAuditableUuidEntity {
   @Column(name = "engine", length = 255)
   private String engine;
 
+  @Column(name = "fuel_type", length = 64)
+  private String fuelType;
+
+  @Column(name = "body_color", length = 64)
+  private String bodyColor;
+
   @Column(name = "seats")
   private Integer seats;
 
   @Column(name = "luggage")
   private Integer luggage;
+
+  /** Örn. {@code otomatik}, {@code manuel} (panel / arama ile uyumlu). */
+  @Column(name = "transmission_type", length = 32)
+  private String transmissionType;
+
+  /** {@link VehicleBodyStyle#getCode()} — referans tablo. */
+  @Column(name = "body_style_code", length = 32)
+  private String bodyStyleCode;
 
   @OneToMany(mappedBy = "vehicle", cascade = CascadeType.ALL, orphanRemoval = true)
   private List<VehicleImage> images = new ArrayList<>();

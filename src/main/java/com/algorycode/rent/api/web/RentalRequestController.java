@@ -6,6 +6,7 @@ import com.algorycode.rent.api.dto.UpdateRentalRequestStatusRequest;
 import com.algorycode.rent.service.RentalRequestService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -14,6 +15,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
@@ -30,8 +32,8 @@ public class RentalRequestController {
   }
 
   @GetMapping
-  public List<RentalRequestDto> list() {
-    return rentalRequestService.listAll();
+  public List<RentalRequestDto> list(@RequestParam(required = false) UUID vehicleId) {
+    return rentalRequestService.listAll(vehicleId);
   }
 
   @PostMapping
@@ -62,6 +64,13 @@ public class RentalRequestController {
   @PostMapping("/{id}/contract")
   public RentalRequestDto generateContract(@PathVariable UUID id) {
     return rentalRequestService.generateContract(id);
+  }
+
+  /** Müşteri e-postasına sözleşme bildirimi (Thymeleaf + Rabbit mail kuyruğu). */
+  @PostMapping("/{id}/send-contract-email")
+  public ResponseEntity<Void> sendContractEmailToCustomer(@PathVariable UUID id) {
+    rentalRequestService.queueContractPdfEmailToCustomer(id);
+    return ResponseEntity.status(HttpStatus.ACCEPTED).build();
   }
 
   @PatchMapping("/{id}/status")

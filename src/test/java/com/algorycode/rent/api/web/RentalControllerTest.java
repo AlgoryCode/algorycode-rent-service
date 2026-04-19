@@ -2,8 +2,8 @@ package com.algorycode.rent.api.web;
 
 import com.algorycode.rent.api.dto.RentalDto;
 import com.algorycode.rent.domain.rental.RentalCommissionFlow;
-import com.algorycode.rent.api.error.RestExceptionHandler;
 import com.algorycode.rent.domain.rental.RentalStatus;
+import com.algorycode.rent.logging.AuditLog;
 import com.algorycode.rent.service.RentalService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -31,6 +31,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class RentalControllerTest {
 
   @Mock private RentalService rentalService;
+  @Mock private AuditLog auditLog;
 
   private MockMvc mockMvc;
 
@@ -38,7 +39,7 @@ class RentalControllerTest {
   void setUp() {
     mockMvc =
         MockMvcBuilders.standaloneSetup(new RentalController(rentalService))
-            .setControllerAdvice(new RestExceptionHandler())
+            .setControllerAdvice(new GlobalExceptionHandler(auditLog))
             .build();
   }
 

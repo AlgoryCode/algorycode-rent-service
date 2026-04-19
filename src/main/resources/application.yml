@@ -2,6 +2,8 @@ server:
   port: 8090
 
 spring:
+  thymeleaf:
+    encoding: UTF-8
   application:
     name: algorycode-rent-service
   datasource:
@@ -23,10 +25,12 @@ spring:
           preferred_uuid_jdbc_type: CHAR
   # AuthService / mail-service ile aynı broker (DNS: rabbitmq.algorycode.com veya küme içi servis)
   rabbitmq:
-    host: rabbitmq.default.svc.cluster.local
+    host: localhost
+    #host: rabbitmq.algorycode.com
     port: 5672
     username: admin
-    password: GuvenliSifre123
+    password: guclusifre
+    #password: GuvenliSifre123
     virtual-host: /
 
 management:
@@ -56,9 +60,10 @@ app:
     allowed-origin-patterns: "*"
   mail:
     rabbit:
-      exchange: rent.mail
+      # mail-service ile aynı exchange (MailRabbitTopologyConfiguration); routing key mail.# ile eşleşir
+      exchange: algorycode.mail.exchange
       routing-key: mail.send.requested
-      queue-dlq: rent.mail.dlq
+      queue-dlq: algorycode.mail.work-queue.dlq
   rental-request:
     # Yurt dışı çıkış seçilirse otomatik eklenen yeşil sigorta ücreti.
     green-insurance-fee: 75.00
@@ -66,6 +71,8 @@ app:
     # Boş: PDF tamamen uygulama içi İngilizce yetkilendirme şablonu ile üretilir.
     template-path: ""
     output-dir: ./generated-contracts
+    # PDF ek hizmet tablosu: satir tutarlari KDV dahil; 0 vergi sutununu sifirlar.
+    pdf-line-vat-percent: 20
     authorization:
       taxable-person-name: "KURU GLOBAL"
       nipt-number: "M51406058A"
@@ -104,3 +111,4 @@ logging:
   level:
     org.hibernate.SQL: WARN
     com.algorycode.rent: INFO
+    AUDIT: INFO

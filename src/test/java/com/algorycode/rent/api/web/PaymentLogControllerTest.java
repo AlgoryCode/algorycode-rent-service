@@ -2,6 +2,7 @@ package com.algorycode.rent.api.web;
 
 import com.algorycode.rent.api.dto.PaymentLogDto;
 import com.algorycode.rent.domain.payment.PaymentLogStatus;
+import com.algorycode.rent.domain.payment.PaymentMoneyFlow;
 import com.algorycode.rent.service.PaymentLogService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -40,12 +41,18 @@ class PaymentLogControllerTest {
             UUID.randomUUID(),
             Instant.parse("2026-01-01T00:00:00Z"),
             new BigDecimal("100.00"),
+            PaymentMoneyFlow.inbound,
             PaymentLogStatus.completed,
             "card",
             "34 A",
             UUID.randomUUID(),
             "X",
             "REF-1",
+            null,
+            null,
+            null,
+            null,
+            null,
             null);
     when(paymentLogService.listAll()).thenReturn(List.of(dto));
 

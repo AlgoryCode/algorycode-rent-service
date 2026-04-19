@@ -18,11 +18,14 @@ import com.algorycode.rent.domain.request.RentalRequestOption;
 import com.algorycode.rent.domain.request.RentalRequestStatus;
 import com.algorycode.rent.domain.vehicle.Vehicle;
 import com.algorycode.rent.events.RentalRequestCreatedMailEvent;
+import com.algorycode.rent.logging.AuditLog;
 import com.algorycode.rent.repository.RentalRequestRepository;
 import com.algorycode.rent.repository.ReservationExtraOptionTemplateRepository;
 import com.algorycode.rent.repository.VehicleOptionDefinitionRepository;
 import com.algorycode.rent.repository.VehicleRepository;
+import com.algorycode.rent.service.support.DateRangeValidator;
 import com.algorycode.rent.service.support.RentalOptionLineResolution;
+import com.algorycode.rent.service.support.Text;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -33,9 +36,11 @@ import java.math.RoundingMode;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 
@@ -47,9 +52,6 @@ public class RentalRequestService {
 
   private static final DateTimeFormatter REF_DATE_FMT = DateTimeFormatter.BASIC_ISO_DATE;
 
-  private static String blankToEmpty(String s) {
-    return s == null || s.isBlank() ? "" : s.trim();
-  }
   private static final String ALPHABET = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
 
   private final RentalRequestRepository rentalRequestRepository;
@@ -64,6 +66,8 @@ public class RentalRequestService {
   private final VehicleOptionDefinitionRepository vehicleOptionDefinitionRepository;
   private final ReservationExtraOptionTemplateRepository reservationExtraOptionTemplateRepository;
   private final ApplicationEventPublisher applicationEventPublisher;
+  private final RentalRequestNotificationService rentalRequestNotificationService;
+  private final AuditLog auditLog;
 
   public RentalRequestService(
       RentalRequestRepository rentalRequestRepository,
@@ -77,7 +81,9 @@ public class RentalRequestService {
       HandoverPricingService handoverPricingService,
       VehicleOptionDefinitionRepository vehicleOptionDefinitionRepository,
       ReservationExtraOptionTemplateRepository reservationExtraOptionTemplateRepository,
-      ApplicationEventPublisher applicationEventPublisher) {
+      ApplicationEventPublisher applicationEventPublisher,
+      RentalRequestNotificationService rentalRequestNotificationService,
+      AuditLog auditLog) {
     this.rentalRequestRepository = rentalRequestRepository;
     this.vehicleRepository = vehicleRepository;
     this.rentalRequestProperties = rentalRequestProperties;
@@ -90,13 +96,13 @@ public class RentalRequestService {
     this.vehicleOptionDefinitionRepository = vehicleOptionDefinitionRepository;
     this.reservationExtraOptionTemplateRepository = reservationExtraOptionTemplateRepository;
     this.applicationEventPublisher = applicationEventPublisher;
+    this.rentalRequestNotificationService = rentalRequestNotificationService;
+    this.auditLog = auditLog;
   }
 
   @Transactional
   public RentalRequestDto create(CreateRentalRequestFormRequest req) {
-    if (req.endDate().isBefore(req.startDate())) {
-      throw new BadRequestException("Bitiş tarihi başlangıçtan önce olamaz.");
-    }
+    DateRangeValidator.requireEndNotBeforeStart(req.startDate(), req.endDate());
     Vehicle vehicle = null;
     if (req.vehicleId() != null) {
       vehicle =
@@ -112,6 +118,8 @@ public class RentalRequestService {
     entity.setUserId(req.userId());
     entity.setStartDate(req.startDate());
     entity.setEndDate(req.endDate());
+    entity.setStartTime(req.startTime() != null ? req.startTime() : LocalTime.of(8, 0));
+    entity.setReturnTime(req.returnTime() != null ? req.returnTime() : LocalTime.of(8, 0));
     entity.setPickupHandoverLocation(resolvePickupForRequest(vehicle, req.pickupHandoverLocationId()));
     entity.setReturnHandoverLocation(resolveReturnForRequest(vehicle, req.returnHandoverLocationId()));
     var handoverQuote =
@@ -131,8 +139,8 @@ public class RentalRequestService {
     c.setEmail(req.customer().email().trim().toLowerCase(Locale.ROOT));
     c.setBirthDate(req.customer().birthDate());
     c.setNationalId(req.customer().nationalId() != null ? req.customer().nationalId().trim() : null);
-    c.setPassportNo(blankToEmpty(req.customer().passportNo()));
-    c.setDriverLicenseNo(blankToEmpty(req.customer().driverLicenseNo()));
+    c.setPassportNo(Text.blankToEmpty(req.customer().passportNo()));
+    c.setDriverLicenseNo(Text.blankToEmpty(req.customer().driverLicenseNo()));
     c.setPassportImageDataUrl(req.customer().passportImageDataUrl().trim());
     c.setDriverLicenseImageDataUrl(req.customer().driverLicenseImageDataUrl().trim());
     entity.setCustomer(c);
@@ -144,8 +152,8 @@ public class RentalRequestService {
         ad.setRentalRequest(entity);
         ad.setFullName(d.fullName().trim());
         ad.setBirthDate(d.birthDate());
-        ad.setDriverLicenseNo(blankToEmpty(d.driverLicenseNo()));
-        ad.setPassportNo(blankToEmpty(d.passportNo()));
+        ad.setDriverLicenseNo(Text.blankToEmpty(d.driverLicenseNo()));
+        ad.setPassportNo(Text.blankToEmpty(d.passportNo()));
         ad.setPassportImageDataUrl(d.passportImageDataUrl().trim());
         ad.setDriverLicenseImageDataUrl(d.driverLicenseImageDataUrl().trim());
         entity.getAdditionalDrivers().add(ad);
@@ -160,9 +168,16 @@ public class RentalRequestService {
     persistRequestMediaToObjectStorage(entity);
     entity = rentalRequestRepository.save(entity);
 
-    RentalRequest refreshed =
-        rentalRequestRepository.findById(entity.getId()).orElseThrow();
+    RentalRequest refreshed = requireById(entity.getId());
     applicationEventPublisher.publishEvent(new RentalRequestCreatedMailEvent(refreshed.getId()));
+    auditLog.infoEvent(
+        "rental_request_created",
+        Map.of(
+            "rentalRequestId", refreshed.getId().toString(),
+            "referenceNo", refreshed.getReferenceNo(),
+            "vehicleId",
+                refreshed.getVehicle() != null ? refreshed.getVehicle().getId().toString() : "none",
+            "userId", refreshed.getUserId() != null ? refreshed.getUserId().toString() : "none"));
     return RentalRequestMapper.toDto(refreshed, objectStorageService::resolvePublicUrl);
   }
 
@@ -172,14 +187,8 @@ public class RentalRequestService {
    */
   @Transactional
   public RentalRequestDto generateContract(UUID id) {
-    RentalRequest entity =
-        rentalRequestRepository
-            .findById(id)
-            .orElseThrow(() -> new ResourceNotFoundException("Talep bulunamadı: " + id));
-    if (entity.getStatus() != RentalRequestStatus.approved) {
-      throw new BadRequestException(
-          "Sözleşme yalnızca onaylanmış (approved) talepler için oluşturulabilir.");
-    }
+    RentalRequest entity = requireById(id);
+    assertApprovedForContractGeneration(entity);
     if (entity.getContractPdfPath() != null && !entity.getContractPdfPath().isBlank()) {
       throw new BadRequestException("Bu talep için sözleşme zaten oluşturulmuş.");
     }
@@ -187,8 +196,7 @@ public class RentalRequestService {
     entity.setContractPdfPath(uploadContractPdf(entity, localPdfPath));
     entity = rentalRequestRepository.save(entity);
     rentalRequestWhatsappContractService.notifyAdminWithContractPdf(entity);
-    RentalRequest refreshed =
-        rentalRequestRepository.findById(entity.getId()).orElseThrow();
+    RentalRequest refreshed = requireById(entity.getId());
     return RentalRequestMapper.toDto(refreshed, objectStorageService::resolvePublicUrl);
   }
 
@@ -203,25 +211,33 @@ public class RentalRequestService {
 
   @Transactional(readOnly = true)
   public RentalRequestDto getById(UUID id) {
-    RentalRequest request =
-        rentalRequestRepository
-            .findById(id)
-            .orElseThrow(() -> new ResourceNotFoundException("Talep bulunamadı: " + id));
+    RentalRequest request = requireById(id);
     return RentalRequestMapper.toDto(request, objectStorageService::resolvePublicUrl);
   }
 
   /**
    * Sözleşme PDF baytları (object key veya yerel dosya yolu). Sadece sözleşme oluşturulmuş taleplerde.
    */
+  /**
+   * Müşteri e-postasına Thymeleaf şablonlu sözleşme bildirimi (PDF herkese açık URL ise mail içinde link).
+   */
+  @Transactional(readOnly = true)
+  public void queueContractPdfEmailToCustomer(UUID id) {
+    RentalRequest request = requireById(id);
+    assertApprovedForContractEmail(request);
+    assertContractPdfPathPresent(request, "Bu talep için sözleşme PDF'i henüz yok.");
+    String email = request.getCustomer().getEmail();
+    if (email == null || email.isBlank()) {
+      throw new BadRequestException("Müşteri e-posta adresi kayıtlı değil.");
+    }
+    rentalRequestNotificationService.notifyContractPdfToCustomer(
+        request, objectStorageService::resolvePublicUrl);
+  }
+
   @Transactional(readOnly = true)
   public ContractPdfAttachment getContractPdfAttachment(UUID id) {
-    RentalRequest request =
-        rentalRequestRepository
-            .findById(id)
-            .orElseThrow(() -> new ResourceNotFoundException("Talep bulunamadı: " + id));
-    if (request.getContractPdfPath() == null || request.getContractPdfPath().isBlank()) {
-      throw new BadRequestException("Sözleşme henüz oluşturulmamış.");
-    }
+    RentalRequest request = requireById(id);
+    assertContractPdfPathPresent(request, "Sözleşme henüz oluşturulmamış.");
     String path = request.getContractPdfPath().trim();
     if (path.startsWith("http://") || path.startsWith("https://")) {
       throw new BadRequestException("Bu kayıt için doğrudan indirme desteklenmiyor.");
@@ -246,19 +262,45 @@ public class RentalRequestService {
 
   @Transactional
   public RentalRequestDto updateStatus(UUID id, UpdateRentalRequestStatusRequest req) {
-    RentalRequest request =
-        rentalRequestRepository
-            .findById(id)
-            .orElseThrow(() -> new ResourceNotFoundException("Talep bulunamadı: " + id));
+    RentalRequest request = requireById(id);
     request.setStatus(req.status());
     request.setStatusMessage(req.statusMessage() != null ? req.statusMessage().trim() : null);
     request = rentalRequestRepository.save(request);
     return RentalRequestMapper.toDto(request, objectStorageService::resolvePublicUrl);
   }
 
+  private RentalRequest requireById(UUID id) {
+    return rentalRequestRepository
+        .findById(id)
+        .orElseThrow(() -> new ResourceNotFoundException("Talep bulunamadı: " + id));
+  }
+
+  private static void assertApprovedForContractGeneration(RentalRequest entity) {
+    if (entity.getStatus() != RentalRequestStatus.approved) {
+      throw new BadRequestException(
+          "Sözleşme yalnızca onaylanmış (approved) talepler için oluşturulabilir.");
+    }
+  }
+
+  private static void assertApprovedForContractEmail(RentalRequest request) {
+    if (request.getStatus() != RentalRequestStatus.approved) {
+      throw new BadRequestException("Sözleşme e-postası yalnızca onaylanmış talepler için gönderilebilir.");
+    }
+  }
+
+  private static void assertContractPdfPathPresent(RentalRequest request, String messageWhenBlank) {
+    if (request.getContractPdfPath() == null || request.getContractPdfPath().isBlank()) {
+      throw new BadRequestException(messageWhenBlank);
+    }
+  }
+
   @Transactional(readOnly = true)
-  public List<RentalRequestDto> listAll() {
-    return rentalRequestRepository.findAll().stream()
+  public List<RentalRequestDto> listAll(UUID vehicleId) {
+    List<RentalRequest> rows =
+        vehicleId == null
+            ? rentalRequestRepository.findAll()
+            : rentalRequestRepository.findByVehicle_IdOrderByCreatedAtDesc(vehicleId);
+    return rows.stream()
         .map(r -> RentalRequestMapper.toDto(r, objectStorageService::resolvePublicUrl))
         .toList();
   }

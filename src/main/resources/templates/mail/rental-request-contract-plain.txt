@@ -1,0 +1,15 @@
+Merhaba [[${customerName}]],
+
+Rezervasyon talebiniz onaylandı ve kiralama sözleşmeniz hazırlandı.
+
+Referans: [[${referenceNo}]]
+
+[# th:if="${hasPublicPdf}"]
+Sözleşme PDF indirme bağlantınız:
+[[${contractPdfUrl}]]
+[/]
+[# th:unless="${hasPublicPdf}"]
+PDF dosyanız sistemde kayıtlıdır; herkese açık indirme bağlantısı yoksa lütfen acentenizden isteyin.
+[/]
+
+Bu e-posta otomatik gönderilmiştir; lütfen yanıtlamayınız.

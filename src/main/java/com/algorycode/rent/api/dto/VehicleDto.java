@@ -25,8 +25,13 @@ public record VehicleDto(
     UUID cityId,
     String cityName,
     String engine,
+    String fuelType,
+    String bodyColor,
     Integer seats,
     Integer luggage,
+    String transmissionType,
+    String bodyStyleCode,
+    String bodyStyleLabel,
     HandoverLocationRefDto defaultPickupHandoverLocation,
     /** İlk izin verilen teslim noktası (kirada varsayılan); liste boşsa null. */
     HandoverLocationRefDto defaultReturnHandoverLocation,

@@ -41,4 +41,10 @@ public interface VehicleRepository extends JpaRepository<Vehicle, UUID> {
   boolean existsByPlateIgnoreCaseAndDeletedFalse(String plate);
 
   boolean existsByPlateIgnoreCaseAndDeletedFalseAndIdNot(String plate, UUID id);
+
+  long countByBodyStyleCodeAndDeletedFalse(String bodyStyleCode);
+
+  long countByFuelTypeAndDeletedFalse(String fuelType);
+
+  long countByTransmissionTypeAndDeletedFalse(String transmissionType);
 }

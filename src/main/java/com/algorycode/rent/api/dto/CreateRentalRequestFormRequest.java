@@ -7,6 +7,7 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.List;
 import java.util.UUID;
 
@@ -15,6 +16,10 @@ public record CreateRentalRequestFormRequest(
     UUID userId,
     @NotNull LocalDate startDate,
     @NotNull LocalDate endDate,
+    /** Bos ise PDF ve kayitta 08:00 kullanilir. */
+    LocalTime startTime,
+    /** Bos ise PDF ve kayitta 08:00 kullanilir. */
+    LocalTime returnTime,
     UUID pickupHandoverLocationId,
     UUID returnHandoverLocationId,
     boolean outsideCountryTravel,

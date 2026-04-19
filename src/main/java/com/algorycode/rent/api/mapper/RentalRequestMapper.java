@@ -52,6 +52,8 @@ public final class RentalRequestMapper {
         r.getUserId(),
         r.getStartDate(),
         r.getEndDate(),
+        r.getStartTime(),
+        r.getReturnTime(),
         HandoverLocationMapper.toRef(r.getPickupHandoverLocation()),
         HandoverLocationMapper.toRef(r.getReturnHandoverLocation()),
         r.isOutsideCountryTravel(),

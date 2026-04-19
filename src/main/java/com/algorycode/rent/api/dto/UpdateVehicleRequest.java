@@ -35,8 +35,12 @@ public record UpdateVehicleRequest(
     @Size(max = 100) List<@Valid VehicleOptionDefinitionRequest> optionDefinitions,
     Map<String, String> images,
     @Size(max = 255) String engine,
+    @Size(max = 64) String fuelType,
+    @Size(max = 64) String bodyColor,
     @Min(1) @Max(20) Integer seats,
     @Min(0) Integer luggage,
+    @Size(max = 32) String transmissionType,
+    @Size(max = 32) String bodyStyleCode,
     /**
      * {@code null}: mevcut öne çıkanlara dokunma. Boş liste: tümünü sil. Dolu liste: tamamen
      * değiştir.

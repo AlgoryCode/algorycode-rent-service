@@ -17,11 +17,16 @@ import com.algorycode.rent.domain.rental.RentalCommissionFlow;
 import com.algorycode.rent.domain.rental.RentalOption;
 import com.algorycode.rent.domain.rental.RentalStatus;
 import com.algorycode.rent.domain.vehicle.Vehicle;
+import com.algorycode.rent.logging.AuditLog;
+import com.algorycode.rent.logging.SafeReasonCodes;
 import com.algorycode.rent.repository.RentalRepository;
 import com.algorycode.rent.repository.ReservationExtraOptionTemplateRepository;
 import com.algorycode.rent.repository.VehicleOptionDefinitionRepository;
 import com.algorycode.rent.repository.VehicleRepository;
+import com.algorycode.rent.service.support.DateRangeValidator;
+import com.algorycode.rent.service.support.RentalCommissionValidator;
 import com.algorycode.rent.service.support.RentalOptionLineResolution;
+import com.algorycode.rent.service.support.Text;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,6 +34,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Service
@@ -41,6 +47,7 @@ public class RentalService {
   private final HandoverLocationService handoverLocationService;
   private final VehicleOptionDefinitionRepository vehicleOptionDefinitionRepository;
   private final ReservationExtraOptionTemplateRepository reservationExtraOptionTemplateRepository;
+  private final AuditLog auditLog;
 
   public RentalService(
       RentalRepository rentalRepository,
@@ -49,7 +56,8 @@ public class RentalService {
       CustomerRecordService customerRecordService,
       HandoverLocationService handoverLocationService,
       VehicleOptionDefinitionRepository vehicleOptionDefinitionRepository,
-      ReservationExtraOptionTemplateRepository reservationExtraOptionTemplateRepository) {
+      ReservationExtraOptionTemplateRepository reservationExtraOptionTemplateRepository,
+      AuditLog auditLog) {
     this.rentalRepository = rentalRepository;
     this.vehicleRepository = vehicleRepository;
     this.objectStorageService = objectStorageService;
@@ -57,13 +65,12 @@ public class RentalService {
     this.handoverLocationService = handoverLocationService;
     this.vehicleOptionDefinitionRepository = vehicleOptionDefinitionRepository;
     this.reservationExtraOptionTemplateRepository = reservationExtraOptionTemplateRepository;
+    this.auditLog = auditLog;
   }
 
   @Transactional(readOnly = true)
   public List<RentalDto> list(UUID vehicleId, RentalStatus status, LocalDate startDate, LocalDate endDate) {
-    if (startDate != null && endDate != null && endDate.isBefore(startDate)) {
-      throw new BadRequestException("Bitiş tarihi başlangıçtan önce olamaz.");
-    }
+    DateRangeValidator.requireEndNotBeforeStartIfBothPresent(startDate, endDate);
 
     List<Rental> base;
     if (vehicleId != null && status != null) {
@@ -99,9 +106,7 @@ public class RentalService {
 
   @Transactional
   public RentalDto create(CreateRentalRequest req) {
-    if (req.endDate().isBefore(req.startDate())) {
-      throw new BadRequestException("Bitiş tarihi başlangıçtan önce olamaz.");
-    }
+    DateRangeValidator.requireEndNotBeforeStart(req.startDate(), req.endDate());
     Vehicle vehicle =
         vehicleRepository
             .findByIdAndDeletedFalse(req.vehicleId())
@@ -109,14 +114,8 @@ public class RentalService {
     if (vehicle.isMaintenance()) {
       throw new ConflictException("Bakımdaki araç kiralanamaz.");
     }
-    if (req.commissionAmount().compareTo(BigDecimal.ZERO) < 0) {
-      throw new BadRequestException("Komisyon tutarı negatif olamaz.");
-    }
-    if (req.commissionFlow() == RentalCommissionFlow.pay
-        && req.commissionAmount().compareTo(BigDecimal.ZERO) > 0
-        && (req.commissionCompany() == null || req.commissionCompany().isBlank())) {
-      throw new BadRequestException("Komisyon ödemesinde firma adı zorunludur.");
-    }
+    RentalCommissionValidator.validate(
+        req.commissionAmount(), req.commissionFlow(), req.commissionCompany());
     RentalStatus status = req.status() != null ? req.status() : RentalStatus.active;
     List<Rental> sameVehicle = rentalRepository.findByVehicle_IdOrderByCreatedAtDesc(req.vehicleId());
     ensureNoOverlap(sameVehicle, req.startDate(), req.endDate(), null);
@@ -176,6 +175,12 @@ public class RentalService {
     rental = rentalRepository.save(rental);
     persistRentalMediaToObjectStorage(rental);
     rental = rentalRepository.save(rental);
+    auditLog.infoEvent(
+        "rental_created",
+        Map.of(
+            "rentalId", rental.getId().toString(),
+            "vehicleId", rental.getVehicle().getId().toString(),
+            "status", rental.getStatus().name()));
     return RentalMapper.toDto(rental, objectStorageService::resolvePublicUrl);
   }
 
@@ -188,28 +193,19 @@ public class RentalService {
 
     LocalDate nextStart = req.startDate() != null ? req.startDate() : rental.getStartDate();
     LocalDate nextEnd = req.endDate() != null ? req.endDate() : rental.getEndDate();
-    if (nextEnd.isBefore(nextStart)) {
-      throw new BadRequestException("Bitiş tarihi başlangıçtan önce olamaz.");
-    }
+    DateRangeValidator.requireEndNotBeforeStart(nextStart, nextEnd);
 
     RentalStatus nextStatus = req.status() != null ? req.status() : rental.getStatus();
 
     BigDecimal nextCommission =
         req.commissionAmount() != null ? req.commissionAmount() : rental.getCommissionAmount();
-    if (nextCommission.compareTo(BigDecimal.ZERO) < 0) {
-      throw new BadRequestException("Komisyon tutarı negatif olamaz.");
-    }
     nextCommission = nextCommission.setScale(2, RoundingMode.HALF_UP);
 
     RentalCommissionFlow nextFlow =
         req.commissionFlow() != null ? req.commissionFlow() : rental.getCommissionFlow();
     String nextCompany =
-        req.commissionCompany() != null ? cleanOrNull(req.commissionCompany()) : rental.getCommissionCompany();
-    if (nextFlow == RentalCommissionFlow.pay
-        && nextCommission.compareTo(BigDecimal.ZERO) > 0
-        && (nextCompany == null || nextCompany.isBlank())) {
-      throw new BadRequestException("Komisyon ödemesinde firma adı zorunludur.");
-    }
+        req.commissionCompany() != null ? Text.cleanOrNull(req.commissionCompany()) : rental.getCommissionCompany();
+    RentalCommissionValidator.validate(nextCommission, nextFlow, nextCompany);
 
     if (nextStatus != RentalStatus.cancelled) {
       List<Rental> sameVehicle = rentalRepository.findByVehicle_IdOrderByCreatedAtDesc(rental.getVehicle().getId());
@@ -244,9 +240,10 @@ public class RentalService {
       if (req.customer().nationalId() != null) c.setNationalId(req.customer().nationalId().trim());
       if (req.customer().passportNo() != null) c.setPassportNo(req.customer().passportNo().trim());
       if (req.customer().phone() != null) c.setPhone(req.customer().phone().trim());
-      if (req.customer().email() != null) c.setEmail(cleanOrNull(req.customer().email()));
+      if (req.customer().email() != null) c.setEmail(Text.cleanOrNull(req.customer().email()));
       if (req.customer().birthDate() != null) c.setBirthDate(req.customer().birthDate());
-      if (req.customer().driverLicenseNo() != null) c.setDriverLicenseNo(cleanOrNull(req.customer().driverLicenseNo()));
+      if (req.customer().driverLicenseNo() != null)
+        c.setDriverLicenseNo(Text.cleanOrNull(req.customer().driverLicenseNo()));
       if (req.customer().passportImageDataUrl() != null && !req.customer().passportImageDataUrl().isBlank()) {
         c.setPassportImageDataUrl(
             objectStorageService.uploadDataUrl(
@@ -330,6 +327,15 @@ public class RentalService {
         continue;
       }
       if (datesOverlap(r.getStartDate(), r.getEndDate(), startDate, endDate)) {
+        auditLog.warnBusiness(
+            SafeReasonCodes.RENTAL_OVERLAP,
+            Map.of(
+                "blockingRentalId", r.getId().toString(),
+                "vehicleId", r.getVehicle().getId().toString(),
+                "overlapStart", r.getStartDate().toString(),
+                "overlapEnd", r.getEndDate().toString(),
+                "requestedStart", startDate.toString(),
+                "requestedEnd", endDate.toString()));
         throw new ConflictException(
             "Bu araç "
                 + r.getStartDate()
@@ -340,12 +346,6 @@ public class RentalService {
                 + ").");
       }
     }
-  }
-
-  private static String cleanOrNull(String input) {
-    if (input == null) return null;
-    String s = input.trim();
-    return s.isBlank() ? null : s;
   }
 
   private void replaceRentalOptions(Rental rental, List<RentalOptionRequest> options) {

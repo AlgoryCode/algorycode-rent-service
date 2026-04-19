@@ -9,7 +9,9 @@ import com.algorycode.rent.domain.rental.Rental;
 import com.algorycode.rent.domain.rental.RentalCommissionFlow;
 import com.algorycode.rent.domain.rental.RentalStatus;
 import com.algorycode.rent.domain.vehicle.Vehicle;
+import com.algorycode.rent.logging.AuditLog;
 import com.algorycode.rent.repository.RentalRepository;
+import com.algorycode.rent.repository.ReservationExtraOptionTemplateRepository;
 import com.algorycode.rent.repository.VehicleOptionDefinitionRepository;
 import com.algorycode.rent.repository.VehicleRepository;
 import org.junit.jupiter.api.Test;
@@ -43,6 +45,8 @@ class RentalServiceTest {
   @Mock private CustomerRecordService customerRecordService;
   @Mock private HandoverLocationService handoverLocationService;
   @Mock private VehicleOptionDefinitionRepository vehicleOptionDefinitionRepository;
+  @Mock private ReservationExtraOptionTemplateRepository reservationExtraOptionTemplateRepository;
+  @Mock private AuditLog auditLog;
 
   @InjectMocks private RentalService rentalService;
 

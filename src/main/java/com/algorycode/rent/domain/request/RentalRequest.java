@@ -21,6 +21,7 @@ import lombok.Setter;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -47,6 +48,14 @@ public class RentalRequest extends AbstractAuditableUuidEntity {
 
   @Column(name = "end_date", nullable = false)
   private LocalDate endDate;
+
+  /** Kiralama baslangic saati (PDF Issue Date yanindaki Time). */
+  @Column(name = "start_time")
+  private LocalTime startTime;
+
+  /** Iade saati (PDF Return Date yanindaki Time). */
+  @Column(name = "return_time")
+  private LocalTime returnTime;
 
   @ManyToOne(fetch = FetchType.LAZY)
   @JoinColumn(name = "pickup_handover_location_id")

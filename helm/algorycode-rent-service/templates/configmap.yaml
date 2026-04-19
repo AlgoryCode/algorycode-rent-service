@@ -23,6 +23,7 @@ data:
   APP_RENTAL_REQUEST_GREEN_INSURANCE_FEE: {{ .Values.app.rentalRequest.greenInsuranceFee | quote }}
   APP_CONTRACT_TEMPLATE_PATH: {{ .Values.app.contract.templatePath | quote }}
   APP_CONTRACT_OUTPUT_DIR: {{ .Values.app.contract.outputDir | quote }}
+  APP_CONTRACT_PDF_LINE_VAT_PERCENT: {{ .Values.app.contract.pdfLineVatPercent | default "20" | quote }}
   {{- $auth := .Values.app.contract.authorization | default dict }}
   APP_CONTRACT_AUTHORIZATION_TAXABLE_PERSON_NAME: {{ $auth.taxablePersonName | default "" | quote }}
   APP_CONTRACT_AUTHORIZATION_NIPT_NUMBER: {{ $auth.niptNumber | default "" | quote }}
