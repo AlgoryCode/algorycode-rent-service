@@ -19,7 +19,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
-import java.util.UUID;
 
 @RestController
 @RequestMapping("/rental-requests")
@@ -32,7 +31,7 @@ public class RentalRequestController {
   }
 
   @GetMapping
-  public List<RentalRequestDto> list(@RequestParam(required = false) UUID vehicleId) {
+  public List<RentalRequestDto> list(@RequestParam(required = false) Long vehicleId) {
     return rentalRequestService.listAll(vehicleId);
   }
 
@@ -47,7 +46,7 @@ public class RentalRequestController {
   }
 
   @GetMapping("/{id}/contract.pdf")
-  public ResponseEntity<byte[]> downloadContractPdf(@PathVariable UUID id) {
+  public ResponseEntity<byte[]> downloadContractPdf(@PathVariable Long id) {
     var attachment = rentalRequestService.getContractPdfAttachment(id);
     return ResponseEntity.ok()
         .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + attachment.filename() + "\"")
@@ -57,25 +56,25 @@ public class RentalRequestController {
   }
 
   @GetMapping("/{id}")
-  public RentalRequestDto getById(@PathVariable UUID id) {
+  public RentalRequestDto getById(@PathVariable Long id) {
     return rentalRequestService.getById(id);
   }
 
   @PostMapping("/{id}/contract")
-  public RentalRequestDto generateContract(@PathVariable UUID id) {
+  public RentalRequestDto generateContract(@PathVariable Long id) {
     return rentalRequestService.generateContract(id);
   }
 
   /** Müşteri e-postasına sözleşme bildirimi (Thymeleaf + Rabbit mail kuyruğu). */
   @PostMapping("/{id}/send-contract-email")
-  public ResponseEntity<Void> sendContractEmailToCustomer(@PathVariable UUID id) {
+  public ResponseEntity<Void> sendContractEmailToCustomer(@PathVariable Long id) {
     rentalRequestService.queueContractPdfEmailToCustomer(id);
     return ResponseEntity.status(HttpStatus.ACCEPTED).build();
   }
 
   @PatchMapping("/{id}/status")
   public RentalRequestDto updateStatus(
-      @PathVariable UUID id,
+      @PathVariable Long id,
       @Valid @RequestBody UpdateRentalRequestStatusRequest body) {
     return rentalRequestService.updateStatus(id, body);
   }

@@ -14,7 +14,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
-import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
@@ -31,7 +30,7 @@ class PaymentLogServiceTest {
   @Test
   void listAll_returnsMappedDtos() {
     var p = new PaymentLog();
-    p.setId(UUID.randomUUID());
+    p.setId(1L);
     p.setAmountTry(new BigDecimal("99.50"));
     p.setMoneyFlow(PaymentMoneyFlow.inbound);
     p.setStatus(PaymentLogStatus.completed);

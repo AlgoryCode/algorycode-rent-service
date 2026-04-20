@@ -13,7 +13,6 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
-import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -42,7 +41,7 @@ public class VehicleOccupancyService {
   }
 
   @Transactional(readOnly = true)
-  public VehicleCalendarOccupancyDto occupancy(UUID vehicleId, LocalDate from, LocalDate to) {
+  public VehicleCalendarOccupancyDto occupancy(Long vehicleId, LocalDate from, LocalDate to) {
     DateRangeValidator.requireEndNotBeforeStart(from, to);
     vehicleRepository
         .findByIdAndDeletedFalse(vehicleId)

@@ -15,12 +15,12 @@ import java.util.List;
 import java.util.UUID;
 
 public record CreateRentalRequest(
-    @NotNull UUID vehicleId,
+    @NotNull Long vehicleId,
     UUID userId,
     @NotNull LocalDate startDate,
     @NotNull LocalDate endDate,
-    UUID pickupHandoverLocationId,
-    UUID returnHandoverLocationId,
+    Long pickupHandoverLocationId,
+    Long returnHandoverLocationId,
     @NotNull @Valid CustomerBody customer,
     @NotNull @DecimalMin(value = "0", inclusive = true) BigDecimal commissionAmount,
     @NotNull RentalCommissionFlow commissionFlow,

@@ -25,7 +25,6 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 
 import org.mockito.ArgumentCaptor;
 
@@ -61,7 +60,7 @@ class RentalServiceTest {
 
   @Test
   void list_withVehicleId_callsVehicleQuery() {
-    var vid = UUID.randomUUID();
+    var vid = 1L;
     when(rentalRepository.findByVehicle_IdOrderByCreatedAtDesc(vid)).thenReturn(List.of());
 
     rentalService.list(vid, null, null, null);
@@ -81,7 +80,7 @@ class RentalServiceTest {
 
   @Test
   void list_withVehicleIdAndStatus_callsCombinedQuery() {
-    var vid = UUID.randomUUID();
+    var vid = 1L;
     when(rentalRepository.findByVehicle_IdAndStatusOrderByCreatedAtDesc(vid, RentalStatus.active))
         .thenReturn(List.of(sampleRental(vid)));
 
@@ -94,8 +93,8 @@ class RentalServiceTest {
 
   @Test
   void getById_returnsDto() {
-    var id = UUID.randomUUID();
-    var r = sampleRental(UUID.randomUUID());
+    var id = 1L;
+    var r = sampleRental(1L);
     r.setId(id);
     when(rentalRepository.findById(id)).thenReturn(Optional.of(r));
 
@@ -107,7 +106,7 @@ class RentalServiceTest {
 
   @Test
   void getById_throwsWhenMissing() {
-    var id = UUID.randomUUID();
+    var id = 1L;
     when(rentalRepository.findById(id)).thenReturn(Optional.empty());
 
     assertThatThrownBy(() -> rentalService.getById(id))
@@ -117,18 +116,18 @@ class RentalServiceTest {
 
   @Test
   void update_whenCompleted_setsVehicleDefaultPickupToReturnHandoverLocation() {
-    UUID rentalId = UUID.randomUUID();
-    UUID vehicleId = UUID.randomUUID();
+    Long rentalId = 1L;
+    Long vehicleId = 1L;
 
     HandoverLocation returnLoc = new HandoverLocation();
-    returnLoc.setId(UUID.randomUUID());
+    returnLoc.setId(1L);
     returnLoc.setKind(HandoverLocationKind.RETURN);
     returnLoc.setName("Havalimanı teslim");
     returnLoc.setActive(true);
     returnLoc.setLineOrder(0);
 
     HandoverLocation oldDefaultPickup = new HandoverLocation();
-    oldDefaultPickup.setId(UUID.randomUUID());
+    oldDefaultPickup.setId(1L);
     oldDefaultPickup.setKind(HandoverLocationKind.PICKUP);
     oldDefaultPickup.setName("Ofis");
     oldDefaultPickup.setActive(true);
@@ -193,8 +192,8 @@ class RentalServiceTest {
 
   @Test
   void update_whenCompleted_withoutReturnLocation_doesNotSaveVehicle() {
-    UUID rentalId = UUID.randomUUID();
-    UUID vehicleId = UUID.randomUUID();
+    Long rentalId = 1L;
+    Long vehicleId = 1L;
     Vehicle vehicle = new Vehicle();
     vehicle.setId(vehicleId);
     vehicle.setPlate("06 A 2");
@@ -238,7 +237,7 @@ class RentalServiceTest {
     verify(vehicleRepository, never()).save(any());
   }
 
-  private static Rental sampleRental(UUID vehicleId) {
+  private static Rental sampleRental(Long vehicleId) {
     var vehicle = new Vehicle();
     vehicle.setId(vehicleId);
     vehicle.setPlate("06 X 06");
@@ -256,7 +255,7 @@ class RentalServiceTest {
     customer.setPhone("+90");
 
     var rental = new Rental();
-    rental.setId(UUID.randomUUID());
+    rental.setId(1L);
     rental.setVehicle(vehicle);
     rental.setStartDate(LocalDate.of(2026, 4, 1));
     rental.setEndDate(LocalDate.of(2026, 4, 10));

@@ -12,7 +12,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.RoundingMode;
 import java.util.List;
-import java.util.UUID;
 
 @Service
 public class ReservationExtraOptionTemplateService {
@@ -41,7 +40,7 @@ public class ReservationExtraOptionTemplateService {
   }
 
   @Transactional(readOnly = true)
-  public ReservationExtraOptionTemplate requireActive(UUID id) {
+  public ReservationExtraOptionTemplate requireActive(Long id) {
     return repository
         .findByIdAndActiveTrue(id)
         .orElseThrow(() -> new ResourceNotFoundException("Rezervasyon ek seçeneği bulunamadı."));
@@ -67,7 +66,7 @@ public class ReservationExtraOptionTemplateService {
   }
 
   @Transactional
-  public ReservationExtraOptionTemplateDto update(UUID id, UpdateReservationExtraOptionTemplateRequest req) {
+  public ReservationExtraOptionTemplateDto update(Long id, UpdateReservationExtraOptionTemplateRequest req) {
     ReservationExtraOptionTemplate e =
         repository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Rezervasyon ek seçeneği bulunamadı."));
     if (req.code() != null) {
@@ -105,7 +104,7 @@ public class ReservationExtraOptionTemplateService {
   }
 
   @Transactional
-  public void deactivate(UUID id) {
+  public void deactivate(Long id) {
     ReservationExtraOptionTemplate e =
         repository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Rezervasyon ek seçeneği bulunamadı."));
     e.setActive(false);

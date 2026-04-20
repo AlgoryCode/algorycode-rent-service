@@ -6,7 +6,6 @@ import com.algorycode.rent.domain.vehicle.VehicleImageSlot;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
-import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -15,7 +14,7 @@ class VehicleMapperTest {
   @Test
   void toDto_mapsImagesBySlotName() {
     var v = new Vehicle();
-    v.setId(UUID.randomUUID());
+    v.setId(1L);
     v.setPlate("34 X 1");
     v.setBrand("B");
     v.setModel("M");
@@ -25,7 +24,7 @@ class VehicleMapperTest {
     v.setUpdatedAt(Instant.now());
 
     var img = new VehicleImage();
-    img.setId(UUID.randomUUID());
+    img.setId(1L);
     img.setSlot(VehicleImageSlot.front);
     img.setImageUrl("https://example.com/a.jpg");
     img.setVehicle(v);

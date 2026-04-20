@@ -9,7 +9,6 @@ import com.algorycode.rent.domain.request.RentalRequestStatus;
 
 import java.math.BigDecimal;
 import java.util.List;
-import java.util.UUID;
 import java.util.function.Function;
 
 public final class RentalRequestMapper {
@@ -36,7 +35,7 @@ public final class RentalRequestMapper {
     List<RentalRequestOptionDto> options =
         r.getOptions().stream().map(RentalRequestMapper::requestOptionDto).toList();
 
-    UUID vehicleId = r.getVehicle() != null ? r.getVehicle().getId() : null;
+    Long vehicleId = r.getVehicleId();
 
     boolean contractGenerationAvailable =
         r.getStatus() == RentalRequestStatus.approved

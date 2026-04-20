@@ -1,6 +1,6 @@
 package com.algorycode.rent.domain.request;
 
-import com.algorycode.rent.domain.AbstractAuditableUuidEntity;
+import com.algorycode.rent.domain.AbstractAuditableLongEntity;
 import com.algorycode.rent.domain.location.HandoverLocation;
 import com.algorycode.rent.domain.vehicle.Vehicle;
 import jakarta.persistence.CascadeType;
@@ -14,6 +14,8 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.OrderBy;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.Setter;
@@ -30,7 +32,7 @@ import java.util.UUID;
 @Setter
 @Entity
 @Table(name = "rental_requests")
-public class RentalRequest extends AbstractAuditableUuidEntity {
+public class RentalRequest extends AbstractAuditableLongEntity {
 
   @Column(name = "reference_no", nullable = false, unique = true, length = 32)
   private String referenceNo;
@@ -39,8 +41,11 @@ public class RentalRequest extends AbstractAuditableUuidEntity {
   @Column(nullable = false, length = 16)
   private RentalRequestStatus status = RentalRequestStatus.pending;
 
+  @Column(name = "vehicle_id")
+  private Long vehicleId;
+
   @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "vehicle_id")
+  @JoinColumn(name = "vehicle_id", insertable = false, updatable = false)
   private Vehicle vehicle;
 
   @Column(name = "start_date", nullable = false)
@@ -57,12 +62,18 @@ public class RentalRequest extends AbstractAuditableUuidEntity {
   @Column(name = "return_time")
   private LocalTime returnTime;
 
-  @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "pickup_handover_location_id")
-  private HandoverLocation pickupHandoverLocation;
+  @Column(name = "pickup_handover_location_id")
+  private Long pickupHandoverLocationId;
 
   @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "return_handover_location_id")
+  @JoinColumn(name = "pickup_handover_location_id", insertable = false, updatable = false)
+  private HandoverLocation pickupHandoverLocation;
+
+  @Column(name = "return_handover_location_id")
+  private Long returnHandoverLocationId;
+
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "return_handover_location_id", insertable = false, updatable = false)
   private HandoverLocation returnHandoverLocation;
 
   @Column(name = "outside_country_travel", nullable = false)
@@ -111,4 +122,18 @@ public class RentalRequest extends AbstractAuditableUuidEntity {
 
   @Column(name = "handover_total_eur", nullable = false, precision = 10, scale = 2)
   private BigDecimal handoverTotalEur = BigDecimal.ZERO;
+
+  @PrePersist
+  @PreUpdate
+  void syncRequestFks() {
+    if (vehicle != null && vehicle.getId() != null) {
+      vehicleId = vehicle.getId();
+    }
+    if (pickupHandoverLocation != null && pickupHandoverLocation.getId() != null) {
+      pickupHandoverLocationId = pickupHandoverLocation.getId();
+    }
+    if (returnHandoverLocation != null && returnHandoverLocation.getId() != null) {
+      returnHandoverLocationId = returnHandoverLocation.getId();
+    }
+  }
 }

@@ -9,7 +9,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
-import java.util.UUID;
 
 @RestController
 @RequestMapping("/panel-users")
@@ -27,7 +26,7 @@ public class PanelUserController {
   }
 
   @DeleteMapping("/{id}")
-  public void delete(@PathVariable UUID id) {
+  public void delete(@PathVariable Long id) {
     panelUserService.deleteById(id);
   }
 }

@@ -1,30 +1,27 @@
 package com.algorycode.rent.domain;
 
 import jakarta.persistence.Column;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.MappedSuperclass;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import lombok.Getter;
 import lombok.Setter;
-import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.type.SqlTypes;
 
 import java.time.Instant;
-import java.util.UUID;
 
-/**
- * Ortak UUID PK ve zaman damgası — tekrarlayan alanları DRY tutar.
- */
+/** Ortak BIGINT PK (IDENTITY) ve zaman damgası. */
 @Getter
 @Setter
 @MappedSuperclass
-public abstract class AbstractAuditableUuidEntity {
+public abstract class AbstractAuditableLongEntity {
 
   @Id
-  @JdbcTypeCode(SqlTypes.CHAR)
-  @Column(nullable = false, updatable = false, length = 36, columnDefinition = "CHAR(36)")
-  private UUID id;
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  @Column(nullable = false, updatable = false)
+  private Long id;
 
   @Column(nullable = false, updatable = false)
   private Instant createdAt;
@@ -35,9 +32,6 @@ public abstract class AbstractAuditableUuidEntity {
   @PrePersist
   void prePersist() {
     var now = Instant.now();
-    if (id == null) {
-      id = UUID.randomUUID();
-    }
     createdAt = now;
     updatedAt = now;
   }

@@ -4,7 +4,6 @@ import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Size;
 
 import java.math.BigDecimal;
-import java.util.UUID;
 
 /**
  * Kiralama veya talep üzerinde satır satır tutulan ek seçenek (ör. bebek koltuğu, ek sigorta).
@@ -13,8 +12,8 @@ import java.util.UUID;
  * rezervasyon ek şablonu; aksi halde {@code title}/{@code price} ile serbest satır.
  */
 public record RentalOptionRequest(
-    UUID vehicleOptionDefinitionId,
-    UUID reservationExtraTemplateId,
+    Long vehicleOptionDefinitionId,
+    Long reservationExtraTemplateId,
     @Size(max = 255) String title,
     @Size(max = 4000) String description,
     @DecimalMin(value = "0", inclusive = true) BigDecimal price,

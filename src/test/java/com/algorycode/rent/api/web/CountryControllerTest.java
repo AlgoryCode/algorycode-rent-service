@@ -11,7 +11,6 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import java.util.List;
-import java.util.UUID;
 
 import org.springframework.http.MediaType;
 
@@ -37,7 +36,7 @@ class CountryControllerTest {
   @Test
   void list_returnsCountries() throws Exception {
     var dto =
-        new CountryDto(UUID.randomUUID(), "TR", "Türkiye", "#E30A17");
+        new CountryDto(1L, "TR", "Türkiye", "#E30A17");
     when(countryService.listAll()).thenReturn(List.of(dto));
 
     mockMvc
@@ -49,7 +48,7 @@ class CountryControllerTest {
 
   @Test
   void create_returnsCountry() throws Exception {
-    var id = UUID.randomUUID();
+    var id = 1L;
     var dto = new CountryDto(id, "DE", "Almanya", "#000000");
     when(countryService.create(any())).thenReturn(dto);
 
@@ -59,7 +58,7 @@ class CountryControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"code\":\"de\",\"name\":\"Almanya\",\"colorCode\":\"#000000\"}"))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.id").value(id.toString()))
+        .andExpect(jsonPath("$.id").value(id))
         .andExpect(jsonPath("$.code").value("DE"))
         .andExpect(jsonPath("$.name").value("Almanya"));
   }

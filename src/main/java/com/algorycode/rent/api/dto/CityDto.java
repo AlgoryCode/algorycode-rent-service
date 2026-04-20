@@ -1,10 +1,8 @@
 package com.algorycode.rent.api.dto;
 
-import java.util.UUID;
-
 public record CityDto(
-    UUID id,
+    Long id,
     String name,
-    UUID countryId,
+    Long countryId,
     String countryCode,
     String countryName) {}

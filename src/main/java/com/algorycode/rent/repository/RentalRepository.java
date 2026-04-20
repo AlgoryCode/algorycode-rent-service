@@ -11,9 +11,8 @@ import org.springframework.data.repository.query.Param;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 
-public interface RentalRepository extends JpaRepository<Rental, UUID>, JpaSpecificationExecutor<Rental> {
+public interface RentalRepository extends JpaRepository<Rental, Long>, JpaSpecificationExecutor<Rental> {
 
   @EntityGraph(attributePaths = {"vehicle"})
   List<Rental> findAllByOrderByCreatedAtDesc();
@@ -22,16 +21,16 @@ public interface RentalRepository extends JpaRepository<Rental, UUID>, JpaSpecif
   List<Rental> findByStatusOrderByCreatedAtDesc(RentalStatus status);
 
   @EntityGraph(attributePaths = {"vehicle"})
-  List<Rental> findByVehicle_IdOrderByCreatedAtDesc(UUID vehicleId);
+  List<Rental> findByVehicle_IdOrderByCreatedAtDesc(Long vehicleId);
 
   @EntityGraph(attributePaths = {"vehicle"})
-  List<Rental> findByVehicle_IdAndStatusOrderByCreatedAtDesc(UUID vehicleId, RentalStatus status);
+  List<Rental> findByVehicle_IdAndStatusOrderByCreatedAtDesc(Long vehicleId, RentalStatus status);
 
-  boolean existsByVehicle_Id(UUID vehicleId);
+  boolean existsByVehicle_Id(Long vehicleId);
 
   @EntityGraph(attributePaths = {"vehicle", "options"})
   @Query("select r from Rental r where r.id = :id")
-  Optional<Rental> findByIdWithVehicleAndOptions(@Param("id") UUID id);
+  Optional<Rental> findByIdWithVehicleAndOptions(@Param("id") Long id);
 
   @Query(
       """
@@ -39,7 +38,7 @@ public interface RentalRepository extends JpaRepository<Rental, UUID>, JpaSpecif
       (trim(coalesce(r.customer.nationalId, '')) <> '' and concat('tc:', trim(r.customer.nationalId)) = :recordKey)
       or (trim(coalesce(r.customer.nationalId, '')) = '' and concat('ph:', trim(coalesce(r.customer.phone, ''))) = :recordKey)
       """)
-  List<UUID> findIdsByCustomerRecordKey(@Param("recordKey") String recordKey);
+  List<Long> findIdsByCustomerRecordKey(@Param("recordKey") String recordKey);
 
   /**
    * Rapor: iptal haric, tarih araligiyla kesisen kiralamalar; gelir gunluk fiyat * gun + opsiyonlardan.
@@ -56,7 +55,7 @@ public interface RentalRepository extends JpaRepository<Rental, UUID>, JpaSpecif
         and (:vehicleId is null or v.id = :vehicleId)
       """)
   List<Rental> findForRevenueReport(
-      @Param("from") LocalDate from, @Param("to") LocalDate to, @Param("vehicleId") UUID vehicleId);
+      @Param("from") LocalDate from, @Param("to") LocalDate to, @Param("vehicleId") Long vehicleId);
 
   /**
    * Araç uygunluk listesi: [from, to] veya to+1 günüyle kesişebilecek iptal olmayan kiralamalar
@@ -88,5 +87,5 @@ public interface RentalRepository extends JpaRepository<Rental, UUID>, JpaSpecif
       order by r.startDate asc, r.endDate asc
       """)
   List<Rental> findCalendarBlockingRentals(
-      @Param("vehicleId") UUID vehicleId, @Param("from") LocalDate from, @Param("to") LocalDate to);
+      @Param("vehicleId") Long vehicleId, @Param("from") LocalDate from, @Param("to") LocalDate to);
 }

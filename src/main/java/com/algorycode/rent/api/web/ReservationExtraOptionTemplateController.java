@@ -18,7 +18,6 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
-import java.util.UUID;
 
 @RestController
 @RequestMapping("/reservation-extra-options")
@@ -43,13 +42,13 @@ public class ReservationExtraOptionTemplateController {
 
   @PatchMapping("/{id}")
   public ReservationExtraOptionTemplateDto update(
-      @PathVariable UUID id, @Valid @RequestBody UpdateReservationExtraOptionTemplateRequest body) {
+      @PathVariable Long id, @Valid @RequestBody UpdateReservationExtraOptionTemplateRequest body) {
     return service.update(id, body);
   }
 
   @DeleteMapping("/{id}")
   @ResponseStatus(HttpStatus.NO_CONTENT)
-  public void deactivate(@PathVariable UUID id) {
+  public void deactivate(@PathVariable Long id) {
     service.deactivate(id);
   }
 }

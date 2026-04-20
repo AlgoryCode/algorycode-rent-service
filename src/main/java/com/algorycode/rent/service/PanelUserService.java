@@ -8,7 +8,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.UUID;
 
 @Service
 public class PanelUserService {
@@ -25,7 +24,7 @@ public class PanelUserService {
   }
 
   @Transactional
-  public void deleteById(UUID id) {
+  public void deleteById(Long id) {
     var user =
         panelUserRepository
             .findByIdAndDeletedFalse(id)

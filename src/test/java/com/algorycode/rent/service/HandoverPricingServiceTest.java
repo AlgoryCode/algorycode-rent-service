@@ -14,7 +14,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
 import java.util.Optional;
-import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
@@ -28,7 +27,7 @@ class HandoverPricingServiceTest {
 
   @Test
   void quote_sameId_returnsZero() {
-    UUID id = UUID.randomUUID();
+    long id = 1L;
     HandoverPricingQuoteDto q = handoverPricingService.quote(id, id);
     assertThat(q.totalEur()).isEqualByComparingTo(BigDecimal.ZERO);
     assertThat(q.applied()).isFalse();
@@ -36,8 +35,8 @@ class HandoverPricingServiceTest {
 
   @Test
   void quote_alToXK_route60_plus_legs() {
-    UUID pId = UUID.randomUUID();
-    UUID rId = UUID.randomUUID();
+    long pId = 10L;
+    long rId = 11L;
     when(handoverLocationRepository.findByIdWithCityAndCountry(pId)).thenReturn(Optional.of(loc(pId, "AL", new BigDecimal("25"))));
     when(handoverLocationRepository.findByIdWithCityAndCountry(rId)).thenReturn(Optional.of(loc(rId, "XK", new BigDecimal("0"))));
     HandoverPricingQuoteDto q = handoverPricingService.quote(pId, rId);
@@ -48,7 +47,7 @@ class HandoverPricingServiceTest {
     assertThat(q.applied()).isTrue();
   }
 
-  private static HandoverLocation loc(UUID id, String countryCode, BigDecimal surcharge) {
+  private static HandoverLocation loc(long id, String countryCode, BigDecimal surcharge) {
     Country c = new Country();
     c.setCode(countryCode);
     City city = new City();

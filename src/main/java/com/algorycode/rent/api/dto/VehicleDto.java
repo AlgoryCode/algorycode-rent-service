@@ -3,11 +3,10 @@ package com.algorycode.rent.api.dto;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
 /** AlgoryRent FE {@code Vehicle} ile uyumlu alanlar. */
 public record VehicleDto(
-    UUID id,
+    Long id,
     String plate,
     String brand,
     String model,
@@ -22,7 +21,7 @@ public record VehicleDto(
     String commissionBrokerPhone,
     String countryCode,
     String countryName,
-    UUID cityId,
+    Long cityId,
     String cityName,
     String engine,
     String fuelType,

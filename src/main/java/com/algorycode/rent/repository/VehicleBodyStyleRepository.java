@@ -7,7 +7,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-public interface VehicleBodyStyleRepository extends JpaRepository<VehicleBodyStyle, String> {
+public interface VehicleBodyStyleRepository extends JpaRepository<VehicleBodyStyle, Long> {
 
   List<VehicleBodyStyle> findAllByOrderBySortOrderAsc();
 

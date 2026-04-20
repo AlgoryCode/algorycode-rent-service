@@ -12,7 +12,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
-import java.util.UUID;
 
 @RestController
 @RequestMapping("/cities")
@@ -25,7 +24,7 @@ public class CityController {
   }
 
   @GetMapping
-  public List<CityDto> list(@RequestParam(required = false) UUID countryId) {
+  public List<CityDto> list(@RequestParam(required = false) Long countryId) {
     return cityService.listAll(countryId);
   }
 

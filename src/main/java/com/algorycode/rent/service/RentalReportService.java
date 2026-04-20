@@ -24,7 +24,6 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
 @Service
 public class RentalReportService {
@@ -39,7 +38,7 @@ public class RentalReportService {
   }
 
   @Transactional(readOnly = true)
-  public RentalDashboardReportDto rentalDashboard(LocalDate from, LocalDate to, UUID vehicleId) {
+  public RentalDashboardReportDto rentalDashboard(LocalDate from, LocalDate to, Long vehicleId) {
     LocalDate toEff = to != null ? to : LocalDate.now();
     LocalDate fromEff = from != null ? from : toEff.minusMonths(1);
     if (toEff.isBefore(fromEff)) {
@@ -63,7 +62,7 @@ public class RentalReportService {
     int activePending = 0;
     int completed = 0;
 
-    Map<UUID, VehicleAgg> byV = new HashMap<>();
+    Map<Long, VehicleAgg> byV = new HashMap<>();
     Map<String, TimelineAgg> timeline = new HashMap<>();
 
     for (Rental r : rentals) {
@@ -89,7 +88,7 @@ public class RentalReportService {
       }
 
       Vehicle v = r.getVehicle();
-      UUID vid = v != null ? v.getId() : null;
+      Long vid = v != null ? v.getId() : null;
       if (vid != null) {
         VehicleAgg a = byV.computeIfAbsent(vid, k -> new VehicleAgg(v));
         a.rentalCount++;

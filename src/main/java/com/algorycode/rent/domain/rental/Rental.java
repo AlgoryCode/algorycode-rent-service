@@ -1,6 +1,6 @@
 package com.algorycode.rent.domain.rental;
 
-import com.algorycode.rent.domain.AbstractAuditableUuidEntity;
+import com.algorycode.rent.domain.AbstractAuditableLongEntity;
 import com.algorycode.rent.domain.location.HandoverLocation;
 import com.algorycode.rent.domain.vehicle.Vehicle;
 import jakarta.persistence.CascadeType;
@@ -15,6 +15,8 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.OrderBy;
 import jakarta.persistence.OneToOne;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.Setter;
@@ -29,10 +31,13 @@ import java.util.UUID;
 @Setter
 @Entity
 @Table(name = "rentals")
-public class Rental extends AbstractAuditableUuidEntity {
+public class Rental extends AbstractAuditableLongEntity {
+
+  @Column(name = "vehicle_id", nullable = false)
+  private Long vehicleId;
 
   @ManyToOne(fetch = FetchType.LAZY, optional = false)
-  @JoinColumn(name = "vehicle_id", nullable = false)
+  @JoinColumn(name = "vehicle_id", nullable = false, insertable = false, updatable = false)
   private Vehicle vehicle;
 
   @Column(nullable = false)
@@ -41,12 +46,18 @@ public class Rental extends AbstractAuditableUuidEntity {
   @Column(nullable = false)
   private LocalDate endDate;
 
-  @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "pickup_handover_location_id")
-  private HandoverLocation pickupHandoverLocation;
+  @Column(name = "pickup_handover_location_id")
+  private Long pickupHandoverLocationId;
 
   @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "return_handover_location_id")
+  @JoinColumn(name = "pickup_handover_location_id", insertable = false, updatable = false)
+  private HandoverLocation pickupHandoverLocation;
+
+  @Column(name = "return_handover_location_id")
+  private Long returnHandoverLocationId;
+
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "return_handover_location_id", insertable = false, updatable = false)
   private HandoverLocation returnHandoverLocation;
 
   @Enumerated(EnumType.STRING)
@@ -84,4 +95,18 @@ public class Rental extends AbstractAuditableUuidEntity {
   @OneToMany(mappedBy = "rental", cascade = CascadeType.ALL, orphanRemoval = true)
   @OrderBy("lineOrder ASC")
   private List<RentalOption> options = new ArrayList<>();
+
+  @PrePersist
+  @PreUpdate
+  void syncRentalFks() {
+    if (vehicle != null && vehicle.getId() != null) {
+      vehicleId = vehicle.getId();
+    }
+    if (pickupHandoverLocation != null && pickupHandoverLocation.getId() != null) {
+      pickupHandoverLocationId = pickupHandoverLocation.getId();
+    }
+    if (returnHandoverLocation != null && returnHandoverLocation.getId() != null) {
+      returnHandoverLocationId = returnHandoverLocation.getId();
+    }
+  }
 }

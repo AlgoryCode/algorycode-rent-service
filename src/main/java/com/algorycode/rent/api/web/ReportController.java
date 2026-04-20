@@ -9,7 +9,6 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.time.LocalDate;
-import java.util.UUID;
 
 @RestController
 @RequestMapping("/reports")
@@ -32,7 +31,7 @@ public class ReportController {
   public RentalDashboardReportDto rentalDashboard(
       @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
       @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
-      @RequestParam(required = false) UUID vehicleId) {
+      @RequestParam(required = false) Long vehicleId) {
     return rentalReportService.rentalDashboard(from, to, vehicleId);
   }
 }

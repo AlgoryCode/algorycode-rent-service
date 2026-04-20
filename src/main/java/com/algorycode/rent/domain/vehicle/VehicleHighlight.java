@@ -1,11 +1,13 @@
 package com.algorycode.rent.domain.vehicle;
 
-import com.algorycode.rent.domain.AbstractAuditableUuidEntity;
+import com.algorycode.rent.domain.AbstractAuditableLongEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.Setter;
@@ -14,10 +16,13 @@ import lombok.Setter;
 @Setter
 @Entity
 @Table(name = "vehicle_highlights")
-public class VehicleHighlight extends AbstractAuditableUuidEntity {
+public class VehicleHighlight extends AbstractAuditableLongEntity {
+
+  @Column(name = "vehicle_id", nullable = false)
+  private Long vehicleId;
 
   @ManyToOne(fetch = FetchType.LAZY, optional = false)
-  @JoinColumn(name = "vehicle_id", nullable = false)
+  @JoinColumn(name = "vehicle_id", nullable = false, insertable = false, updatable = false)
   private Vehicle vehicle;
 
   @Column(name = "line_order", nullable = false)
@@ -25,4 +30,12 @@ public class VehicleHighlight extends AbstractAuditableUuidEntity {
 
   @Column(nullable = false, length = 500)
   private String text;
+
+  @PrePersist
+  @PreUpdate
+  void syncVehicleHighlightFk() {
+    if (vehicle != null && vehicle.getId() != null) {
+      vehicleId = vehicle.getId();
+    }
+  }
 }

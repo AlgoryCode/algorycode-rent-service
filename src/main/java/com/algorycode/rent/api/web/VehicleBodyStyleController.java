@@ -46,8 +46,8 @@ public class VehicleBodyStyleController {
     return vehicleBodyStyleService.update(code, body);
   }
 
-  @DeleteMapping("/{code}")
-  public void delete(@PathVariable String code) {
-    vehicleBodyStyleService.delete(code);
+  @DeleteMapping("/by-id/{id}")
+  public void delete(@PathVariable long id) {
+    vehicleBodyStyleService.delete(id);
   }
 }

@@ -13,7 +13,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -30,7 +29,7 @@ class PanelUserServiceTest {
   @Test
   void listAll_returnsDtos() {
     var u = new PanelUser();
-    u.setId(UUID.randomUUID());
+    u.setId(1L);
     u.setFullName("Admin");
     u.setEmail("a@x.com");
     u.setRole(PanelUserRole.admin);
@@ -49,7 +48,7 @@ class PanelUserServiceTest {
 
   @Test
   void deleteById_softDeletesWhenActive() {
-    var id = UUID.randomUUID();
+    var id = 1L;
     var u = new PanelUser();
     u.setId(id);
     u.setDeleted(false);
@@ -63,7 +62,7 @@ class PanelUserServiceTest {
 
   @Test
   void deleteById_throwsWhenMissing() {
-    var id = UUID.randomUUID();
+    var id = 1L;
     when(panelUserRepository.findByIdAndDeletedFalse(id)).thenReturn(Optional.empty());
 
     assertThatThrownBy(() -> panelUserService.deleteById(id))

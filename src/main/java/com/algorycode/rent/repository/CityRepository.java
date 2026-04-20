@@ -5,11 +5,10 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 
-public interface CityRepository extends JpaRepository<City, UUID> {
+public interface CityRepository extends JpaRepository<City, Long> {
 
-  Optional<City> findByNameIgnoreCaseAndCountry_Id(String name, UUID countryId);
+  Optional<City> findByNameIgnoreCaseAndCountry_Id(String name, Long countryId);
 
-  List<City> findByCountry_IdOrderByNameAsc(UUID countryId);
+  List<City> findByCountry_IdOrderByNameAsc(Long countryId);
 }

@@ -6,14 +6,13 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
 import java.math.BigDecimal;
-import java.util.UUID;
 
 public record CreateHandoverLocationRequest(
     @NotNull HandoverLocationKind kind,
     @NotBlank @Size(max = 255) String name,
     @Size(max = 4000) String description,
     @Size(max = 500) String addressLine,
-    UUID cityId,
+    Long cityId,
     /** {@code null} veya {@code true}: aktif; yalnızca {@code false} pasif kayıt oluşturur. */
     Boolean active,
     int lineOrder,

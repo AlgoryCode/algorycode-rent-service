@@ -42,12 +42,14 @@ public class VehicleBodyStyleService {
 
   @Transactional
   public VehicleCatalogEntryDto create(VehicleLookupCreateRequest req) {
-    String normalized = VehicleCatalogSupport.normalizeBodyStyleCode(req.code());
-    if (vehicleBodyStyleRepository.findByCodeIgnoreCase(normalized).isPresent()) {
-      throw new ConflictException("Bu araç türü kodu zaten kayıtlı: " + normalized);
-    }
+    String code =
+        VehicleCatalogSupport.resolveNewCatalogCode(
+            req.code(),
+            req.labelTr().trim(),
+            true,
+            c -> vehicleBodyStyleRepository.findByCodeIgnoreCase(c).isPresent());
     VehicleBodyStyle e = new VehicleBodyStyle();
-    e.setCode(normalized);
+    e.setCode(code);
     e.setLabelTr(req.labelTr().trim());
     e.setSortOrder(req.sortOrder());
     return toDto(vehicleBodyStyleRepository.save(e));
@@ -59,7 +61,7 @@ public class VehicleBodyStyleService {
     VehicleBodyStyle e = requireEntity(code);
     if (req.labelTr() != null) {
       if (req.labelTr().isBlank()) {
-        throw new BadRequestException("labelTr boş olamaz.");
+        throw new BadRequestException("Özellik adı boş olamaz.");
       }
       e.setLabelTr(req.labelTr().trim());
     }
@@ -70,8 +72,11 @@ public class VehicleBodyStyleService {
   }
 
   @Transactional
-  public void delete(String code) {
-    VehicleBodyStyle e = requireEntity(code);
+  public void delete(long id) {
+    VehicleBodyStyle e =
+        vehicleBodyStyleRepository
+            .findById(id)
+            .orElseThrow(() -> new ResourceNotFoundException("Araç türü bulunamadı."));
     long used = vehicleRepository.countByBodyStyleCodeAndDeletedFalse(e.getCode());
     if (used > 0) {
       throw new ConflictException("Bu araç türü " + used + " araçta kullanılıyor; silinemez.");
@@ -90,6 +95,6 @@ public class VehicleBodyStyleService {
   }
 
   private static VehicleCatalogEntryDto toDto(VehicleBodyStyle e) {
-    return new VehicleCatalogEntryDto(e.getCode(), e.getLabelTr(), e.getSortOrder());
+    return new VehicleCatalogEntryDto(e.getId(), e.getCode(), e.getLabelTr(), e.getSortOrder());
   }
 }

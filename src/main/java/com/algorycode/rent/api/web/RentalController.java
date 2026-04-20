@@ -17,7 +17,6 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.time.LocalDate;
 import java.util.List;
-import java.util.UUID;
 
 @RestController
 @RequestMapping("/rentals")
@@ -31,7 +30,7 @@ public class RentalController {
 
   @GetMapping
   public List<RentalDto> list(
-      @RequestParam(required = false) UUID vehicleId,
+      @RequestParam(required = false) Long vehicleId,
       @RequestParam(required = false) RentalStatus status,
       @RequestParam(required = false) LocalDate startDate,
       @RequestParam(required = false) LocalDate endDate) {
@@ -39,7 +38,7 @@ public class RentalController {
   }
 
   @GetMapping("/{id}")
-  public RentalDto get(@PathVariable UUID id) {
+  public RentalDto get(@PathVariable Long id) {
     return rentalService.getById(id);
   }
 
@@ -49,7 +48,7 @@ public class RentalController {
   }
 
   @PatchMapping("/{id}")
-  public RentalDto update(@PathVariable UUID id, @Valid @RequestBody UpdateRentalRequest body) {
+  public RentalDto update(@PathVariable Long id, @Valid @RequestBody UpdateRentalRequest body) {
     return rentalService.update(id, body);
   }
 }

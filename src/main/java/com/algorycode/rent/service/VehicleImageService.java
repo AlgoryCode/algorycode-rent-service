@@ -10,7 +10,6 @@ import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -74,7 +73,7 @@ public class VehicleImageService {
   }
 
   @Transactional
-  public Vehicle replaceImageSlot(UUID vehicleId, VehicleImageSlot slot, String imageValue) {
+  public Vehicle replaceImageSlot(Long vehicleId, VehicleImageSlot slot, String imageValue) {
     if (imageValue == null || imageValue.isBlank()) {
       throw new BadRequestException("Görsel verisi zorunludur.");
     }
@@ -111,7 +110,7 @@ public class VehicleImageService {
   }
 
   @Transactional
-  public Vehicle deleteImageSlot(UUID vehicleId, VehicleImageSlot slot) {
+  public Vehicle deleteImageSlot(Long vehicleId, VehicleImageSlot slot) {
     Vehicle v =
         vehicleRepository
             .findByIdAndDeletedFalse(vehicleId)

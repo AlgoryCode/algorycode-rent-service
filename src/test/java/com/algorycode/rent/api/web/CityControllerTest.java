@@ -12,7 +12,6 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import java.util.List;
-import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.isNull;
@@ -36,8 +35,8 @@ class CityControllerTest {
 
   @Test
   void list_returnsCities() throws Exception {
-    var countryId = UUID.randomUUID();
-    var cityId = UUID.randomUUID();
+    var countryId = 1L;
+    var cityId = 1L;
     when(cityService.listAll(isNull()))
         .thenReturn(List.of(new CityDto(cityId, "İstanbul", countryId, "TR", "Türkiye")));
 
@@ -50,8 +49,8 @@ class CityControllerTest {
 
   @Test
   void create_returnsCity() throws Exception {
-    var countryId = UUID.randomUUID();
-    var cityId = UUID.randomUUID();
+    var countryId = 1L;
+    var cityId = 1L;
     when(cityService.create(any()))
         .thenReturn(new CityDto(cityId, "Atina", countryId, "GR", "Yunanistan"));
 
@@ -61,7 +60,7 @@ class CityControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"name\":\"Atina\",\"countryId\":\"" + countryId + "\"}"))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.id").value(cityId.toString()))
+        .andExpect(jsonPath("$.id").value(cityId))
         .andExpect(jsonPath("$.countryCode").value("GR"));
   }
 }

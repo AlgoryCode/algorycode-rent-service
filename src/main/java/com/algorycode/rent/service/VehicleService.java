@@ -44,7 +44,6 @@ import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
 @Service
 public class VehicleService {
@@ -103,8 +102,8 @@ public class VehicleService {
   public List<VehicleDto> listWithAvailabilityFilter(
       LocalDate availableFrom,
       LocalDate availableTo,
-      UUID pickupHandoverLocationId,
-      UUID returnHandoverLocationId,
+      Long pickupHandoverLocationId,
+      Long returnHandoverLocationId,
       boolean includePartialAvailability) {
     return vehicleAvailabilityService
         .listVehiclesMatchingAvailability(
@@ -119,7 +118,7 @@ public class VehicleService {
   }
 
   @Transactional(readOnly = true)
-  public VehicleDto getById(UUID id) {
+  public VehicleDto getById(Long id) {
     var v =
         vehicleRepository
             .findByIdAndDeletedFalse(id)
@@ -183,7 +182,7 @@ public class VehicleService {
   }
 
   @Transactional
-  public VehicleDto update(UUID id, UpdateVehicleRequest req) {
+  public VehicleDto update(Long id, UpdateVehicleRequest req) {
     Vehicle v =
         vehicleRepository
             .findByIdAndDeletedFalse(id)
@@ -291,7 +290,7 @@ public class VehicleService {
    * Tek görsel slotunu günceller: yeni dosyayı yükler, eski object storage kaydını siler.
    */
   @Transactional
-  public VehicleDto replaceImageSlot(UUID vehicleId, VehicleImageSlot slot, String imageValue) {
+  public VehicleDto replaceImageSlot(Long vehicleId, VehicleImageSlot slot, String imageValue) {
     return toDto(vehicleImageService.replaceImageSlot(vehicleId, slot, imageValue));
   }
 
@@ -299,12 +298,12 @@ public class VehicleService {
    * Tek görsel slotunu kaldırır; object storage’daki nesneyi silmeyi dener.
    */
   @Transactional
-  public VehicleDto deleteImageSlot(UUID vehicleId, VehicleImageSlot slot) {
+  public VehicleDto deleteImageSlot(Long vehicleId, VehicleImageSlot slot) {
     return toDto(vehicleImageService.deleteImageSlot(vehicleId, slot));
   }
 
   @Transactional
-  public void delete(UUID id) {
+  public void delete(Long id) {
     Vehicle v =
         vehicleRepository
             .findByIdAndDeletedFalse(id)
@@ -314,11 +313,11 @@ public class VehicleService {
   }
 
   private List<VehicleOptionDefinitionRequest> mergeOptionDefinitions(
-      List<UUID> templateIds, List<VehicleOptionDefinitionRequest> manual) {
+      List<Long> templateIds, List<VehicleOptionDefinitionRequest> manual) {
     List<VehicleOptionDefinitionRequest> merged = new ArrayList<>();
     int lo = 0;
-    List<UUID> tids = templateIds != null ? templateIds : List.of();
-    for (UUID tid : tids) {
+    List<Long> tids = templateIds != null ? templateIds : List.of();
+    for (Long tid : tids) {
       VehicleOptionTemplate t = vehicleOptionTemplateService.requireActive(tid);
       merged.add(
           new VehicleOptionDefinitionRequest(
@@ -392,7 +391,7 @@ public class VehicleService {
         .toList();
   }
 
-  private static List<UUID> resolveCreateReturnHandoverIds(CreateVehicleRequest req) {
+  private static List<Long> resolveCreateReturnHandoverIds(CreateVehicleRequest req) {
     if (req.returnHandoverLocationIds() != null && !req.returnHandoverLocationIds().isEmpty()) {
       return req.returnHandoverLocationIds();
     }
@@ -402,19 +401,19 @@ public class VehicleService {
     return List.of();
   }
 
-  private void replaceVehicleReturnHandovers(Vehicle v, List<UUID> ids) {
+  private void replaceVehicleReturnHandovers(Vehicle v, List<Long> ids) {
     v.getAllowedReturnHandovers().clear();
     if (ids == null || ids.isEmpty()) {
       return;
     }
-    LinkedHashSet<UUID> seen = new LinkedHashSet<>();
-    for (UUID hid : ids) {
+    LinkedHashSet<Long> seen = new LinkedHashSet<>();
+    for (Long hid : ids) {
       if (hid != null) {
         seen.add(hid);
       }
     }
     int order = 0;
-    for (UUID hid : seen) {
+    for (Long hid : seen) {
       HandoverLocation loc =
           handoverLocationService.requireForAssignment(hid, HandoverLocationKind.RETURN);
       VehicleAllowedReturnHandover link = new VehicleAllowedReturnHandover();
@@ -425,7 +424,7 @@ public class VehicleService {
     }
   }
 
-  private void applyCountryAndOptionalCity(Vehicle v, String countryCodeRaw, UUID cityId) {
+  private void applyCountryAndOptionalCity(Vehicle v, String countryCodeRaw, Long cityId) {
     if (countryCodeRaw == null || countryCodeRaw.isBlank()) {
       throw new BadRequestException("Ülke kodu zorunludur.");
     }
@@ -449,7 +448,7 @@ public class VehicleService {
     }
   }
 
-  private City findCityRequired(UUID cityId) {
+  private City findCityRequired(Long cityId) {
     return cityRepository
         .findById(cityId)
         .orElseThrow(() -> new ResourceNotFoundException("Şehir bulunamadı: " + cityId));

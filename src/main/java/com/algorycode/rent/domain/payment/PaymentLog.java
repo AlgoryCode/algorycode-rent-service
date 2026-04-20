@@ -1,6 +1,6 @@
 package com.algorycode.rent.domain.payment;
 
-import com.algorycode.rent.domain.AbstractAuditableUuidEntity;
+import com.algorycode.rent.domain.AbstractAuditableLongEntity;
 import com.algorycode.rent.domain.rental.Rental;
 import com.algorycode.rent.domain.vehicle.Vehicle;
 import jakarta.persistence.Column;
@@ -10,6 +10,8 @@ import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.Setter;
@@ -20,7 +22,7 @@ import java.math.BigDecimal;
 @Setter
 @Entity
 @Table(name = "payment_logs")
-public class PaymentLog extends AbstractAuditableUuidEntity {
+public class PaymentLog extends AbstractAuditableLongEntity {
 
   @Column(name = "amount_try", nullable = false, precision = 14, scale = 2)
   private BigDecimal amountTry;
@@ -39,12 +41,18 @@ public class PaymentLog extends AbstractAuditableUuidEntity {
   @Column(nullable = false, length = 32)
   private String plate;
 
-  @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "vehicle_id")
-  private Vehicle vehicle;
+  @Column(name = "vehicle_id")
+  private Long vehicleId;
 
   @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "rental_id")
+  @JoinColumn(name = "vehicle_id", insertable = false, updatable = false)
+  private Vehicle vehicle;
+
+  @Column(name = "rental_id")
+  private Long rentalId;
+
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "rental_id", insertable = false, updatable = false)
   private Rental rental;
 
   /** Kiralama anindaki toplam gelir (EUR): gunluk fiyat * gun + opsiyonlar. */
@@ -59,4 +67,15 @@ public class PaymentLog extends AbstractAuditableUuidEntity {
 
   @Column(length = 2000)
   private String note;
+
+  @PrePersist
+  @PreUpdate
+  void syncPaymentLogFks() {
+    if (vehicle != null && vehicle.getId() != null) {
+      vehicleId = vehicle.getId();
+    }
+    if (rental != null && rental.getId() != null) {
+      rentalId = rental.getId();
+    }
+  }
 }

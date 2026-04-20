@@ -10,7 +10,6 @@ import jakarta.validation.constraints.Size;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
 public record UpdateVehicleRequest(
     @Size(max = 32) String plate,
@@ -23,15 +22,15 @@ public record UpdateVehicleRequest(
     @DecimalMin(value = "0.01", inclusive = true) BigDecimal rentalDailyPrice,
     @DecimalMin(value = "0.0", inclusive = true) BigDecimal commissionRatePercent,
     @Size(max = 32) String commissionBrokerPhone,
-    UUID cityId,
-    UUID defaultPickupHandoverLocationId,
+    Long cityId,
+    Long defaultPickupHandoverLocationId,
     /** Geriye uyumluluk; {@code returnHandoverLocationIds} null değilse yok sayılır. */
-    UUID defaultReturnHandoverLocationId,
+    Long defaultReturnHandoverLocationId,
     /**
      * null: teslim noktalarına dokunma. Boş liste: tüm araç-teslim eşlemelerini kaldır. Dolu: tamamen değiştir.
      */
-    @Size(max = 50) List<UUID> returnHandoverLocationIds,
-    @Size(max = 100) List<UUID> optionTemplateIds,
+    @Size(max = 50) List<Long> returnHandoverLocationIds,
+    @Size(max = 100) List<Long> optionTemplateIds,
     @Size(max = 100) List<@Valid VehicleOptionDefinitionRequest> optionDefinitions,
     Map<String, String> images,
     @Size(max = 255) String engine,

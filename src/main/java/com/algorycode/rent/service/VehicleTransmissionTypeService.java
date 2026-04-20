@@ -42,12 +42,14 @@ public class VehicleTransmissionTypeService {
 
   @Transactional
   public VehicleCatalogEntryDto create(VehicleLookupCreateRequest req) {
-    String normalized = VehicleCatalogSupport.normalizeFuelOrTransmissionCode(req.code());
-    if (vehicleTransmissionTypeRepository.findByCodeIgnoreCase(normalized).isPresent()) {
-      throw new ConflictException("Bu vites kodu zaten kayıtlı: " + normalized);
-    }
+    String code =
+        VehicleCatalogSupport.resolveNewCatalogCode(
+            req.code(),
+            req.labelTr().trim(),
+            false,
+            c -> vehicleTransmissionTypeRepository.findByCodeIgnoreCase(c).isPresent());
     VehicleTransmissionType e = new VehicleTransmissionType();
-    e.setCode(normalized);
+    e.setCode(code);
     e.setLabelTr(req.labelTr().trim());
     e.setSortOrder(req.sortOrder());
     return toDto(vehicleTransmissionTypeRepository.save(e));
@@ -59,7 +61,7 @@ public class VehicleTransmissionTypeService {
     VehicleTransmissionType e = requireEntity(code);
     if (req.labelTr() != null) {
       if (req.labelTr().isBlank()) {
-        throw new BadRequestException("labelTr boş olamaz.");
+        throw new BadRequestException("Özellik adı boş olamaz.");
       }
       e.setLabelTr(req.labelTr().trim());
     }
@@ -70,8 +72,11 @@ public class VehicleTransmissionTypeService {
   }
 
   @Transactional
-  public void delete(String code) {
-    VehicleTransmissionType e = requireEntity(code);
+  public void delete(long id) {
+    VehicleTransmissionType e =
+        vehicleTransmissionTypeRepository
+            .findById(id)
+            .orElseThrow(() -> new ResourceNotFoundException("Vites türü bulunamadı."));
     long used = vehicleRepository.countByTransmissionTypeAndDeletedFalse(e.getCode());
     if (used > 0) {
       throw new ConflictException("Bu vites türü " + used + " araçta kullanılıyor; silinemez.");
@@ -90,6 +95,6 @@ public class VehicleTransmissionTypeService {
   }
 
   private static VehicleCatalogEntryDto toDto(VehicleTransmissionType e) {
-    return new VehicleCatalogEntryDto(e.getCode(), e.getLabelTr(), e.getSortOrder());
+    return new VehicleCatalogEntryDto(e.getId(), e.getCode(), e.getLabelTr(), e.getSortOrder());
   }
 }

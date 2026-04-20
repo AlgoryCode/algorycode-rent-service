@@ -1,6 +1,6 @@
 package com.algorycode.rent.domain.catalog;
 
-import com.algorycode.rent.domain.AbstractAuditableUuidEntity;
+import com.algorycode.rent.domain.AbstractAuditableLongEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
@@ -13,7 +13,7 @@ import java.math.BigDecimal;
 @Setter
 @Entity
 @Table(name = "reservation_extra_option_templates")
-public class ReservationExtraOptionTemplate extends AbstractAuditableUuidEntity {
+public class ReservationExtraOptionTemplate extends AbstractAuditableLongEntity {
 
   @Column(nullable = false, length = 64)
   private String code;

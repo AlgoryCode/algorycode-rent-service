@@ -10,8 +10,8 @@ import java.util.List;
 import java.util.UUID;
 
 public record RentalDto(
-    UUID id,
-    UUID vehicleId,
+    Long id,
+    Long vehicleId,
     UUID userId,
     LocalDate startDate,
     LocalDate endDate,
@@ -41,7 +41,7 @@ public record RentalDto(
       String passportImageDataUrl) {}
 
   public record AdditionalDriverDto(
-      UUID id,
+      Long id,
       String fullName,
       LocalDate birthDate,
       String driverLicenseNo,
@@ -51,13 +51,13 @@ public record RentalDto(
 
   public record FeedbackDto(Instant at, String text) {}
 
-  public record RentalPhotoDto(String id, String url, String caption) {}
+  public record RentalPhotoDto(Long id, String url, String caption) {}
 
   public record AccidentReportDto(
-      UUID id, Instant at, String description, List<RentalPhotoDto> photos) {}
+      Long id, Instant at, String description, List<RentalPhotoDto> photos) {}
 
   public record RentalOptionDto(
-      UUID id,
+      Long id,
       String title,
       String description,
       BigDecimal price,

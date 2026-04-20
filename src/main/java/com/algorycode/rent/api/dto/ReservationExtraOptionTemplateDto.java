@@ -1,10 +1,9 @@
 package com.algorycode.rent.api.dto;
 
 import java.math.BigDecimal;
-import java.util.UUID;
 
 public record ReservationExtraOptionTemplateDto(
-    UUID id,
+    Long id,
     String code,
     String title,
     String description,

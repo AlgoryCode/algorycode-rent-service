@@ -17,7 +17,6 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
-import java.util.UUID;
 
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
@@ -47,8 +46,8 @@ class RentalControllerTest {
   void list_withStatusQuery_passesToService() throws Exception {
     var dto =
         new RentalDto(
-            UUID.randomUUID(),
-            UUID.randomUUID(),
+            1L,
+            2L,
             null,
             LocalDate.of(2026, 1, 1),
             LocalDate.of(2026, 1, 5),
@@ -65,7 +64,7 @@ class RentalControllerTest {
             List.of(),
             List.of(),
             List.of());
-    when(rentalService.list(nullable(UUID.class), eq(RentalStatus.pending), isNull(), isNull()))
+    when(rentalService.list(nullable(Long.class), eq(RentalStatus.pending), isNull(), isNull()))
         .thenReturn(List.of(dto));
 
     mockMvc

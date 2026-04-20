@@ -13,7 +13,6 @@ import com.algorycode.rent.repository.VehicleRepository;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -37,12 +36,12 @@ class VehicleOccupancyServiceTest {
 
   @Test
   void occupancy_mergesRentalsAndRequests_inclusiveDates() {
-    UUID vid = UUID.randomUUID();
+    Long vid = 1L;
     Vehicle v = new Vehicle();
     v.setId(vid);
     when(vehicleRepository.findByIdAndDeletedFalse(vid)).thenReturn(Optional.of(v));
 
-    UUID rid = UUID.randomUUID();
+    Long rid = 1L;
     Rental rental = new Rental();
     rental.setId(rid);
     rental.setStartDate(LocalDate.of(2026, 4, 19));
@@ -50,7 +49,7 @@ class VehicleOccupancyServiceTest {
     rental.setStatus(RentalStatus.active);
     when(rentalRepository.findCalendarBlockingRentals(eq(vid), any(), any())).thenReturn(List.of(rental));
 
-    UUID qid = UUID.randomUUID();
+    Long qid = 1L;
     RentalRequest req = new RentalRequest();
     req.setId(qid);
     req.setStartDate(LocalDate.of(2026, 5, 1));
@@ -74,7 +73,7 @@ class VehicleOccupancyServiceTest {
 
   @Test
   void occupancy_throwsWhenVehicleMissing() {
-    UUID vid = UUID.randomUUID();
+    Long vid = 1L;
     when(vehicleRepository.findByIdAndDeletedFalse(vid)).thenReturn(Optional.empty());
 
     assertThatThrownBy(

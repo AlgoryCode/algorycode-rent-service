@@ -3,7 +3,6 @@ package com.algorycode.rent.api.dto.report;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
-import java.util.UUID;
 
 /** Kiralama geliri: ozet, arac bazli ve zamansal (gun veya ay). */
 public record RentalDashboardReportDto(
@@ -26,7 +25,7 @@ public record RentalDashboardReportDto(
       int completedCount) {}
 
   public record VehicleRentalStatRow(
-      UUID vehicleId,
+      Long vehicleId,
       String plate,
       String brand,
       String model,

@@ -1,11 +1,13 @@
 package com.algorycode.rent.domain.rental;
 
-import com.algorycode.rent.domain.AbstractAuditableUuidEntity;
+import com.algorycode.rent.domain.AbstractAuditableLongEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.Setter;
@@ -16,10 +18,13 @@ import java.math.BigDecimal;
 @Setter
 @Entity
 @Table(name = "rental_options")
-public class RentalOption extends AbstractAuditableUuidEntity {
+public class RentalOption extends AbstractAuditableLongEntity {
+
+  @Column(name = "rental_id", nullable = false)
+  private Long rentalId;
 
   @ManyToOne(fetch = FetchType.LAZY, optional = false)
-  @JoinColumn(name = "rental_id", nullable = false)
+  @JoinColumn(name = "rental_id", nullable = false, insertable = false, updatable = false)
   private Rental rental;
 
   @Column(nullable = false, length = 255)
@@ -37,4 +42,12 @@ public class RentalOption extends AbstractAuditableUuidEntity {
 
   @Column(name = "line_order", nullable = false)
   private int lineOrder;
+
+  @PrePersist
+  @PreUpdate
+  void syncRentalOptionFk() {
+    if (rental != null && rental.getId() != null) {
+      rentalId = rental.getId();
+    }
+  }
 }

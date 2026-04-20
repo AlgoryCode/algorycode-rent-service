@@ -10,12 +10,12 @@ import java.util.List;
 import java.util.UUID;
 
 public record RentalRequestDto(
-    UUID id,
+    Long id,
     String referenceNo,
     Instant createdAt,
     RentalRequestStatus status,
     String statusMessage,
-    UUID vehicleId,
+    Long vehicleId,
     UUID userId,
     LocalDate startDate,
     LocalDate endDate,
@@ -54,7 +54,7 @@ public record RentalRequestDto(
       String driverLicenseImageDataUrl) {}
 
   public record AdditionalDriverDto(
-      UUID id,
+      Long id,
       String fullName,
       LocalDate birthDate,
       String driverLicenseNo,
@@ -63,7 +63,7 @@ public record RentalRequestDto(
       String driverLicenseImageDataUrl) {}
 
   public record RentalRequestOptionDto(
-      UUID id,
+      Long id,
       String title,
       String description,
       BigDecimal price,

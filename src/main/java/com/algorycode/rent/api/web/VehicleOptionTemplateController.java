@@ -18,7 +18,6 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
-import java.util.UUID;
 
 @RestController
 @RequestMapping("/vehicle-option-templates")
@@ -43,13 +42,13 @@ public class VehicleOptionTemplateController {
 
   @PatchMapping("/{id}")
   public VehicleOptionTemplateDto update(
-      @PathVariable UUID id, @Valid @RequestBody UpdateVehicleOptionTemplateRequest body) {
+      @PathVariable Long id, @Valid @RequestBody UpdateVehicleOptionTemplateRequest body) {
     return vehicleOptionTemplateService.update(id, body);
   }
 
   @DeleteMapping("/{id}")
   @ResponseStatus(HttpStatus.NO_CONTENT)
-  public void deactivate(@PathVariable UUID id) {
+  public void deactivate(@PathVariable Long id) {
     vehicleOptionTemplateService.deactivate(id);
   }
 }

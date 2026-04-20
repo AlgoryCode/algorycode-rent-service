@@ -13,7 +13,6 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 import java.time.Instant;
 import java.util.List;
-import java.util.UUID;
 
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.when;
@@ -38,7 +37,7 @@ class PanelUserControllerTest {
   void list_returnsUsers() throws Exception {
     var dto =
         new PanelUserDto(
-            UUID.randomUUID(),
+            1L,
             "User",
             "u@x.com",
             PanelUserRole.viewer,
@@ -55,7 +54,7 @@ class PanelUserControllerTest {
 
   @Test
   void delete_returnsNoContent() throws Exception {
-    var id = UUID.randomUUID();
+    var id = 1L;
     doNothing().when(panelUserService).deleteById(id);
 
     mockMvc.perform(delete("/panel-users/" + id)).andExpect(status().isOk());

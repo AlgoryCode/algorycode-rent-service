@@ -20,7 +20,7 @@ public final class PaymentMapper {
         p.getStatus(),
         p.getMethod(),
         p.getPlate(),
-        p.getVehicle() != null ? p.getVehicle().getId() : null,
+        p.getVehicleId(),
         p.getCustomerName(),
         p.getReference(),
         p.getNote(),

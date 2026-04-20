@@ -25,10 +25,10 @@ public class HandoverPricingService {
 
   /**
    * Alış ve iade noktası aynı kayıt değilse: her iki noktanın {@code surcharge_eur} toplamı + bilinen ülke çifti
-   * güzergâh ücreti (ör. AL→XK 60 €, AL→ME 75 €). Aynı UUID veya eksik ülke kodunda güzergâh 0.
+   * güzergâh ücreti (ör. AL→XK 60 €, AL→ME 75 €). Aynı nokta veya eksik ülke kodunda güzergâh 0.
    */
   @Transactional(readOnly = true)
-  public HandoverPricingQuoteDto quote(java.util.UUID pickupHandoverId, java.util.UUID returnHandoverId) {
+  public HandoverPricingQuoteDto quote(Long pickupHandoverId, Long returnHandoverId) {
     if (pickupHandoverId == null || returnHandoverId == null || pickupHandoverId.equals(returnHandoverId)) {
       return new HandoverPricingQuoteDto(ZERO, ZERO, ZERO, ZERO, false);
     }

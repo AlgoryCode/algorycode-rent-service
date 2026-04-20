@@ -13,7 +13,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Optional;
-import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -34,7 +33,7 @@ class HandoverLocationServiceTest {
 
   @Test
   void requireActive_returnsEntityWhenActive() {
-    UUID id = UUID.randomUUID();
+    Long id = 1L;
     HandoverLocation loc = new HandoverLocation();
     loc.setId(id);
     loc.setKind(HandoverLocationKind.RETURN);
@@ -48,7 +47,7 @@ class HandoverLocationServiceTest {
 
   @Test
   void requireActive_throwsWhenMissing() {
-    UUID id = UUID.randomUUID();
+    Long id = 1L;
     when(handoverLocationRepository.findById(id)).thenReturn(Optional.empty());
     assertThatThrownBy(() -> handoverLocationService.requireActive(id))
         .isInstanceOf(ResourceNotFoundException.class);
@@ -56,7 +55,7 @@ class HandoverLocationServiceTest {
 
   @Test
   void requireActive_throwsWhenInactive() {
-    UUID id = UUID.randomUUID();
+    Long id = 1L;
     HandoverLocation loc = new HandoverLocation();
     loc.setId(id);
     loc.setKind(HandoverLocationKind.PICKUP);

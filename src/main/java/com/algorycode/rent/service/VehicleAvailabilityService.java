@@ -12,7 +12,6 @@ import com.algorycode.rent.service.support.DateRangeValidator;
 import com.algorycode.rent.service.support.RentalAvailabilityRules;
 import java.time.LocalDate;
 import java.util.List;
-import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -44,8 +43,8 @@ public class VehicleAvailabilityService {
   public List<Vehicle> listVehiclesMatchingAvailability(
       LocalDate availableFrom,
       LocalDate availableTo,
-      UUID pickupHandoverLocationId,
-      UUID returnHandoverLocationId,
+      Long pickupHandoverLocationId,
+      Long returnHandoverLocationId,
       boolean includePartialAvailability) {
     if (availableFrom == null || availableTo == null) {
       throw new BadRequestException(
@@ -76,7 +75,7 @@ public class VehicleAvailabilityService {
   }
 
   private static boolean passesAvailabilityForListing(
-      UUID vehicleId,
+      Long vehicleId,
       LocalDate availableFrom,
       LocalDate availableTo,
       List<Rental> rentalCandidates,
@@ -100,7 +99,7 @@ public class VehicleAvailabilityService {
   }
 
   private static boolean matchesHandoverFilters(
-      Vehicle v, UUID pickupHandoverLocationId, UUID returnHandoverLocationId) {
+      Vehicle v, Long pickupHandoverLocationId, Long returnHandoverLocationId) {
     if (pickupHandoverLocationId != null) {
       if (v.getDefaultPickupHandoverLocation() == null) {
         return false;
@@ -110,7 +109,7 @@ public class VehicleAvailabilityService {
       }
     }
     if (returnHandoverLocationId != null) {
-      List<UUID> allowedReturns = v.orderedReturnHandoverLocationIds();
+      List<Long> allowedReturns = v.orderedReturnHandoverLocationIds();
       if (allowedReturns.isEmpty()) {
         return true;
       }
@@ -120,7 +119,7 @@ public class VehicleAvailabilityService {
   }
 
   private static boolean isVehicleAvailableForRange(
-      UUID vehicleId,
+      Long vehicleId,
       LocalDate from,
       LocalDate to,
       List<Rental> rentalCandidates,

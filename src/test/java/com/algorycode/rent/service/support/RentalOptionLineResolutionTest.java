@@ -14,7 +14,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
 import java.util.Optional;
-import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -28,8 +27,8 @@ class RentalOptionLineResolutionTest {
 
   @Test
   void resolve_copiesFieldsFromVehicleOptionDefinition() {
-    UUID vehicleId = UUID.randomUUID();
-    UUID defId = UUID.randomUUID();
+    Long vehicleId = 1L;
+    Long defId = 1L;
     Vehicle vehicle = new Vehicle();
     vehicle.setId(vehicleId);
 
@@ -55,8 +54,8 @@ class RentalOptionLineResolutionTest {
 
   @Test
   void resolve_throwsWhenDefinitionInactive() {
-    UUID vehicleId = UUID.randomUUID();
-    UUID defId = UUID.randomUUID();
+    Long vehicleId = 1L;
+    Long defId = 1L;
     Vehicle vehicle = new Vehicle();
     vehicle.setId(vehicleId);
     VehicleOptionDefinition def = new VehicleOptionDefinition();
@@ -75,7 +74,7 @@ class RentalOptionLineResolutionTest {
   @Test
   void resolve_usesRequestBodyWhenNoDefinitionId() {
     Vehicle vehicle = new Vehicle();
-    vehicle.setId(UUID.randomUUID());
+    vehicle.setId(1L);
     RentalOptionRequest req =
         new RentalOptionRequest(null, null, "Serbest satır", "Açıklama", new BigDecimal("5"), "ic");
 
@@ -91,7 +90,7 @@ class RentalOptionLineResolutionTest {
   @Test
   void resolve_throwsWhenManualTitleMissing() {
     Vehicle vehicle = new Vehicle();
-    vehicle.setId(UUID.randomUUID());
+    vehicle.setId(1L);
     RentalOptionRequest req = new RentalOptionRequest(null, null, "  ", null, BigDecimal.ONE, null);
     assertThatThrownBy(() -> RentalOptionLineResolution.resolve(vehicle, req, definitionRepository, templateRepository))
         .isInstanceOf(BadRequestException.class)
@@ -100,7 +99,7 @@ class RentalOptionLineResolutionTest {
 
   @Test
   void resolve_usesReservationExtraTemplate() {
-    UUID templateId = UUID.randomUUID();
+    Long templateId = 1L;
     ReservationExtraOptionTemplate t = new ReservationExtraOptionTemplate();
     t.setTitle("Ek şöför");
     t.setDescription("Açıklama");
@@ -122,9 +121,9 @@ class RentalOptionLineResolutionTest {
   @Test
   void resolve_throwsWhenBothVehicleDefAndTemplate() {
     Vehicle vehicle = new Vehicle();
-    vehicle.setId(UUID.randomUUID());
+    vehicle.setId(1L);
     RentalOptionRequest req =
-        new RentalOptionRequest(UUID.randomUUID(), UUID.randomUUID(), null, null, null, null);
+        new RentalOptionRequest(1L, 1L, null, null, null, null);
     assertThatThrownBy(() -> RentalOptionLineResolution.resolve(vehicle, req, definitionRepository, templateRepository))
         .isInstanceOf(BadRequestException.class)
         .hasMessageContaining("Aynı satırda");

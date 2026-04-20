@@ -5,13 +5,12 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 
-public interface PanelUserRepository extends JpaRepository<PanelUser, UUID> {
+public interface PanelUserRepository extends JpaRepository<PanelUser, Long> {
 
   Optional<PanelUser> findByEmailIgnoreCase(String email);
 
   List<PanelUser> findAllByDeletedFalse();
 
-  Optional<PanelUser> findByIdAndDeletedFalse(UUID id);
+  Optional<PanelUser> findByIdAndDeletedFalse(Long id);
 }

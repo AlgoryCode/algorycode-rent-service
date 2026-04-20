@@ -4,7 +4,6 @@ import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.read.ListAppender;
 import java.util.Map;
-import java.util.UUID;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -34,7 +33,7 @@ class AuditLogWhitelistTest {
   @Test
   void infoEvent_omitsKeysNotOnWhitelist() {
     AuditLog auditLog = new AuditLog();
-    String rentalId = UUID.randomUUID().toString();
+    String rentalId = "42";
     auditLog.infoEvent(
         "probe_event",
         Map.of(

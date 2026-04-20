@@ -6,10 +6,10 @@ import jakarta.validation.constraints.Size;
 
 public record CreateCountryRequest(
     @NotBlank
-        @Size(min = 2, max = 2)
+        @Size(min = 2, max = 5)
         @Pattern(
-            regexp = "^[A-Za-z]{2}$",
-            message = "Ülke kodu tam 2 harf olmalıdır (ISO 3166-1 alpha-2)")
+            regexp = "^[A-Za-z]{2,5}$",
+            message = "Ülke kodu 2–5 harf olmalıdır (yalnızca A–Z).")
         String code,
     @NotBlank @Size(max = 128) String name,
     @NotBlank

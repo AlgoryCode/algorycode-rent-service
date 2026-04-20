@@ -186,7 +186,7 @@ public class RentalRequestService {
    * bildirimini tetikler. Başvuru oluşturma sırasında PDF üretilmez; görseller önce depoda saklanır.
    */
   @Transactional
-  public RentalRequestDto generateContract(UUID id) {
+  public RentalRequestDto generateContract(Long id) {
     RentalRequest entity = requireById(id);
     assertApprovedForContractGeneration(entity);
     if (entity.getContractPdfPath() != null && !entity.getContractPdfPath().isBlank()) {
@@ -210,7 +210,7 @@ public class RentalRequestService {
   }
 
   @Transactional(readOnly = true)
-  public RentalRequestDto getById(UUID id) {
+  public RentalRequestDto getById(Long id) {
     RentalRequest request = requireById(id);
     return RentalRequestMapper.toDto(request, objectStorageService::resolvePublicUrl);
   }
@@ -222,7 +222,7 @@ public class RentalRequestService {
    * Müşteri e-postasına Thymeleaf şablonlu sözleşme bildirimi (PDF herkese açık URL ise mail içinde link).
    */
   @Transactional(readOnly = true)
-  public void queueContractPdfEmailToCustomer(UUID id) {
+  public void queueContractPdfEmailToCustomer(Long id) {
     RentalRequest request = requireById(id);
     assertApprovedForContractEmail(request);
     assertContractPdfPathPresent(request, "Bu talep için sözleşme PDF'i henüz yok.");
@@ -235,7 +235,7 @@ public class RentalRequestService {
   }
 
   @Transactional(readOnly = true)
-  public ContractPdfAttachment getContractPdfAttachment(UUID id) {
+  public ContractPdfAttachment getContractPdfAttachment(Long id) {
     RentalRequest request = requireById(id);
     assertContractPdfPathPresent(request, "Sözleşme henüz oluşturulmamış.");
     String path = request.getContractPdfPath().trim();
@@ -261,7 +261,7 @@ public class RentalRequestService {
   }
 
   @Transactional
-  public RentalRequestDto updateStatus(UUID id, UpdateRentalRequestStatusRequest req) {
+  public RentalRequestDto updateStatus(Long id, UpdateRentalRequestStatusRequest req) {
     RentalRequest request = requireById(id);
     request.setStatus(req.status());
     request.setStatusMessage(req.statusMessage() != null ? req.statusMessage().trim() : null);
@@ -269,7 +269,7 @@ public class RentalRequestService {
     return RentalRequestMapper.toDto(request, objectStorageService::resolvePublicUrl);
   }
 
-  private RentalRequest requireById(UUID id) {
+  private RentalRequest requireById(Long id) {
     return rentalRequestRepository
         .findById(id)
         .orElseThrow(() -> new ResourceNotFoundException("Talep bulunamadı: " + id));
@@ -295,7 +295,7 @@ public class RentalRequestService {
   }
 
   @Transactional(readOnly = true)
-  public List<RentalRequestDto> listAll(UUID vehicleId) {
+  public List<RentalRequestDto> listAll(Long vehicleId) {
     List<RentalRequest> rows =
         vehicleId == null
             ? rentalRequestRepository.findAll()
@@ -401,8 +401,8 @@ public class RentalRequestService {
         vehicle, o, vehicleOptionDefinitionRepository, reservationExtraOptionTemplateRepository);
   }
 
-  private HandoverLocation resolvePickupForRequest(Vehicle vehicle, UUID requestPickupId) {
-    UUID pickupId = requestPickupId;
+  private HandoverLocation resolvePickupForRequest(Vehicle vehicle, Long requestPickupId) {
+    Long pickupId = requestPickupId;
     if (pickupId == null && vehicle != null && vehicle.getDefaultPickupHandoverLocation() != null) {
       pickupId = vehicle.getDefaultPickupHandoverLocation().getId();
     }
@@ -414,11 +414,11 @@ public class RentalRequestService {
         : handoverLocationService.requireActive(pickupId);
   }
 
-  private HandoverLocation resolveReturnForRequest(Vehicle vehicle, UUID requestReturnId) {
-    List<UUID> allowed =
+  private HandoverLocation resolveReturnForRequest(Vehicle vehicle, Long requestReturnId) {
+    List<Long> allowed =
         vehicle != null ? vehicle.orderedReturnHandoverLocationIds() : List.of();
     boolean inferred = requestReturnId == null;
-    UUID returnId = requestReturnId;
+    Long returnId = requestReturnId;
     if (returnId == null && vehicle != null && !allowed.isEmpty()) {
       returnId = allowed.get(0);
     }

@@ -17,7 +17,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.List;
-import java.util.UUID;
 
 @Service
 public class HandoverLocationService {
@@ -54,7 +53,7 @@ public class HandoverLocationService {
   }
 
   @Transactional(readOnly = true)
-  public HandoverLocation requireForAssignment(UUID id, HandoverLocationKind expectedKind) {
+  public HandoverLocation requireForAssignment(Long id, HandoverLocationKind expectedKind) {
     if (id == null) {
       return null;
     }
@@ -74,7 +73,7 @@ public class HandoverLocationService {
 
   /** Tür kontrolü olmadan yalnızca aktif kayıt (araç varsayılanı / kiralama sonrası güncelleme için). */
   @Transactional(readOnly = true)
-  public HandoverLocation requireActive(UUID id) {
+  public HandoverLocation requireActive(Long id) {
     if (id == null) {
       return null;
     }
@@ -108,7 +107,7 @@ public class HandoverLocationService {
   }
 
   @Transactional
-  public HandoverLocationDto update(UUID id, UpdateHandoverLocationRequest req) {
+  public HandoverLocationDto update(Long id, UpdateHandoverLocationRequest req) {
     HandoverLocation e =
         handoverLocationRepository
             .findById(id)
@@ -143,7 +142,7 @@ public class HandoverLocationService {
   }
 
   @Transactional
-  public void deactivate(UUID id) {
+  public void deactivate(Long id) {
     HandoverLocation e =
         handoverLocationRepository
             .findById(id)
@@ -152,7 +151,7 @@ public class HandoverLocationService {
     handoverLocationRepository.save(e);
   }
 
-  private City resolveCity(UUID cityId) {
+  private City resolveCity(Long cityId) {
     if (cityId == null) {
       return null;
     }

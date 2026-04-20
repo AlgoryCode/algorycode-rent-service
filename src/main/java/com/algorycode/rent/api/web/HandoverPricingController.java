@@ -7,7 +7,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.UUID;
 
 @RestController
 @RequestMapping("/handover-pricing")
@@ -21,7 +20,7 @@ public class HandoverPricingController {
 
   @GetMapping("/quote")
   public HandoverPricingQuoteDto quote(
-      @RequestParam UUID pickupHandoverId, @RequestParam UUID returnHandoverId) {
+      @RequestParam Long pickupHandoverId, @RequestParam Long returnHandoverId) {
     return handoverPricingService.quote(pickupHandoverId, returnHandoverId);
   }
 }

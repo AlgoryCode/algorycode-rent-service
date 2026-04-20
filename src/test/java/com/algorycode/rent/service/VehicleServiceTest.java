@@ -29,12 +29,13 @@ import java.time.LocalDate;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -43,6 +44,8 @@ class VehicleServiceTest {
 
   @Mock private VehicleRepository vehicleRepository;
   @Mock private VehicleBodyStyleRepository vehicleBodyStyleRepository;
+  @Mock private VehicleFuelTypeRepository vehicleFuelTypeRepository;
+  @Mock private VehicleTransmissionTypeRepository vehicleTransmissionTypeRepository;
   @Mock private CountryRepository countryRepository;
   @Mock private CityRepository cityRepository;
   @Mock private ObjectStorageService objectStorageService;
@@ -55,7 +58,8 @@ class VehicleServiceTest {
 
   @BeforeEach
   void setUp() {
-    when(rentalRequestRepository.findPotentiallyBlockingRequestsForAvailability(any(), any(), anyList()))
+    lenient()
+        .when(rentalRequestRepository.findPotentiallyBlockingRequestsForAvailability(any(), any(), anyList()))
         .thenReturn(Collections.emptyList());
     vehicleService =
         new VehicleService(
@@ -76,7 +80,7 @@ class VehicleServiceTest {
   @Test
   void listWithAvailabilityFilter_excludesWhenBufferDayBlocked() {
     var v = sampleVehicle();
-    UUID vid = v.getId();
+    Long vid = v.getId();
     when(vehicleRepository.findAllByDeletedFalse()).thenReturn(List.of(v));
     Rental r = new Rental();
     r.setStartDate(LocalDate.of(2026, 6, 15));
@@ -117,7 +121,7 @@ class VehicleServiceTest {
   @Test
   void listWithAvailabilityFilter_excludesWhenPendingRentalRequestOverlaps() {
     var v = sampleVehicle();
-    UUID vid = v.getId();
+    Long vid = v.getId();
     when(vehicleRepository.findAllByDeletedFalse()).thenReturn(List.of(v));
     when(rentalRepository.findPotentiallyBlockingForAvailability(
             LocalDate.of(2026, 8, 10), LocalDate.of(2026, 8, 12)))
@@ -132,7 +136,7 @@ class VehicleServiceTest {
     req.setVehicle(rv);
 
     when(rentalRequestRepository.findPotentiallyBlockingRequestsForAvailability(
-            LocalDate.of(2026, 8, 10), LocalDate.of(2026, 8, 12), anyList()))
+            eq(LocalDate.of(2026, 8, 10)), eq(LocalDate.of(2026, 8, 12)), anyList()))
         .thenReturn(List.of(req));
 
     var rows =
@@ -150,7 +154,7 @@ class VehicleServiceTest {
   void listWithAvailabilityFilter_includesVehicleWhenReturnFilterSetButNoReturnRestrictions() {
     var v = sampleVehicle();
     HandoverLocation pickup = mock(HandoverLocation.class);
-    UUID pickupId = UUID.fromString("aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee");
+    Long pickupId = 100L;
     when(pickup.getId()).thenReturn(pickupId);
     v.setDefaultPickupHandoverLocation(pickup);
 
@@ -159,7 +163,7 @@ class VehicleServiceTest {
             LocalDate.of(2026, 6, 14), LocalDate.of(2026, 6, 16)))
         .thenReturn(Collections.emptyList());
 
-    UUID anyReturn = UUID.fromString("bbbbbbbb-cccc-dddd-eeee-ffffffffffff");
+    Long anyReturn = 200L;
 
     var rows =
         vehicleService.listWithAvailabilityFilter(
@@ -184,7 +188,7 @@ class VehicleServiceTest {
   @Test
   void listWithAvailabilityFilter_partialIncludesWhenStartWindowFree() {
     var v = sampleVehicle();
-    UUID vid = v.getId();
+    Long vid = v.getId();
     when(vehicleRepository.findAllByDeletedFalse()).thenReturn(List.of(v));
 
     Rental r = new Rental();
@@ -226,7 +230,7 @@ class VehicleServiceTest {
 
   @Test
   void getById_returnsDtoWhenFound() {
-    var id = UUID.randomUUID();
+    long id = 55L;
     var v = sampleVehicle();
     v.setId(id);
     when(vehicleRepository.findByIdAndDeletedFalse(id)).thenReturn(Optional.of(v));
@@ -238,7 +242,7 @@ class VehicleServiceTest {
 
   @Test
   void getById_throwsWhenMissing() {
-    var id = UUID.randomUUID();
+    long id = 77L;
     when(vehicleRepository.findByIdAndDeletedFalse(id)).thenReturn(Optional.empty());
 
     assertThatThrownBy(() -> vehicleService.getById(id))
@@ -248,7 +252,7 @@ class VehicleServiceTest {
 
   private static Vehicle sampleVehicle() {
     var v = new Vehicle();
-    v.setId(UUID.randomUUID());
+    v.setId(301L);
     v.setPlate("34 ABC 101");
     v.setBrand("Toyota");
     v.setModel("Corolla");

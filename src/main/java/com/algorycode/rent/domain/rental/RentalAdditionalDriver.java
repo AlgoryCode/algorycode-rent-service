@@ -1,11 +1,13 @@
 package com.algorycode.rent.domain.rental;
 
-import com.algorycode.rent.domain.AbstractAuditableUuidEntity;
+import com.algorycode.rent.domain.AbstractAuditableLongEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.Setter;
@@ -16,10 +18,13 @@ import java.time.LocalDate;
 @Setter
 @Entity
 @Table(name = "rental_additional_drivers")
-public class RentalAdditionalDriver extends AbstractAuditableUuidEntity {
+public class RentalAdditionalDriver extends AbstractAuditableLongEntity {
+
+  @Column(name = "rental_id", nullable = false)
+  private Long rentalId;
 
   @ManyToOne(fetch = FetchType.LAZY, optional = false)
-  @JoinColumn(name = "rental_id", nullable = false)
+  @JoinColumn(name = "rental_id", nullable = false, insertable = false, updatable = false)
   private Rental rental;
 
   @Column(name = "full_name", nullable = false, length = 255)
@@ -39,4 +44,12 @@ public class RentalAdditionalDriver extends AbstractAuditableUuidEntity {
 
   @Column(name = "passport_image_data_url", columnDefinition = "LONGTEXT")
   private String passportImageDataUrl;
+
+  @PrePersist
+  @PreUpdate
+  void syncRentalAdditionalDriverFk() {
+    if (rental != null && rental.getId() != null) {
+      rentalId = rental.getId();
+    }
+  }
 }

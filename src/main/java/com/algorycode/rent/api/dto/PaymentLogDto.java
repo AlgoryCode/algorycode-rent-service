@@ -7,21 +7,20 @@ import com.algorycode.rent.domain.rental.RentalStatus;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
-import java.util.UUID;
 
 public record PaymentLogDto(
-    UUID id,
+    Long id,
     Instant createdAt,
     BigDecimal amountTry,
     PaymentMoneyFlow moneyFlow,
     PaymentLogStatus status,
     String method,
     String plate,
-    UUID vehicleId,
+    Long vehicleId,
     String customerName,
     String reference,
     String note,
-    UUID rentalId,
+    Long rentalId,
     LocalDate rentalStartDate,
     LocalDate rentalEndDate,
     RentalStatus rentalStatus,

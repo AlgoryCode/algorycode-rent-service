@@ -46,8 +46,8 @@ public class VehicleFuelTypeController {
     return vehicleFuelTypeService.update(code, body);
   }
 
-  @DeleteMapping("/{code}")
-  public void delete(@PathVariable String code) {
-    vehicleFuelTypeService.delete(code);
+  @DeleteMapping("/by-id/{id}")
+  public void delete(@PathVariable long id) {
+    vehicleFuelTypeService.delete(id);
   }
 }

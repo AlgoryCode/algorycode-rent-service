@@ -6,14 +6,13 @@ import com.algorycode.rent.domain.location.City;
 import com.algorycode.rent.domain.location.HandoverLocation;
 
 import java.math.BigDecimal;
-import java.util.UUID;
 
 public final class HandoverLocationMapper {
 
   private HandoverLocationMapper() {}
 
   public static HandoverLocationDto toDto(HandoverLocation e) {
-    UUIDAndNames u = cityMeta(e.getCity());
+    CityMeta u = cityMeta(e.getCity());
     return new HandoverLocationDto(
         e.getId(),
         e.getKind(),
@@ -32,7 +31,7 @@ public final class HandoverLocationMapper {
     if (e == null) {
       return null;
     }
-    UUIDAndNames u = cityMeta(e.getCity());
+    CityMeta u = cityMeta(e.getCity());
     return new HandoverLocationRefDto(
         e.getId(),
         e.getKind(),
@@ -45,14 +44,14 @@ public final class HandoverLocationMapper {
         e.getSurchargeEur() != null ? e.getSurchargeEur() : BigDecimal.ZERO);
   }
 
-  private record UUIDAndNames(UUID cityId, String cityName, String countryCode) {}
+  private record CityMeta(Long cityId, String cityName, String countryCode) {}
 
-  private static UUIDAndNames cityMeta(City city) {
+  private static CityMeta cityMeta(City city) {
     if (city == null) {
-      return new UUIDAndNames(null, null, null);
+      return new CityMeta(null, null, null);
     }
     String countryCode =
         city.getCountry() != null ? city.getCountry().getCode() : null;
-    return new UUIDAndNames(city.getId(), city.getName(), countryCode);
+    return new CityMeta(city.getId(), city.getName(), countryCode);
   }
 }

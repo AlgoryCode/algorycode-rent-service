@@ -12,7 +12,7 @@ import java.util.List;
 import java.util.UUID;
 
 public record CreateRentalRequestFormRequest(
-    UUID vehicleId,
+    Long vehicleId,
     UUID userId,
     @NotNull LocalDate startDate,
     @NotNull LocalDate endDate,
@@ -20,8 +20,8 @@ public record CreateRentalRequestFormRequest(
     LocalTime startTime,
     /** Bos ise PDF ve kayitta 08:00 kullanilir. */
     LocalTime returnTime,
-    UUID pickupHandoverLocationId,
-    UUID returnHandoverLocationId,
+    Long pickupHandoverLocationId,
+    Long returnHandoverLocationId,
     boolean outsideCountryTravel,
     @Size(max = 1000) String note,
     @NotNull @Valid CustomerBody customer,

@@ -1,6 +1,6 @@
 package com.algorycode.rent.domain.vehicle;
 
-import com.algorycode.rent.domain.AbstractAuditableUuidEntity;
+import com.algorycode.rent.domain.AbstractAuditableLongEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Table;
@@ -13,7 +13,7 @@ import java.math.BigDecimal;
 @Setter
 @Entity
 @Table(name = "vehicle_option_templates")
-public class VehicleOptionTemplate extends AbstractAuditableUuidEntity {
+public class VehicleOptionTemplate extends AbstractAuditableLongEntity {
 
   @Column(nullable = false, length = 255)
   private String title;

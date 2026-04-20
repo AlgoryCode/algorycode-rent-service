@@ -6,9 +6,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
 import java.util.List;
-import java.util.UUID;
-
-public interface PaymentLogRepository extends JpaRepository<PaymentLog, UUID> {
+public interface PaymentLogRepository extends JpaRepository<PaymentLog, Long> {
 
   @EntityGraph(attributePaths = {"vehicle", "rental", "rental.vehicle", "rental.options"})
   @Query("select distinct p from PaymentLog p order by p.createdAt desc")

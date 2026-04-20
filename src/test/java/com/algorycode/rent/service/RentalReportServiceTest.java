@@ -16,7 +16,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
-import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -70,7 +69,7 @@ class RentalReportServiceTest {
   void rentalDashboard_aggregatesSingleRentalAndVehicleRow() {
     LocalDate from = LocalDate.of(2026, 1, 1);
     LocalDate to = LocalDate.of(2026, 1, 31);
-    UUID vehicleId = UUID.randomUUID();
+    Long vehicleId = 1L;
 
     Vehicle v = new Vehicle();
     v.setId(vehicleId);
@@ -116,7 +115,7 @@ class RentalReportServiceTest {
     Rental cancelled = new Rental();
     cancelled.setStatus(RentalStatus.cancelled);
     cancelled.setVehicle(new Vehicle());
-    cancelled.getVehicle().setId(UUID.randomUUID());
+    cancelled.getVehicle().setId(1L);
     cancelled.getVehicle().setRentalDailyPrice(BigDecimal.TEN);
     cancelled.setStartDate(from);
     cancelled.setEndDate(from);

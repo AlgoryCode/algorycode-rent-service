@@ -15,7 +15,6 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
-import java.util.UUID;
 
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -38,14 +37,14 @@ class PaymentLogControllerTest {
   void list_returnsPayments() throws Exception {
     var dto =
         new PaymentLogDto(
-            UUID.randomUUID(),
+            1L,
             Instant.parse("2026-01-01T00:00:00Z"),
             new BigDecimal("100.00"),
             PaymentMoneyFlow.inbound,
             PaymentLogStatus.completed,
             "card",
             "34 A",
-            UUID.randomUUID(),
+            1L,
             "X",
             "REF-1",
             null,

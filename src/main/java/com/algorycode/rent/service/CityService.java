@@ -13,7 +13,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.UUID;
 
 @Service
 public class CityService {
@@ -27,7 +26,7 @@ public class CityService {
   }
 
   @Transactional(readOnly = true)
-  public List<CityDto> listAll(UUID countryId) {
+  public List<CityDto> listAll(Long countryId) {
     if (countryId == null) {
       return cityRepository.findAll(Sort.by(Sort.Direction.ASC, "name")).stream()
           .map(CityMapper::toDto)

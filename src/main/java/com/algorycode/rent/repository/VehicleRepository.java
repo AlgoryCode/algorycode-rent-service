@@ -6,9 +6,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
-
-public interface VehicleRepository extends JpaRepository<Vehicle, UUID> {
+public interface VehicleRepository extends JpaRepository<Vehicle, Long> {
 
   Optional<Vehicle> findByPlateIgnoreCase(String plate);
 
@@ -36,11 +34,11 @@ public interface VehicleRepository extends JpaRepository<Vehicle, UUID> {
         "allowedReturnHandovers.handoverLocation.city",
         "allowedReturnHandovers.handoverLocation.city.country"
       })
-  Optional<Vehicle> findByIdAndDeletedFalse(UUID id);
+  Optional<Vehicle> findByIdAndDeletedFalse(Long id);
 
   boolean existsByPlateIgnoreCaseAndDeletedFalse(String plate);
 
-  boolean existsByPlateIgnoreCaseAndDeletedFalseAndIdNot(String plate, UUID id);
+  boolean existsByPlateIgnoreCaseAndDeletedFalseAndIdNot(String plate, Long id);
 
   long countByBodyStyleCodeAndDeletedFalse(String bodyStyleCode);
 

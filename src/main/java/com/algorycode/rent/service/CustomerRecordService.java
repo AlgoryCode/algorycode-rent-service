@@ -14,7 +14,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.UUID;
 
 @Service
 public class CustomerRecordService {
@@ -97,12 +96,12 @@ public class CustomerRecordService {
     if (!recordKey.startsWith("tc:") && !recordKey.startsWith("ph:")) {
       throw new BadRequestException("Geçersiz müşteri anahtarı.");
     }
-    List<UUID> rentalIds = rentalRepository.findIdsByCustomerRecordKey(recordKey);
-    List<UUID> requestIds = rentalRequestRepository.findIdsByCustomerRecordKey(recordKey);
-    for (UUID id : rentalIds) {
+    List<Long> rentalIds = rentalRepository.findIdsByCustomerRecordKey(recordKey);
+    List<Long> requestIds = rentalRequestRepository.findIdsByCustomerRecordKey(recordKey);
+    for (Long id : rentalIds) {
       rentalRepository.findById(id).ifPresent(rentalRepository::delete);
     }
-    for (UUID id : requestIds) {
+    for (Long id : requestIds) {
       rentalRequestRepository.findById(id).ifPresent(rentalRequestRepository::delete);
     }
     softDeleteStateIfPresent(recordKey);

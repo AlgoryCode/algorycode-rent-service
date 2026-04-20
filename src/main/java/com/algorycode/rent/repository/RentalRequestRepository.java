@@ -7,14 +7,14 @@ import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
+
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 
-public interface RentalRequestRepository extends JpaRepository<RentalRequest, UUID> {
+public interface RentalRequestRepository extends JpaRepository<RentalRequest, Long> {
 
   @EntityGraph(attributePaths = {"vehicle"})
-  List<RentalRequest> findByVehicle_IdOrderByCreatedAtDesc(UUID vehicleId);
+  List<RentalRequest> findByVehicle_IdOrderByCreatedAtDesc(Long vehicleId);
 
   /**
    * Takvim doluluğu: reddedilmemiş talepler, [from, to] ile kesişen (uçlar dahil) kayıtlar.
@@ -30,7 +30,7 @@ public interface RentalRequestRepository extends JpaRepository<RentalRequest, UU
       order by rr.startDate asc, rr.endDate asc
       """)
   List<RentalRequest> findBlockingForVehicleCalendar(
-      @Param("vehicleId") UUID vehicleId,
+      @Param("vehicleId") Long vehicleId,
       @Param("from") LocalDate from,
       @Param("to") LocalDate to,
       @Param("blockingStatuses") List<RentalRequestStatus> blockingStatuses);
@@ -60,7 +60,7 @@ public interface RentalRequestRepository extends JpaRepository<RentalRequest, UU
 
   @EntityGraph(attributePaths = {"vehicle"})
   @Query("select r from RentalRequest r where r.id = :id")
-  Optional<RentalRequest> findByIdWithVehicle(@Param("id") UUID id);
+  Optional<RentalRequest> findByIdWithVehicle(@Param("id") Long id);
 
   @Query(
       """
@@ -68,5 +68,5 @@ public interface RentalRequestRepository extends JpaRepository<RentalRequest, UU
       (trim(coalesce(rr.customer.nationalId, '')) <> '' and concat('tc:', trim(rr.customer.nationalId)) = :recordKey)
       or (trim(coalesce(rr.customer.nationalId, '')) = '' and concat('ph:', trim(coalesce(rr.customer.phone, ''))) = :recordKey)
       """)
-  List<UUID> findIdsByCustomerRecordKey(@Param("recordKey") String recordKey);
+  List<Long> findIdsByCustomerRecordKey(@Param("recordKey") String recordKey);
 }

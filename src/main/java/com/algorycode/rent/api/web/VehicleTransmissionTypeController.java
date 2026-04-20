@@ -46,8 +46,8 @@ public class VehicleTransmissionTypeController {
     return vehicleTransmissionTypeService.update(code, body);
   }
 
-  @DeleteMapping("/{code}")
-  public void delete(@PathVariable String code) {
-    vehicleTransmissionTypeService.delete(code);
+  @DeleteMapping("/by-id/{id}")
+  public void delete(@PathVariable long id) {
+    vehicleTransmissionTypeService.delete(id);
   }
 }

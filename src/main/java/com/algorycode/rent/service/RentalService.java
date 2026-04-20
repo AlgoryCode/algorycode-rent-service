@@ -35,7 +35,6 @@ import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
 @Service
 public class RentalService {
@@ -69,7 +68,7 @@ public class RentalService {
   }
 
   @Transactional(readOnly = true)
-  public List<RentalDto> list(UUID vehicleId, RentalStatus status, LocalDate startDate, LocalDate endDate) {
+  public List<RentalDto> list(Long vehicleId, RentalStatus status, LocalDate startDate, LocalDate endDate) {
     DateRangeValidator.requireEndNotBeforeStartIfBothPresent(startDate, endDate);
 
     List<Rental> base;
@@ -96,7 +95,7 @@ public class RentalService {
   }
 
   @Transactional(readOnly = true)
-  public RentalDto getById(UUID id) {
+  public RentalDto getById(Long id) {
     var r =
         rentalRepository
             .findById(id)
@@ -185,7 +184,7 @@ public class RentalService {
   }
 
   @Transactional
-  public RentalDto update(UUID id, UpdateRentalRequest req) {
+  public RentalDto update(Long id, UpdateRentalRequest req) {
     Rental rental =
         rentalRepository
             .findById(id)
@@ -221,8 +220,8 @@ public class RentalService {
     }
     if (req.returnHandoverLocationId() != null) {
       Vehicle v = rental.getVehicle();
-      List<UUID> allowedReturns = v.orderedReturnHandoverLocationIds();
-      UUID rid = req.returnHandoverLocationId();
+      List<Long> allowedReturns = v.orderedReturnHandoverLocationIds();
+      Long rid = req.returnHandoverLocationId();
       if (!allowedReturns.isEmpty() && !allowedReturns.contains(rid)) {
         throw new BadRequestException("Bu araç için seçilen teslim noktası geçerli değil.");
       }
@@ -318,7 +317,7 @@ public class RentalService {
     return datesOverlap(rentalStart, rentalEnd, start, end);
   }
 
-  private void ensureNoOverlap(List<Rental> sameVehicle, LocalDate startDate, LocalDate endDate, UUID skipRentalId) {
+  private void ensureNoOverlap(List<Rental> sameVehicle, LocalDate startDate, LocalDate endDate, Long skipRentalId) {
     for (Rental r : sameVehicle) {
       if (skipRentalId != null && skipRentalId.equals(r.getId())) {
         continue;
@@ -370,8 +369,8 @@ public class RentalService {
     }
   }
 
-  private HandoverLocation resolvePickupHandover(Vehicle vehicle, UUID requestPickupId) {
-    UUID pickupId = requestPickupId;
+  private HandoverLocation resolvePickupHandover(Vehicle vehicle, Long requestPickupId) {
+    Long pickupId = requestPickupId;
     if (pickupId == null && vehicle.getDefaultPickupHandoverLocation() != null) {
       pickupId = vehicle.getDefaultPickupHandoverLocation().getId();
     }
@@ -383,10 +382,10 @@ public class RentalService {
         : handoverLocationService.requireActive(pickupId);
   }
 
-  private HandoverLocation resolveReturnHandover(Vehicle vehicle, UUID requestReturnId) {
-    List<UUID> allowed = vehicle.orderedReturnHandoverLocationIds();
+  private HandoverLocation resolveReturnHandover(Vehicle vehicle, Long requestReturnId) {
+    List<Long> allowed = vehicle.orderedReturnHandoverLocationIds();
     boolean inferred = requestReturnId == null;
-    UUID returnId = requestReturnId;
+    Long returnId = requestReturnId;
     if (returnId == null && !allowed.isEmpty()) {
       returnId = allowed.get(0);
     }

@@ -1,6 +1,6 @@
 package com.algorycode.rent.domain.vehicle;
 
-import com.algorycode.rent.domain.AbstractAuditableUuidEntity;
+import com.algorycode.rent.domain.AbstractAuditableLongEntity;
 import com.algorycode.rent.domain.location.City;
 import com.algorycode.rent.domain.location.HandoverLocation;
 import jakarta.persistence.CascadeType;
@@ -11,6 +11,8 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.OrderBy;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.Setter;
@@ -19,13 +21,12 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
-import java.util.UUID;
 
 @Getter
 @Setter
 @Entity
 @Table(name = "vehicles")
-public class Vehicle extends AbstractAuditableUuidEntity {
+public class Vehicle extends AbstractAuditableLongEntity {
 
   /** Silinmemiş kayıtlar arasında plaka benzersizliği serviste doğrulanır (yumuşak silinen plaka yeniden kullanılabilir). */
   @Column(nullable = false, length = 32)
@@ -74,16 +75,22 @@ public class Vehicle extends AbstractAuditableUuidEntity {
   private String commissionBrokerPhone;
 
   /** Geçici geriye uyumluluk alanı (yeni modelde country city üzerinden okunur). */
-  @Column(name = "country_code", length = 2)
+  @Column(name = "country_code", length = 5)
   private String countryCode;
 
+  @Column(name = "city_id")
+  private Long cityId;
+
   @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "city_id")
+  @JoinColumn(name = "city_id", insertable = false, updatable = false)
   private City city;
 
   /** Varsayılan alış noktası; kiralama tamamlanınca son teslim noktasına güncellenebilir. */
+  @Column(name = "default_pickup_handover_location_id")
+  private Long defaultPickupHandoverLocationId;
+
   @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "default_pickup_handover_location_id")
+  @JoinColumn(name = "default_pickup_handover_location_id", insertable = false, updatable = false)
   private HandoverLocation defaultPickupHandoverLocation;
 
   /** Bu araç için müşterinin seçebileceği teslim (RETURN) noktaları; sıra {@code lineOrder}. */
@@ -126,8 +133,19 @@ public class Vehicle extends AbstractAuditableUuidEntity {
   @OrderBy("lineOrder ASC")
   private List<VehicleHighlight> highlights = new ArrayList<>();
 
+  @PrePersist
+  @PreUpdate
+  void syncLocationFks() {
+    if (city != null && city.getId() != null) {
+      cityId = city.getId();
+    }
+    if (defaultPickupHandoverLocation != null && defaultPickupHandoverLocation.getId() != null) {
+      defaultPickupHandoverLocationId = defaultPickupHandoverLocation.getId();
+    }
+  }
+
   /** Kiralama / talep çözümlemesi için izin verilen RETURN handover kimlikleri (sıralı). */
-  public List<UUID> orderedReturnHandoverLocationIds() {
+  public List<Long> orderedReturnHandoverLocationIds() {
     if (allowedReturnHandovers == null || allowedReturnHandovers.isEmpty()) {
       return List.of();
     }
@@ -135,7 +153,7 @@ public class Vehicle extends AbstractAuditableUuidEntity {
         .sorted(
             Comparator.comparingInt(VehicleAllowedReturnHandover::getLineOrder)
                 .thenComparing(VehicleAllowedReturnHandover::getId, Comparator.nullsLast(Comparator.naturalOrder())))
-        .map(l -> l.getHandoverLocation().getId())
+        .map(VehicleAllowedReturnHandover::getHandoverLocationId)
         .toList();
   }
 }

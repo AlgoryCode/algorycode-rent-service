@@ -49,7 +49,7 @@ public final class RentalMapper {
     List<RentalOptionDto> options = r.getOptions().stream().map(RentalMapper::optionDto).toList();
     return new RentalDto(
         r.getId(),
-        r.getVehicle().getId(),
+        r.getVehicleId(),
         r.getUserId(),
         r.getStartDate(),
         r.getEndDate(),
@@ -85,7 +85,7 @@ public final class RentalMapper {
   }
 
   private static RentalPhotoDto photoDto(RentalPhoto p, Function<String, String> assetResolver) {
-    return new RentalPhotoDto(p.getId().toString(), assetResolver.apply(p.getUrl()), p.getCaption());
+    return new RentalPhotoDto(p.getId(), assetResolver.apply(p.getUrl()), p.getCaption());
   }
 
   private static AccidentReportDto accidentDto(AccidentReport ar, Function<String, String> assetResolver) {
@@ -97,6 +97,6 @@ public final class RentalMapper {
   }
 
   private static RentalPhotoDto accidentPhotoDto(AccidentPhoto p, Function<String, String> assetResolver) {
-    return new RentalPhotoDto(p.getId().toString(), assetResolver.apply(p.getUrl()), p.getCaption());
+    return new RentalPhotoDto(p.getId(), assetResolver.apply(p.getUrl()), p.getCaption());
   }
 }

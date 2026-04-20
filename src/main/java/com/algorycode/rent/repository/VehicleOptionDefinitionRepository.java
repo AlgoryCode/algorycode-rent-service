@@ -5,11 +5,10 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.UUID;
 
-public interface VehicleOptionDefinitionRepository extends JpaRepository<VehicleOptionDefinition, UUID> {
+public interface VehicleOptionDefinitionRepository extends JpaRepository<VehicleOptionDefinition, Long> {
 
-  List<VehicleOptionDefinition> findByVehicle_IdOrderByLineOrderAscTitleAsc(UUID vehicleId);
+  List<VehicleOptionDefinition> findByVehicle_IdOrderByLineOrderAscTitleAsc(Long vehicleId);
 
-  Optional<VehicleOptionDefinition> findByIdAndVehicle_Id(UUID id, UUID vehicleId);
+  Optional<VehicleOptionDefinition> findByIdAndVehicle_Id(Long id, Long vehicleId);
 }

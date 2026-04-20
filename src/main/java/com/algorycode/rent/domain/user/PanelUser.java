@@ -1,6 +1,6 @@
 package com.algorycode.rent.domain.user;
 
-import com.algorycode.rent.domain.AbstractAuditableUuidEntity;
+import com.algorycode.rent.domain.AbstractAuditableLongEntity;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -15,7 +15,7 @@ import java.time.Instant;
 @Setter
 @Entity
 @Table(name = "panel_users")
-public class PanelUser extends AbstractAuditableUuidEntity {
+public class PanelUser extends AbstractAuditableLongEntity {
 
   @Column(name = "full_name", nullable = false)
   private String fullName;

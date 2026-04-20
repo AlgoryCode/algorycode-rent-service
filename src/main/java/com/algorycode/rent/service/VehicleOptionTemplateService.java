@@ -12,7 +12,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.RoundingMode;
 import java.util.List;
-import java.util.UUID;
 
 @Service
 public class VehicleOptionTemplateService {
@@ -36,7 +35,7 @@ public class VehicleOptionTemplateService {
   }
 
   @Transactional(readOnly = true)
-  public VehicleOptionTemplate requireActive(UUID id) {
+  public VehicleOptionTemplate requireActive(Long id) {
     return vehicleOptionTemplateRepository
         .findByIdAndActiveTrue(id)
         .orElseThrow(() -> new BadRequestException("Opsiyon şablonu bulunamadı veya pasif: " + id));
@@ -56,7 +55,7 @@ public class VehicleOptionTemplateService {
   }
 
   @Transactional
-  public VehicleOptionTemplateDto update(UUID id, UpdateVehicleOptionTemplateRequest req) {
+  public VehicleOptionTemplateDto update(Long id, UpdateVehicleOptionTemplateRequest req) {
     VehicleOptionTemplate e =
         vehicleOptionTemplateRepository
             .findById(id)
@@ -83,7 +82,7 @@ public class VehicleOptionTemplateService {
   }
 
   @Transactional
-  public void deactivate(UUID id) {
+  public void deactivate(Long id) {
     VehicleOptionTemplate e =
         vehicleOptionTemplateRepository
             .findById(id)

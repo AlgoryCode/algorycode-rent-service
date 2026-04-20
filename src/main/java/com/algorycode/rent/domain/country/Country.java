@@ -1,6 +1,6 @@
 package com.algorycode.rent.domain.country;
 
-import com.algorycode.rent.domain.AbstractAuditableUuidEntity;
+import com.algorycode.rent.domain.AbstractAuditableLongEntity;
 import com.algorycode.rent.domain.location.City;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -12,14 +12,14 @@ import lombok.Setter;
 import java.util.ArrayList;
 import java.util.List;
 
-/** ISO 3166-1 alpha-2 kodu ve arayüz/temap için renk kodu (örn. {@code #E30A17}). */
+/** Ülke kodu (genelde ISO 3166-1 alpha-2; en fazla 5 harf) ve arayüz için renk (örn. {@code #E30A17}). */
 @Getter
 @Setter
 @Entity
 @Table(name = "countries")
-public class Country extends AbstractAuditableUuidEntity {
+public class Country extends AbstractAuditableLongEntity {
 
-  @Column(nullable = false, unique = true, length = 2)
+  @Column(nullable = false, unique = true, length = 5)
   private String code;
 
   @Column(nullable = false, length = 128)

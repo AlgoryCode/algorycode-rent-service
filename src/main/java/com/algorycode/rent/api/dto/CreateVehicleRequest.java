@@ -11,7 +11,6 @@ import jakarta.validation.constraints.Size;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
 public record CreateVehicleRequest(
     @NotBlank @Size(max = 32) String plate,
@@ -27,21 +26,21 @@ public record CreateVehicleRequest(
     @DecimalMin(value = "0.0", inclusive = true)
     BigDecimal commissionRatePercent,
     @Size(max = 32) String commissionBrokerPhone,
-    /** ISO 3166-1 alpha-2 (örn. TR); zorunlu. Şehir yoksa araç yalnızca ülkeye bağlanır. */
-    @NotBlank @Size(min = 2, max = 2) String countryCode,
+    /** Ülke kodu (2–5 harf, ülke tablosu ile eşleşir). Şehir yoksa araç yalnızca ülkeye bağlanır. */
+    @NotBlank @Size(min = 2, max = 5) String countryCode,
     /** Opsiyonel; doluysa {@code countryCode} ile aynı ülkeye ait olmalıdır. */
-    UUID cityId,
+    Long cityId,
     /** Kiralama başlangıcında kullanılacak varsayılan alış noktası (PICKUP türü). */
-    @NotNull UUID defaultPickupHandoverLocationId,
+    @NotNull Long defaultPickupHandoverLocationId,
     /** Geriye uyumluluk: tek teslim noktası; {@code returnHandoverLocationIds} doluysa yok sayılır. */
-    UUID defaultReturnHandoverLocationId,
+    Long defaultReturnHandoverLocationId,
     /**
      * Bu araca izin verilen teslim (RETURN) noktaları; sıra korunur. Boş veya null: araç bazlı teslim kısıtı yok
      * (yalnızca {@code defaultReturnHandoverLocationId} doluysa tek elemanlı liste gibi davranır).
      */
-    @Size(max = 50) List<UUID> returnHandoverLocationIds,
+    @Size(max = 50) List<Long> returnHandoverLocationIds,
     /** Şablondan kopyalanacak opsiyonlar (sıra korunur); ardından {@code optionDefinitions} eklenir. */
-    @Size(max = 100) List<UUID> optionTemplateIds,
+    @Size(max = 100) List<Long> optionTemplateIds,
     @Size(max = 100) List<@Valid VehicleOptionDefinitionRequest> optionDefinitions,
     Map<String, String> images,
     @Size(max = 255) String engine,

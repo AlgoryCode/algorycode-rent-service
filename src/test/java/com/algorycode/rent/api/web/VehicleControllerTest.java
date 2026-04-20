@@ -21,7 +21,6 @@ import java.time.LocalDate;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import java.util.UUID;
 
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -47,7 +46,7 @@ class VehicleControllerTest {
 
   @Test
   void list_returnsJsonArray() throws Exception {
-    var id = UUID.randomUUID();
+    var id = 1L;
     when(vehicleService.listAll())
         .thenReturn(
             List.of(new VehicleDto(
@@ -92,8 +91,8 @@ class VehicleControllerTest {
 
   @Test
   void calendarOccupancy_returnsMergedRanges() throws Exception {
-    var vid = UUID.randomUUID();
-    var rid = UUID.randomUUID();
+    var vid = 1L;
+    var rid = 1L;
     when(vehicleOccupancyService.occupancy(vid, LocalDate.of(2026, 4, 1), LocalDate.of(2026, 4, 30)))
         .thenReturn(
             new VehicleCalendarOccupancyDto(
@@ -122,7 +121,7 @@ class VehicleControllerTest {
 
   @Test
   void getById_notFound_returnsProblemDetail() throws Exception {
-    var id = UUID.randomUUID();
+    var id = 1L;
     when(vehicleService.getById(id)).thenThrow(new ResourceNotFoundException("Vehicle not found: " + id));
 
     mockMvc

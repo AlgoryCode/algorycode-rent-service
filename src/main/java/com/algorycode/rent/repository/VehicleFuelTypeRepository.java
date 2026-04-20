@@ -7,7 +7,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-public interface VehicleFuelTypeRepository extends JpaRepository<VehicleFuelType, String> {
+public interface VehicleFuelTypeRepository extends JpaRepository<VehicleFuelType, Long> {
 
   List<VehicleFuelType> findAllByOrderBySortOrderAsc();
 

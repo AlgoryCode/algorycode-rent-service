@@ -14,7 +14,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
-import java.util.UUID;
 
 @RestController
 @RequestMapping("/countries")
@@ -37,7 +36,7 @@ public class CountryController {
   }
 
   @PatchMapping("/{id}")
-  public CountryDto updateColor(@PathVariable UUID id, @Valid @RequestBody UpdateCountryColorRequest body) {
+  public CountryDto updateColor(@PathVariable Long id, @Valid @RequestBody UpdateCountryColorRequest body) {
     return countryService.updateColor(id, body);
   }
 }
