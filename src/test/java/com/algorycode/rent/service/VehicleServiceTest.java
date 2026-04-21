@@ -19,6 +19,7 @@ import com.algorycode.rent.repository.VehicleFuelTypeRepository;
 import com.algorycode.rent.repository.VehicleRepository;
 import com.algorycode.rent.repository.VehicleTransmissionTypeRepository;
 import com.algorycode.rent.service.readmodel.FeFleetSnapshotBuilder;
+import com.algorycode.rent.service.support.VehicleAvailabilitySlotAnalyzer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -73,7 +74,11 @@ class VehicleServiceTest {
             objectStorageService,
             handoverLocationService,
             vehicleOptionTemplateService,
-            new VehicleAvailabilityService(vehicleRepository, rentalRepository, rentalRequestRepository),
+            new VehicleAvailabilityService(
+                vehicleRepository,
+                rentalRepository,
+                rentalRequestRepository,
+                new VehicleAvailabilitySlotAnalyzer()),
             new VehicleImageService(vehicleRepository, objectStorageService),
             mock(AuditLog.class),
             mock(FeFleetSnapshotBuilder.class));

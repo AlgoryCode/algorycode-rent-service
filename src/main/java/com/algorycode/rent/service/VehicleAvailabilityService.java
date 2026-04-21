@@ -9,7 +9,7 @@ import com.algorycode.rent.repository.RentalRepository;
 import com.algorycode.rent.repository.RentalRequestRepository;
 import com.algorycode.rent.repository.VehicleRepository;
 import com.algorycode.rent.service.support.DateRangeValidator;
-import com.algorycode.rent.service.support.RentalAvailabilityRules;
+import com.algorycode.rent.service.support.VehicleAvailabilitySlotAnalyzer;
 import java.time.LocalDate;
 import java.util.List;
 import org.springframework.stereotype.Service;
@@ -29,14 +29,17 @@ public class VehicleAvailabilityService {
   private final VehicleRepository vehicleRepository;
   private final RentalRepository rentalRepository;
   private final RentalRequestRepository rentalRequestRepository;
+  private final VehicleAvailabilitySlotAnalyzer availabilitySlotAnalyzer;
 
   public VehicleAvailabilityService(
       VehicleRepository vehicleRepository,
       RentalRepository rentalRepository,
-      RentalRequestRepository rentalRequestRepository) {
+      RentalRequestRepository rentalRequestRepository,
+      VehicleAvailabilitySlotAnalyzer availabilitySlotAnalyzer) {
     this.vehicleRepository = vehicleRepository;
     this.rentalRepository = rentalRepository;
     this.rentalRequestRepository = rentalRequestRepository;
+    this.availabilitySlotAnalyzer = availabilitySlotAnalyzer;
   }
 
   @Transactional(readOnly = true)
@@ -74,7 +77,7 @@ public class VehicleAvailabilityService {
         .toList();
   }
 
-  private static boolean passesAvailabilityForListing(
+  private boolean passesAvailabilityForListing(
       Long vehicleId,
       LocalDate availableFrom,
       LocalDate availableTo,
@@ -82,7 +85,7 @@ public class VehicleAvailabilityService {
       List<RentalRequest> requestCandidates,
       boolean includePartialAvailability) {
     boolean strict =
-        isVehicleAvailableForRange(
+        availabilitySlotAnalyzer.isAvailableForInclusiveTrip(
             vehicleId, availableFrom, availableTo, rentalCandidates, requestCandidates);
     if (!includePartialAvailability) {
       return strict;
@@ -94,7 +97,7 @@ public class VehicleAvailabilityService {
       return false;
     }
     LocalDate partialThrough = availableFrom.plusDays(1);
-    return isVehicleAvailableForRange(
+    return availabilitySlotAnalyzer.isAvailableForInclusiveTrip(
         vehicleId, availableFrom, partialThrough, rentalCandidates, requestCandidates);
   }
 
@@ -114,33 +117,6 @@ public class VehicleAvailabilityService {
         return true;
       }
       return allowedReturns.contains(returnHandoverLocationId);
-    }
-    return true;
-  }
-
-  private static boolean isVehicleAvailableForRange(
-      Long vehicleId,
-      LocalDate from,
-      LocalDate to,
-      List<Rental> rentalCandidates,
-      List<RentalRequest> requestCandidates) {
-    for (Rental r : rentalCandidates) {
-      if (!r.getVehicle().getId().equals(vehicleId)) {
-        continue;
-      }
-      if (RentalAvailabilityRules.rentalBlocksRequestedRange(
-          from, to, r.getStartDate(), r.getEndDate())) {
-        return false;
-      }
-    }
-    for (RentalRequest rr : requestCandidates) {
-      if (rr.getVehicle() == null || !rr.getVehicle().getId().equals(vehicleId)) {
-        continue;
-      }
-      if (RentalAvailabilityRules.rentalBlocksRequestedRange(
-          from, to, rr.getStartDate(), rr.getEndDate())) {
-        return false;
-      }
     }
     return true;
   }
