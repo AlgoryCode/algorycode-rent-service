@@ -5,12 +5,7 @@ import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
 public record CreateCountryRequest(
-    @NotBlank
-        @Size(min = 2, max = 5)
-        @Pattern(
-            regexp = "^[A-Za-z]{2,5}$",
-            message = "Ülke kodu 2–5 harf olmalıdır (yalnızca A–Z).")
-        String code,
+    @NotBlank @Size(max = 64) String code,
     @NotBlank @Size(max = 128) String name,
     @NotBlank
         @Pattern(

@@ -10,7 +10,6 @@ import com.algorycode.rent.api.error.BadRequestException;
 import com.algorycode.rent.api.error.ConflictException;
 import com.algorycode.rent.api.error.ResourceNotFoundException;
 import com.algorycode.rent.api.mapper.HandoverLocationMapper;
-import com.algorycode.rent.domain.country.Country;
 import com.algorycode.rent.domain.location.City;
 import com.algorycode.rent.domain.location.HandoverLocation;
 import com.algorycode.rent.domain.location.HandoverLocationKind;
@@ -49,6 +48,8 @@ import java.util.Map;
 
 @Service
 public class VehicleService {
+
+  private static final BigDecimal EXTERNAL_COMMISSION_PERCENT_MAX = BigDecimal.valueOf(100);
 
   private final VehicleRepository vehicleRepository;
   private final VehicleBodyStyleRepository vehicleBodyStyleRepository;
@@ -152,11 +153,7 @@ public class VehicleService {
     } else {
       v.setExternalCompany(null);
     }
-    BigDecimal rentalDailyPrice = req.rentalDailyPrice();
-    if (rentalDailyPrice == null || rentalDailyPrice.compareTo(BigDecimal.ZERO) <= 0) {
-      throw new BadRequestException("Günlük kiralama fiyatı sıfırdan büyük olmalıdır.");
-    }
-    v.setRentalDailyPrice(rentalDailyPrice);
+    v.setRentalDailyPrice(req.rentalDailyPrice());
 
     applyCommissionRules(v, req.external(), req.commissionRatePercent(), req.commissionBrokerPhone());
     applyCountryAndOptionalCity(v, req.countryCode(), req.cityId());
@@ -437,28 +434,17 @@ public class VehicleService {
     }
   }
 
+  /**
+   * Ülke / şehir ataması: alan doğrulaması {@link com.algorycode.rent.api.dto.CreateVehicleRequest} üzerindeki
+   * Bean Validation ile yapılır ({@code @ExistingCountryCode}, {@code @VehicleCityMatchesCountry}).
+   */
   private void applyCountryAndOptionalCity(Vehicle v, String countryCodeRaw, Long cityId) {
-    if (countryCodeRaw == null || countryCodeRaw.isBlank()) {
-      throw new BadRequestException("Ülke kodu zorunludur.");
-    }
-    String code = countryCodeRaw.trim().toUpperCase();
-    if (code.length() != 2) {
-      throw new BadRequestException("Ülke kodu iki harfli ISO kod olmalıdır.");
-    }
-    Country country =
+    v.setCountryCode(
         countryRepository
-            .findByCodeIgnoreCase(code)
-            .orElseThrow(() -> new BadRequestException("Kayıtlı ülke bulunamadı: " + code));
-    v.setCountryCode(country.getCode());
-    if (cityId != null) {
-      City city = findCityRequired(cityId);
-      if (!city.getCountry().getId().equals(country.getId())) {
-        throw new BadRequestException("Seçilen şehir, seçilen ülkeye ait değil.");
-      }
-      v.setCity(city);
-    } else {
-      v.setCity(null);
-    }
+            .findByCodeIgnoreCase(countryCodeRaw.trim().toUpperCase())
+            .orElseThrow(() -> new IllegalStateException("Bean Validation sonrası ülke bulunamadı: " + countryCodeRaw))
+            .getCode());
+    v.setCity(cityId == null ? null : findCityRequired(cityId));
   }
 
   private City findCityRequired(Long cityId) {
@@ -469,35 +455,32 @@ public class VehicleService {
 
   private String resolveBodyStyleCodeOrNull(String raw) {
     String c = Text.trimOrNull(raw);
-    if (c == null) {
-      return null;
-    }
-    return vehicleBodyStyleRepository
-        .findByCodeIgnoreCase(c)
-        .map(VehicleBodyStyle::getCode)
-        .orElseThrow(() -> new BadRequestException("Geçersiz araç türü: " + raw));
+    return c == null
+        ? null
+        : vehicleBodyStyleRepository
+            .findByCodeIgnoreCase(c)
+            .map(VehicleBodyStyle::getCode)
+            .orElseThrow(() -> new BadRequestException("Geçersiz araç türü: " + raw));
   }
 
   private String resolveFuelTypeOrNull(String raw) {
     String t = Text.trimOrNull(raw);
-    if (t == null) {
-      return null;
-    }
-    return vehicleFuelTypeRepository
-        .findByCodeIgnoreCase(t)
-        .map(VehicleFuelType::getCode)
-        .orElseThrow(() -> new BadRequestException("Geçersiz yakıt türü: " + raw));
+    return t == null
+        ? null
+        : vehicleFuelTypeRepository
+            .findByCodeIgnoreCase(t)
+            .map(VehicleFuelType::getCode)
+            .orElseThrow(() -> new BadRequestException("Geçersiz yakıt türü: " + raw));
   }
 
   private String resolveTransmissionTypeOrNull(String raw) {
     String t = Text.trimOrNull(raw);
-    if (t == null) {
-      return null;
-    }
-    return vehicleTransmissionTypeRepository
-        .findByCodeIgnoreCase(t)
-        .map(VehicleTransmissionType::getCode)
-        .orElseThrow(() -> new BadRequestException("Geçersiz vites türü: " + raw));
+    return t == null
+        ? null
+        : vehicleTransmissionTypeRepository
+            .findByCodeIgnoreCase(t)
+            .map(VehicleTransmissionType::getCode)
+            .orElseThrow(() -> new BadRequestException("Geçersiz vites türü: " + raw));
   }
 
   private void applyOptionalVehicleSpecs(Vehicle v, String engine, Integer seats, Integer luggage) {
@@ -508,21 +491,20 @@ public class VehicleService {
 
   private void applyCommissionRules(Vehicle v, boolean external, BigDecimal commissionRatePercent, String brokerPhone) {
     v.setCommissionEnabled(external);
-    if (external) {
-      if (commissionRatePercent == null
-          || commissionRatePercent.compareTo(BigDecimal.ZERO) <= 0
-          || commissionRatePercent.compareTo(new BigDecimal("100")) > 0) {
-        throw new BadRequestException("Harici araçta komisyon oranı 0 ile 100 arasında zorunludur.");
-      }
-      v.setCommissionRatePercent(commissionRatePercent);
-      v.setCommissionBrokerFullName(null);
-      v.setCommissionBrokerPhone(
-          brokerPhone == null || brokerPhone.isBlank() ? null : brokerPhone.trim());
-    } else {
+    if (!external) {
       v.setCommissionRatePercent(null);
       v.setCommissionBrokerFullName(null);
       v.setCommissionBrokerPhone(null);
+      return;
     }
+    if (commissionRatePercent == null
+        || commissionRatePercent.compareTo(BigDecimal.ZERO) <= 0
+        || commissionRatePercent.compareTo(EXTERNAL_COMMISSION_PERCENT_MAX) > 0) {
+      throw new BadRequestException("Harici araçta komisyon oranı 0 ile 100 arasında zorunludur.");
+    }
+    v.setCommissionRatePercent(commissionRatePercent);
+    v.setCommissionBrokerFullName(null);
+    v.setCommissionBrokerPhone(brokerPhone == null || brokerPhone.isBlank() ? null : brokerPhone.trim());
   }
 
   private void persistFleetSnapshot(Vehicle v) {
@@ -530,10 +512,8 @@ public class VehicleService {
   }
 
   private JsonNode fleetSnapshotForResponse(Vehicle v) {
-    if (v.getFeFleetSnapshot() != null) {
-      return v.getFeFleetSnapshot();
-    }
-    return feFleetSnapshotBuilder.build(v);
+    JsonNode cached = v.getFeFleetSnapshot();
+    return cached != null ? cached : feFleetSnapshotBuilder.build(v);
   }
 
   private VehicleDto toDto(Vehicle v) {

@@ -11,12 +11,15 @@ import com.algorycode.rent.repository.VehicleTransmissionTypeRepository;
 import com.algorycode.rent.repository.VehicleRepository;
 import com.algorycode.rent.service.support.Text;
 import com.algorycode.rent.service.support.VehicleCatalogSupport;
+import com.algorycode.rent.service.vehiclecatalog.VehicleCatalogCrudPort;
+import com.algorycode.rent.service.vehiclecatalog.VehicleCatalogEntityFactory;
 import java.util.List;
+import java.util.Optional;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
-public class VehicleTransmissionTypeService {
+public class VehicleTransmissionTypeService implements VehicleCatalogCrudPort {
 
   private final VehicleTransmissionTypeRepository vehicleTransmissionTypeRepository;
   private final VehicleRepository vehicleRepository;
@@ -48,11 +51,9 @@ public class VehicleTransmissionTypeService {
             req.labelTr().trim(),
             false,
             c -> vehicleTransmissionTypeRepository.findByCodeIgnoreCase(c).isPresent());
-    VehicleTransmissionType e = new VehicleTransmissionType();
-    e.setCode(code);
-    e.setLabelTr(req.labelTr().trim());
-    e.setSortOrder(req.sortOrder());
-    return toDto(vehicleTransmissionTypeRepository.save(e));
+    return toDto(
+        vehicleTransmissionTypeRepository.save(
+            VehicleCatalogEntityFactory.newTransmissionType(code, req.labelTr().trim(), req.sortOrder())));
   }
 
   @Transactional
@@ -85,13 +86,12 @@ public class VehicleTransmissionTypeService {
   }
 
   private VehicleTransmissionType requireEntity(String rawCode) {
-    String key = Text.trimOrNull(rawCode);
-    if (key == null) {
-      throw new BadRequestException("Kod gerekli.");
-    }
+    String key =
+        Optional.ofNullable(Text.trimOrNull(rawCode))
+            .orElseThrow(() -> new BadRequestException("Kod gerekli."));
     return vehicleTransmissionTypeRepository
         .findByCodeIgnoreCase(key)
-        .orElseThrow(() -> new ResourceNotFoundException("Vites türü bulunamadı: " + rawCode));
+        .orElseThrow(() -> new ResourceNotFoundException("Vites türü bulunamadı: " + key));
   }
 
   private static VehicleCatalogEntryDto toDto(VehicleTransmissionType e) {

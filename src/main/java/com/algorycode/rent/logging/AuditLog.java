@@ -34,6 +34,7 @@ public class AuditLog {
           "requestedEnd",
           "httpStatus",
           "exceptionType",
+          "fieldErrorCount",
           "referenceNo",
           "entity");
 

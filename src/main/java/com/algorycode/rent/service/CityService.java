@@ -27,14 +27,11 @@ public class CityService {
 
   @Transactional(readOnly = true)
   public List<CityDto> listAll(Long countryId) {
-    if (countryId == null) {
-      return cityRepository.findAll(Sort.by(Sort.Direction.ASC, "name")).stream()
-          .map(CityMapper::toDto)
-          .toList();
-    }
-    return cityRepository.findByCountry_IdOrderByNameAsc(countryId).stream()
-        .map(CityMapper::toDto)
-        .toList();
+    var rows =
+        countryId == null
+            ? cityRepository.findAll(Sort.by(Sort.Direction.ASC, "name"))
+            : cityRepository.findByCountry_IdOrderByNameAsc(countryId);
+    return rows.stream().map(CityMapper::toDto).toList();
   }
 
   @Transactional

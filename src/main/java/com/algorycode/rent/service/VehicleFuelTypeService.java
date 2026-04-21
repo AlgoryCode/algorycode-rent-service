@@ -11,12 +11,15 @@ import com.algorycode.rent.repository.VehicleFuelTypeRepository;
 import com.algorycode.rent.repository.VehicleRepository;
 import com.algorycode.rent.service.support.Text;
 import com.algorycode.rent.service.support.VehicleCatalogSupport;
+import com.algorycode.rent.service.vehiclecatalog.VehicleCatalogCrudPort;
+import com.algorycode.rent.service.vehiclecatalog.VehicleCatalogEntityFactory;
 import java.util.List;
+import java.util.Optional;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
-public class VehicleFuelTypeService {
+public class VehicleFuelTypeService implements VehicleCatalogCrudPort {
 
   private final VehicleFuelTypeRepository vehicleFuelTypeRepository;
   private final VehicleRepository vehicleRepository;
@@ -47,11 +50,9 @@ public class VehicleFuelTypeService {
             req.labelTr().trim(),
             false,
             c -> vehicleFuelTypeRepository.findByCodeIgnoreCase(c).isPresent());
-    VehicleFuelType e = new VehicleFuelType();
-    e.setCode(code);
-    e.setLabelTr(req.labelTr().trim());
-    e.setSortOrder(req.sortOrder());
-    return toDto(vehicleFuelTypeRepository.save(e));
+    return toDto(
+        vehicleFuelTypeRepository.save(
+            VehicleCatalogEntityFactory.newFuelType(code, req.labelTr().trim(), req.sortOrder())));
   }
 
   @Transactional
@@ -84,13 +85,12 @@ public class VehicleFuelTypeService {
   }
 
   private VehicleFuelType requireEntity(String rawCode) {
-    String key = Text.trimOrNull(rawCode);
-    if (key == null) {
-      throw new BadRequestException("Kod gerekli.");
-    }
+    String key =
+        Optional.ofNullable(Text.trimOrNull(rawCode))
+            .orElseThrow(() -> new BadRequestException("Kod gerekli."));
     return vehicleFuelTypeRepository
         .findByCodeIgnoreCase(key)
-        .orElseThrow(() -> new ResourceNotFoundException("Yakıt türü bulunamadı: " + rawCode));
+        .orElseThrow(() -> new ResourceNotFoundException("Yakıt türü bulunamadı: " + key));
   }
 
   private static VehicleCatalogEntryDto toDto(VehicleFuelType e) {

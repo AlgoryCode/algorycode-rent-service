@@ -12,6 +12,7 @@ import com.algorycode.rent.domain.location.HandoverLocationKind;
 import com.algorycode.rent.repository.CityRepository;
 import com.algorycode.rent.repository.HandoverLocationRepository;
 import com.algorycode.rent.service.readmodel.FeHandoverSnapshotJson;
+import com.algorycode.rent.service.support.Text;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -33,48 +34,32 @@ public class HandoverLocationService {
 
   @Transactional(readOnly = true)
   public List<HandoverLocationDto> list(HandoverLocationKind kind, boolean includeInactive) {
-    if (includeInactive) {
-      if (kind != null) {
-        return handoverLocationRepository.findByKindOrderByActiveDescLineOrderAscNameAsc(kind).stream()
-            .map(HandoverLocationMapper::toDto)
-            .toList();
-      }
-      return handoverLocationRepository.findAllByOrderByKindAscActiveDescLineOrderAscNameAsc().stream()
-          .map(HandoverLocationMapper::toDto)
-          .toList();
-    }
+    return listEntities(kind, includeInactive).stream().map(HandoverLocationMapper::toDto).toList();
+  }
+
+  private List<HandoverLocation> listEntities(HandoverLocationKind kind, boolean includeInactive) {
     if (kind != null) {
-      return handoverLocationRepository.findByKindAndActiveTrueOrderByLineOrderAscNameAsc(kind).stream()
-          .map(HandoverLocationMapper::toDto)
-          .toList();
+      return includeInactive
+          ? handoverLocationRepository.findByKindOrderByActiveDescLineOrderAscNameAsc(kind)
+          : handoverLocationRepository.findByKindAndActiveTrueOrderByLineOrderAscNameAsc(kind);
     }
-    return handoverLocationRepository.findByActiveTrueOrderByKindAscLineOrderAscNameAsc().stream()
-        .map(HandoverLocationMapper::toDto)
-        .toList();
+    return includeInactive
+        ? handoverLocationRepository.findAllByOrderByKindAscActiveDescLineOrderAscNameAsc()
+        : handoverLocationRepository.findByActiveTrueOrderByKindAscLineOrderAscNameAsc();
   }
 
   @Transactional(readOnly = true)
   public HandoverLocation requireForAssignment(Long id, HandoverLocationKind expectedKind) {
-    if (id == null) {
-      return null;
-    }
-    HandoverLocation loc =
-        handoverLocationRepository
-            .findById(id)
-            .orElseThrow(() -> new ResourceNotFoundException("Alış/teslim noktası bulunamadı: " + id));
-    if (!loc.isActive()) {
-      throw new BadRequestException("Seçilen alış/teslim noktası artık kullanılamaz.");
-    }
-    if (loc.getKind() != expectedKind) {
-      throw new BadRequestException(
-          "Seçilen nokta türü uyuşmuyor (beklenen: " + expectedKind + ", kayıt: " + loc.getKind() + ").");
-    }
-    return loc;
+    return requireLoaded(id, expectedKind);
   }
 
   /** Tür kontrolü olmadan yalnızca aktif kayıt (araç varsayılanı / kiralama sonrası güncelleme için). */
   @Transactional(readOnly = true)
   public HandoverLocation requireActive(Long id) {
+    return requireLoaded(id, null);
+  }
+
+  private HandoverLocation requireLoaded(Long id, HandoverLocationKind expectedKind) {
     if (id == null) {
       return null;
     }
@@ -84,6 +69,10 @@ public class HandoverLocationService {
             .orElseThrow(() -> new ResourceNotFoundException("Alış/teslim noktası bulunamadı: " + id));
     if (!loc.isActive()) {
       throw new BadRequestException("Seçilen alış/teslim noktası artık kullanılamaz.");
+    }
+    if (expectedKind != null && loc.getKind() != expectedKind) {
+      throw new BadRequestException(
+          "Seçilen nokta türü uyuşmuyor (beklenen: " + expectedKind + ", kayıt: " + loc.getKind() + ").");
     }
     return loc;
   }
@@ -93,10 +82,8 @@ public class HandoverLocationService {
     HandoverLocation e = new HandoverLocation();
     e.setKind(req.kind());
     e.setName(req.name().trim());
-    e.setDescription(
-        req.description() != null && !req.description().isBlank() ? req.description().trim() : null);
-    e.setAddressLine(
-        req.addressLine() != null && !req.addressLine().isBlank() ? req.addressLine().trim() : null);
+    e.setDescription(Text.trimOrNull(req.description()));
+    e.setAddressLine(Text.trimOrNull(req.addressLine()));
     e.setCity(resolveCity(req.cityId()));
     e.setActive(req.active() == null || Boolean.TRUE.equals(req.active()));
     e.setLineOrder(req.lineOrder());
@@ -122,10 +109,10 @@ public class HandoverLocationService {
       e.setName(req.name().trim());
     }
     if (req.description() != null) {
-      e.setDescription(req.description().isBlank() ? null : req.description().trim());
+      e.setDescription(Text.trimOrNull(req.description()));
     }
     if (req.addressLine() != null) {
-      e.setAddressLine(req.addressLine().isBlank() ? null : req.addressLine().trim());
+      e.setAddressLine(Text.trimOrNull(req.addressLine()));
     }
     if (Boolean.TRUE.equals(req.clearCity())) {
       e.setCity(null);

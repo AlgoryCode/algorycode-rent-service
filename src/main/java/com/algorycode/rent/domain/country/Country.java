@@ -12,14 +12,14 @@ import lombok.Setter;
 import java.util.ArrayList;
 import java.util.List;
 
-/** Ülke kodu (genelde ISO 3166-1 alpha-2; en fazla 5 harf) ve arayüz için renk (örn. {@code #E30A17}). */
+/** Ülke kodu (benzersiz; en fazla 64 karakter) ve arayüz için renk (örn. {@code #E30A17}). */
 @Getter
 @Setter
 @Entity
 @Table(name = "countries")
 public class Country extends AbstractAuditableLongEntity {
 
-  @Column(nullable = false, unique = true, length = 5)
+  @Column(nullable = false, unique = true, length = 64)
   private String code;
 
   @Column(nullable = false, length = 128)

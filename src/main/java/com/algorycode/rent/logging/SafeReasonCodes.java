@@ -9,5 +9,7 @@ public final class SafeReasonCodes {
   public static final String RESOURCE_NOT_FOUND = "resource_not_found";
   public static final String CONFLICT = "conflict";
   public static final String BAD_REQUEST = "bad_request";
+  public static final String VALIDATION_FAILED = "validation_failed";
+  public static final String INVARIANT_VIOLATION = "invariant_violation";
   public static final String UNHANDLED_EXCEPTION = "unhandled_exception";
 }

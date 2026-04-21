@@ -1,17 +1,21 @@
 package com.algorycode.rent.api.dto;
 
+import com.algorycode.rent.validation.ExistingCountryCode;
+import com.algorycode.rent.validation.VehicleCityMatchesCountry;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
-import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
-
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
+import lombok.Builder;
 
+@Builder
+@VehicleCityMatchesCountry
 public record CreateVehicleRequest(
     @NotBlank @Size(max = 32) String plate,
     @NotBlank @Size(max = 255) String brand,
@@ -26,8 +30,8 @@ public record CreateVehicleRequest(
     @DecimalMin(value = "0.0", inclusive = true)
     BigDecimal commissionRatePercent,
     @Size(max = 32) String commissionBrokerPhone,
-    /** Ülke kodu (2–5 harf, ülke tablosu ile eşleşir). Şehir yoksa araç yalnızca ülkeye bağlanır. */
-    @NotBlank @Size(min = 2, max = 5) String countryCode,
+    /** Ülke kodu (ülke tablosu ile eşleşir; en fazla 64 karakter). Şehir yoksa araç yalnızca ülkeye bağlanır. */
+    @NotBlank @Size(max = 64) @ExistingCountryCode String countryCode,
     /** Opsiyonel; doluysa {@code countryCode} ile aynı ülkeye ait olmalıdır. */
     Long cityId,
     /** Kiralama başlangıcında kullanılacak varsayılan alış noktası (PICKUP türü). */

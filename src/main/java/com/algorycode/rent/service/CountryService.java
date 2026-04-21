@@ -36,21 +36,20 @@ public class CountryService {
     if (countryRepository.findByCodeIgnoreCase(code).isPresent()) {
       throw new ConflictException("Bu ülke kodu zaten kayıtlı.");
     }
-    Country c = new Country();
-    c.setCode(code);
-    c.setName(body.name().trim());
-    c.setColorCode(body.colorCode().trim().toUpperCase());
-    return CountryMapper.toDto(countryRepository.save(c));
+    Country country = new Country();
+    country.setCode(code);
+    country.setName(body.name().trim());
+    country.setColorCode(body.colorCode().trim().toUpperCase());
+    return CountryMapper.toDto(countryRepository.save(country));
   }
 
   @Transactional
   public CountryDto updateColor(Long id, UpdateCountryColorRequest body) {
-    var c =
+    Country country =
         countryRepository
             .findById(id)
             .orElseThrow(() -> new ResourceNotFoundException("Ülke bulunamadı: " + id));
-    String raw = body.colorCode().trim();
-    c.setColorCode(raw.toUpperCase());
-    return CountryMapper.toDto(countryRepository.save(c));
+    country.setColorCode(body.colorCode().trim().toUpperCase());
+    return CountryMapper.toDto(countryRepository.save(country));
   }
 }

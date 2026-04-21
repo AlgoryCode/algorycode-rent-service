@@ -19,7 +19,6 @@ import com.algorycode.rent.repository.VehicleFuelTypeRepository;
 import com.algorycode.rent.repository.VehicleRepository;
 import com.algorycode.rent.repository.VehicleTransmissionTypeRepository;
 import com.algorycode.rent.service.readmodel.FeFleetSnapshotBuilder;
-import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -55,7 +54,6 @@ class VehicleServiceTest {
   @Mock private VehicleOptionTemplateService vehicleOptionTemplateService;
   @Mock private RentalRepository rentalRepository;
   @Mock private RentalRequestRepository rentalRequestRepository;
-  @Mock private FeFleetSnapshotBuilder feFleetSnapshotBuilder;
 
   private VehicleService vehicleService;
 
@@ -64,9 +62,6 @@ class VehicleServiceTest {
     lenient()
         .when(rentalRequestRepository.findPotentiallyBlockingRequestsForAvailability(any(), any(), anyList()))
         .thenReturn(Collections.emptyList());
-    lenient()
-        .when(feFleetSnapshotBuilder.build(org.mockito.ArgumentMatchers.any()))
-        .thenReturn(JsonNodeFactory.instance.objectNode());
     vehicleService =
         new VehicleService(
             vehicleRepository,
@@ -81,7 +76,7 @@ class VehicleServiceTest {
             new VehicleAvailabilityService(vehicleRepository, rentalRepository, rentalRequestRepository),
             new VehicleImageService(vehicleRepository, objectStorageService),
             mock(AuditLog.class),
-            feFleetSnapshotBuilder);
+            mock(FeFleetSnapshotBuilder.class));
   }
 
   @Test
