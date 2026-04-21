@@ -9,6 +9,7 @@ import jakarta.validation.constraints.Size;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 
 public record CreateRentalRequestFormRequest(
@@ -27,7 +28,13 @@ public record CreateRentalRequestFormRequest(
     @NotNull @Valid CustomerBody customer,
     @Size(max = 1)
     List<@Valid AdditionalDriverBody> additionalDrivers,
-    @Size(max = 100) List<@Valid RentalOptionRequest> options) {
+    @Size(max = 100) List<@Valid RentalOptionRequest> options,
+    /** İstemci özeti (denetim); zorunlu değil — sunucu {@code rental_request_priced_lines} üretir. */
+    @Size(max = 64) List<@Valid PricedLineRequest> pricingLines) {
+
+  public CreateRentalRequestFormRequest {
+    pricingLines = Objects.requireNonNullElse(pricingLines, List.of());
+  }
 
   public record CustomerBody(
       @NotBlank @Size(max = 255) String fullName,

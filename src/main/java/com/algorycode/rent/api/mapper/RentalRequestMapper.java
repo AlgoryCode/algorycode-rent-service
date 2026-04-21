@@ -5,6 +5,7 @@ import com.algorycode.rent.api.dto.RentalRequestDto.RentalRequestOptionDto;
 import com.algorycode.rent.domain.request.RentalRequest;
 import com.algorycode.rent.domain.request.RentalRequestAdditionalDriver;
 import com.algorycode.rent.domain.request.RentalRequestOption;
+import com.algorycode.rent.domain.request.RentalRequestPricedLine;
 import com.algorycode.rent.domain.request.RentalRequestStatus;
 
 import java.math.BigDecimal;
@@ -35,6 +36,11 @@ public final class RentalRequestMapper {
     List<RentalRequestOptionDto> options =
         r.getOptions().stream().map(RentalRequestMapper::requestOptionDto).toList();
 
+    List<RentalRequestDto.RentalRequestPricedLineDto> pricedLines =
+        r.getPricedLines() == null
+            ? List.of()
+            : r.getPricedLines().stream().map(RentalRequestMapper::pricedLineDto).toList();
+
     Long vehicleId = r.getVehicleId();
 
     boolean contractGenerationAvailable =
@@ -53,6 +59,8 @@ public final class RentalRequestMapper {
         r.getEndDate(),
         r.getStartTime(),
         r.getReturnTime(),
+        r.getRentalNights(),
+        r.getPricingTotalTry(),
         HandoverLocationMapper.toRef(r.getPickupHandoverLocation()),
         HandoverLocationMapper.toRef(r.getReturnHandoverLocation()),
         r.isOutsideCountryTravel(),
@@ -68,7 +76,8 @@ public final class RentalRequestMapper {
         nz(r.getHandoverTotalEur()),
         customer,
         additional,
-        options);
+        options,
+        pricedLines);
   }
 
   private static BigDecimal nz(BigDecimal v) {
@@ -78,6 +87,24 @@ public final class RentalRequestMapper {
   private static RentalRequestOptionDto requestOptionDto(RentalRequestOption o) {
     return new RentalRequestOptionDto(
         o.getId(), o.getTitle(), o.getDescription(), o.getPrice(), o.getIcon());
+  }
+
+  private static RentalRequestDto.RentalRequestPricedLineDto pricedLineDto(RentalRequestPricedLine o) {
+    return new RentalRequestDto.RentalRequestPricedLineDto(
+        o.getId(),
+        o.getLineType().name(),
+        o.getTitle(),
+        o.getDescription(),
+        o.getQuantity(),
+        nz(o.getUnitAmount()),
+        nz(o.getLineAmount()),
+        o.getCurrency(),
+        o.getLineOrder(),
+        o.getPricedAt(),
+        o.getSourceReservationExtraTemplateId(),
+        o.getSourceVehicleOptionDefinitionId(),
+        o.getReturnHandoverLocationId(),
+        o.getMetadata());
   }
 
   private static RentalRequestDto.AdditionalDriverDto toAdditionalDriverDto(

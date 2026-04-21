@@ -67,6 +67,8 @@ app:
   rental-request:
     # Yurt dışı çıkış seçilirse otomatik eklenen yeşil sigorta ücreti.
     green-insurance-fee: 75.00
+    # Handover EUR satırlarını TRY’ye çevirmek için gösterge kur (fatura özeti).
+    try-per-eur: 36.20
   contract:
     # Boş: PDF tamamen uygulama içi İngilizce yetkilendirme şablonu ile üretilir.
     template-path: ""

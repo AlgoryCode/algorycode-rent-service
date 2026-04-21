@@ -21,6 +21,8 @@ public record RentalRequestDto(
     LocalDate endDate,
     LocalTime startTime,
     LocalTime returnTime,
+    Integer rentalNights,
+    BigDecimal pricingTotalTry,
     HandoverLocationRefDto pickupHandoverLocation,
     HandoverLocationRefDto returnHandoverLocation,
     boolean outsideCountryTravel,
@@ -40,7 +42,8 @@ public record RentalRequestDto(
     BigDecimal handoverTotalEur,
     CustomerDto customer,
     List<AdditionalDriverDto> additionalDrivers,
-    List<RentalRequestOptionDto> options) {
+    List<RentalRequestOptionDto> options,
+    List<RentalRequestPricedLineDto> pricedLines) {
 
   public record CustomerDto(
       String fullName,
@@ -68,4 +71,21 @@ public record RentalRequestDto(
       String description,
       BigDecimal price,
       String icon) {}
+
+  /** Faturalandırma kalemi (TRY tutarlar; handover için metadata’da EUR). */
+  public record RentalRequestPricedLineDto(
+      Long id,
+      String lineType,
+      String title,
+      String description,
+      Integer quantity,
+      BigDecimal unitAmount,
+      BigDecimal lineAmount,
+      String currency,
+      int lineOrder,
+      Instant pricedAt,
+      Long sourceReservationExtraTemplateId,
+      Long sourceVehicleOptionDefinitionId,
+      Long returnHandoverLocationId,
+      String metadata) {}
 }

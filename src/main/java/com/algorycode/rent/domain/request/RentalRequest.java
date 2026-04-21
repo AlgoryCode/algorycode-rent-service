@@ -54,6 +54,14 @@ public class RentalRequest extends AbstractAuditableLongEntity {
   @Column(name = "end_date", nullable = false)
   private LocalDate endDate;
 
+  /** Talep anında hesaplanan kiralama gecesi (alış–teslim tarihleri ile uyumlu). */
+  @Column(name = "rental_nights")
+  private Integer rentalNights;
+
+  /** {@code rental_request_priced_lines} satırlarının TRY toplamı (bilgilendirme / rapor). */
+  @Column(name = "pricing_total_try", precision = 12, scale = 2)
+  private BigDecimal pricingTotalTry;
+
   /** Kiralama baslangic saati (PDF Issue Date yanindaki Time). */
   @Column(name = "start_time")
   private LocalTime startTime;
@@ -109,6 +117,10 @@ public class RentalRequest extends AbstractAuditableLongEntity {
   @OneToMany(mappedBy = "rentalRequest", cascade = CascadeType.ALL, orphanRemoval = true)
   @OrderBy("lineOrder ASC")
   private List<RentalRequestOption> options = new ArrayList<>();
+
+  @OneToMany(mappedBy = "rentalRequest", cascade = CascadeType.ALL, orphanRemoval = true)
+  @OrderBy("lineOrder ASC")
+  private List<RentalRequestPricedLine> pricedLines = new ArrayList<>();
 
   /** Talep oluşturulurken hesaplanan alış noktası ek ücreti (EUR). */
   @Column(name = "handover_pickup_leg_eur", nullable = false, precision = 10, scale = 2)

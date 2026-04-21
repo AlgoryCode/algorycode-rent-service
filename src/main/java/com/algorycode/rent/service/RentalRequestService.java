@@ -25,6 +25,7 @@ import com.algorycode.rent.repository.VehicleOptionDefinitionRepository;
 import com.algorycode.rent.repository.VehicleRepository;
 import com.algorycode.rent.service.support.DateRangeValidator;
 import com.algorycode.rent.service.support.RentalOptionLineResolution;
+import com.algorycode.rent.service.support.RentalRequestPricedLineAssembler;
 import com.algorycode.rent.service.support.Text;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
@@ -68,6 +69,7 @@ public class RentalRequestService {
   private final ApplicationEventPublisher applicationEventPublisher;
   private final RentalRequestNotificationService rentalRequestNotificationService;
   private final AuditLog auditLog;
+  private final RentalRequestPricedLineAssembler rentalRequestPricedLineAssembler;
 
   public RentalRequestService(
       RentalRequestRepository rentalRequestRepository,
@@ -83,7 +85,8 @@ public class RentalRequestService {
       ReservationExtraOptionTemplateRepository reservationExtraOptionTemplateRepository,
       ApplicationEventPublisher applicationEventPublisher,
       RentalRequestNotificationService rentalRequestNotificationService,
-      AuditLog auditLog) {
+      AuditLog auditLog,
+      RentalRequestPricedLineAssembler rentalRequestPricedLineAssembler) {
     this.rentalRequestRepository = rentalRequestRepository;
     this.vehicleRepository = vehicleRepository;
     this.rentalRequestProperties = rentalRequestProperties;
@@ -98,6 +101,7 @@ public class RentalRequestService {
     this.applicationEventPublisher = applicationEventPublisher;
     this.rentalRequestNotificationService = rentalRequestNotificationService;
     this.auditLog = auditLog;
+    this.rentalRequestPricedLineAssembler = rentalRequestPricedLineAssembler;
   }
 
   @Transactional
@@ -118,6 +122,7 @@ public class RentalRequestService {
     entity.setUserId(req.userId());
     entity.setStartDate(req.startDate());
     entity.setEndDate(req.endDate());
+    entity.setRentalNights(RentalRequestPricedLineAssembler.rentalNightsBetween(req.startDate(), req.endDate()));
     entity.setStartTime(req.startTime() != null ? req.startTime() : LocalTime.of(8, 0));
     entity.setReturnTime(req.returnTime() != null ? req.returnTime() : LocalTime.of(8, 0));
     entity.setPickupHandoverLocation(resolvePickupForRequest(vehicle, req.pickupHandoverLocationId()));
@@ -130,7 +135,8 @@ public class RentalRequestService {
     entity.setHandoverRouteEur(handoverQuote.routeEur());
     entity.setHandoverTotalEur(handoverQuote.totalEur());
     entity.setOutsideCountryTravel(req.outsideCountryTravel());
-    entity.setGreenInsuranceFee(resolveGreenInsuranceFee(req.outsideCountryTravel()));
+    BigDecimal greenInsuranceFee = resolveGreenInsuranceFee(req.outsideCountryTravel());
+    entity.setGreenInsuranceFee(greenInsuranceFee);
     entity.setNote(req.note() != null ? req.note().trim() : null);
 
     RentalRequestCustomerSnapshot c = new RentalRequestCustomerSnapshot();
@@ -163,6 +169,14 @@ public class RentalRequestService {
     if (req.options() != null) {
       replaceRequestOptions(entity, req.options());
     }
+
+    rentalRequestPricedLineAssembler.attach(
+        entity,
+        vehicle,
+        req,
+        handoverQuote,
+        entity.getRentalNights() != null ? entity.getRentalNights() : 0,
+        greenInsuranceFee);
 
     entity = rentalRequestRepository.save(entity);
     persistRequestMediaToObjectStorage(entity);
