@@ -35,10 +35,10 @@ public class RentalRequestCustomerSnapshot {
   private String driverLicenseNo;
 
   @Lob
-  @Column(name = "passport_image_data_url", nullable = false, columnDefinition = "LONGTEXT")
+  @Column(name = "passport_image_data_url", nullable = false, columnDefinition = "TEXT")
   private String passportImageDataUrl;
 
   @Lob
-  @Column(name = "driver_license_image_data_url", nullable = false, columnDefinition = "LONGTEXT")
+  @Column(name = "driver_license_image_data_url", nullable = false, columnDefinition = "TEXT")
   private String driverLicenseImageDataUrl;
 }

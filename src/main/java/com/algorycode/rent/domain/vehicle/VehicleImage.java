@@ -37,7 +37,7 @@ public class VehicleImage extends AbstractAuditableLongEntity {
 
   /** URL/object key veya fallback data URL */
   @Lob
-  @Column(nullable = false, columnDefinition = "LONGTEXT")
+  @Column(nullable = false, columnDefinition = "TEXT")
   private String imageUrl;
 
   @PrePersist

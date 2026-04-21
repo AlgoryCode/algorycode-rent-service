@@ -17,10 +17,13 @@ import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.Setter;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 @Getter
 @Setter
@@ -132,6 +135,11 @@ public class Vehicle extends AbstractAuditableLongEntity {
   @OneToMany(mappedBy = "vehicle", cascade = CascadeType.ALL, orphanRemoval = true)
   @OrderBy("lineOrder ASC")
   private List<VehicleHighlight> highlights = new ArrayList<>();
+
+  /** user-fe vitrin paketi (JSON); yazılımda senkron yenilenir. */
+  @JdbcTypeCode(SqlTypes.JSON)
+  @Column(name = "fe_fleet_snapshot", columnDefinition = "jsonb")
+  private JsonNode feFleetSnapshot;
 
   @PrePersist
   @PreUpdate

@@ -39,10 +39,10 @@ public class RentalRequestAdditionalDriver extends AbstractAuditableLongEntity {
   @Column(name = "passport_no", nullable = false, length = 64)
   private String passportNo;
 
-  @Column(name = "driver_license_image_data_url", nullable = false, columnDefinition = "LONGTEXT")
+  @Column(name = "driver_license_image_data_url", nullable = false, columnDefinition = "TEXT")
   private String driverLicenseImageDataUrl;
 
-  @Column(name = "passport_image_data_url", nullable = false, columnDefinition = "LONGTEXT")
+  @Column(name = "passport_image_data_url", nullable = false, columnDefinition = "TEXT")
   private String passportImageDataUrl;
 
   @PrePersist

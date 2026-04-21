@@ -4,6 +4,7 @@ import com.algorycode.rent.api.dto.HandoverLocationDto;
 import com.algorycode.rent.api.dto.HandoverLocationRefDto;
 import com.algorycode.rent.domain.location.City;
 import com.algorycode.rent.domain.location.HandoverLocation;
+import com.algorycode.rent.service.readmodel.FeHandoverSnapshotJson;
 
 import java.math.BigDecimal;
 
@@ -24,7 +25,8 @@ public final class HandoverLocationMapper {
         u.countryCode,
         e.isActive(),
         e.getLineOrder(),
-        e.getSurchargeEur() != null ? e.getSurchargeEur() : BigDecimal.ZERO);
+        e.getSurchargeEur() != null ? e.getSurchargeEur() : BigDecimal.ZERO,
+        e.getFeHandoverSnapshot() != null ? e.getFeHandoverSnapshot() : FeHandoverSnapshotJson.forRow(e));
   }
 
   public static HandoverLocationRefDto toRef(HandoverLocation e) {

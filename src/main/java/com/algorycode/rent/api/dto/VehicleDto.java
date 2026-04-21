@@ -1,5 +1,7 @@
 package com.algorycode.rent.api.dto;
 
+import com.fasterxml.jackson.databind.JsonNode;
+
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
@@ -39,4 +41,6 @@ public record VehicleDto(
     List<VehicleOptionDefinitionDto> optionDefinitions,
     /** Öne çıkan metinler (sıralı). */
     List<String> highlights,
-    Map<String, String> images) {}
+    Map<String, String> images,
+    /** user-fe {@code feFleetSnapshot} — vitrin JSON (DB + anlık üretim). */
+    JsonNode feFleetSnapshot) {}

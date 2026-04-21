@@ -11,6 +11,7 @@ import com.algorycode.rent.domain.location.HandoverLocation;
 import com.algorycode.rent.domain.location.HandoverLocationKind;
 import com.algorycode.rent.repository.CityRepository;
 import com.algorycode.rent.repository.HandoverLocationRepository;
+import com.algorycode.rent.service.readmodel.FeHandoverSnapshotJson;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -103,7 +104,9 @@ public class HandoverLocationService {
         req.surchargeEur() != null
             ? req.surchargeEur().setScale(2, RoundingMode.HALF_UP)
             : BigDecimal.ZERO);
-    return HandoverLocationMapper.toDto(handoverLocationRepository.save(e));
+    HandoverLocation saved = handoverLocationRepository.save(e);
+    saved.setFeHandoverSnapshot(FeHandoverSnapshotJson.forRow(saved));
+    return HandoverLocationMapper.toDto(handoverLocationRepository.save(saved));
   }
 
   @Transactional
@@ -138,7 +141,9 @@ public class HandoverLocationService {
     if (req.surchargeEur() != null) {
       e.setSurchargeEur(req.surchargeEur().setScale(2, RoundingMode.HALF_UP));
     }
-    return HandoverLocationMapper.toDto(handoverLocationRepository.save(e));
+    HandoverLocation saved = handoverLocationRepository.save(e);
+    saved.setFeHandoverSnapshot(FeHandoverSnapshotJson.forRow(saved));
+    return HandoverLocationMapper.toDto(handoverLocationRepository.save(saved));
   }
 
   @Transactional

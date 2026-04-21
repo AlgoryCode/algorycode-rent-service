@@ -31,7 +31,9 @@ import com.algorycode.rent.repository.VehicleBodyStyleRepository;
 import com.algorycode.rent.repository.VehicleFuelTypeRepository;
 import com.algorycode.rent.repository.VehicleRepository;
 import com.algorycode.rent.repository.VehicleTransmissionTypeRepository;
+import com.algorycode.rent.service.readmodel.FeFleetSnapshotBuilder;
 import com.algorycode.rent.service.support.Text;
+import com.fasterxml.jackson.databind.JsonNode;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -60,6 +62,7 @@ public class VehicleService {
   private final VehicleAvailabilityService vehicleAvailabilityService;
   private final VehicleImageService vehicleImageService;
   private final AuditLog auditLog;
+  private final FeFleetSnapshotBuilder feFleetSnapshotBuilder;
 
   public VehicleService(
       VehicleRepository vehicleRepository,
@@ -73,7 +76,8 @@ public class VehicleService {
       VehicleOptionTemplateService vehicleOptionTemplateService,
       VehicleAvailabilityService vehicleAvailabilityService,
       VehicleImageService vehicleImageService,
-      AuditLog auditLog) {
+      AuditLog auditLog,
+      FeFleetSnapshotBuilder feFleetSnapshotBuilder) {
     this.vehicleRepository = vehicleRepository;
     this.vehicleBodyStyleRepository = vehicleBodyStyleRepository;
     this.vehicleFuelTypeRepository = vehicleFuelTypeRepository;
@@ -86,6 +90,7 @@ public class VehicleService {
     this.vehicleAvailabilityService = vehicleAvailabilityService;
     this.vehicleImageService = vehicleImageService;
     this.auditLog = auditLog;
+    this.feFleetSnapshotBuilder = feFleetSnapshotBuilder;
   }
 
   @Transactional(readOnly = true)
@@ -177,6 +182,8 @@ public class VehicleService {
       vehicleImageService.applyVehicleImages(v, req.images());
       v = vehicleRepository.save(v);
     }
+    persistFleetSnapshot(v);
+    v = vehicleRepository.save(v);
     auditLog.infoEvent("vehicle_created", Map.of("vehicleId", v.getId().toString()));
     return toDto(v);
   }
@@ -283,7 +290,9 @@ public class VehicleService {
       replaceVehicleHighlights(v, req.highlights());
     }
 
-    return toDto(vehicleRepository.save(v));
+    Vehicle saved = vehicleRepository.save(v);
+    persistFleetSnapshot(saved);
+    return toDto(vehicleRepository.save(saved));
   }
 
   /**
@@ -291,7 +300,9 @@ public class VehicleService {
    */
   @Transactional
   public VehicleDto replaceImageSlot(Long vehicleId, VehicleImageSlot slot, String imageValue) {
-    return toDto(vehicleImageService.replaceImageSlot(vehicleId, slot, imageValue));
+    Vehicle v = vehicleImageService.replaceImageSlot(vehicleId, slot, imageValue);
+    persistFleetSnapshot(v);
+    return toDto(vehicleRepository.save(v));
   }
 
   /**
@@ -299,7 +310,9 @@ public class VehicleService {
    */
   @Transactional
   public VehicleDto deleteImageSlot(Long vehicleId, VehicleImageSlot slot) {
-    return toDto(vehicleImageService.deleteImageSlot(vehicleId, slot));
+    Vehicle v = vehicleImageService.deleteImageSlot(vehicleId, slot);
+    persistFleetSnapshot(v);
+    return toDto(vehicleRepository.save(v));
   }
 
   @Transactional
@@ -512,6 +525,17 @@ public class VehicleService {
     }
   }
 
+  private void persistFleetSnapshot(Vehicle v) {
+    v.setFeFleetSnapshot(feFleetSnapshotBuilder.build(v));
+  }
+
+  private JsonNode fleetSnapshotForResponse(Vehicle v) {
+    if (v.getFeFleetSnapshot() != null) {
+      return v.getFeFleetSnapshot();
+    }
+    return feFleetSnapshotBuilder.build(v);
+  }
+
   private VehicleDto toDto(Vehicle v) {
     Map<String, String> images = new HashMap<>();
     for (VehicleImage img : v.getImages()) {
@@ -579,6 +603,7 @@ public class VehicleService {
             .sorted((a, b) -> Integer.compare(a.getLineOrder(), b.getLineOrder()))
             .map(VehicleHighlight::getText)
             .toList(),
-        Map.copyOf(images));
+        Map.copyOf(images),
+        fleetSnapshotForResponse(v));
   }
 }

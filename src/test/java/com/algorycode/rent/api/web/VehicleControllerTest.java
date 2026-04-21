@@ -80,7 +80,8 @@ class VehicleControllerTest {
                 Collections.emptyList(),
                 Collections.emptyList(),
                 Collections.emptyList(),
-                Map.of())));
+                Map.of(),
+                null)));
 
     mockMvc
         .perform(get("/vehicles").accept(MediaType.APPLICATION_JSON))

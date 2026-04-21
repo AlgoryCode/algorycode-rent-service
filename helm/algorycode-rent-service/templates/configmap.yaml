@@ -12,7 +12,7 @@ data:
   SPRING_JPA_OPEN_IN_VIEW: "false"
   SPRING_JPA_SHOW_SQL: {{ .Values.spring.jpa.showSql | quote }}
   SPRING_JPA_PROPERTIES_HIBERNATE_JDBC_TIME_ZONE: "UTC"
-  SPRING_JPA_PROPERTIES_HIBERNATE_TYPE_PREFERRED_UUID_JDBC_TYPE: "CHAR"
+  SPRING_JPA_PROPERTIES_HIBERNATE_DIALECT: "org.hibernate.dialect.PostgreSQLDialect"
   SPRING_RABBITMQ_HOST: {{ .Values.rabbitmq.host | quote }}
   SPRING_RABBITMQ_PORT: {{ .Values.rabbitmq.port | quote }}
   SPRING_RABBITMQ_VIRTUAL_HOST: {{ .Values.rabbitmq.virtualHost | quote }}

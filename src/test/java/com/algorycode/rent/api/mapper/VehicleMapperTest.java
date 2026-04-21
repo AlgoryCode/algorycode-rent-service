@@ -41,5 +41,6 @@ class VehicleMapperTest {
     assertThat(dto.returnHandoverLocations()).isEmpty();
     assertThat(dto.optionDefinitions()).isEmpty();
     assertThat(dto.highlights()).isEmpty();
+    assertThat(dto.feFleetSnapshot()).isNull();
   }
 }

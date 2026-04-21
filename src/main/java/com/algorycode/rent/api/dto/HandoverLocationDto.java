@@ -1,6 +1,7 @@
 package com.algorycode.rent.api.dto;
 
 import com.algorycode.rent.domain.location.HandoverLocationKind;
+import com.fasterxml.jackson.databind.JsonNode;
 
 import java.math.BigDecimal;
 
@@ -15,4 +16,6 @@ public record HandoverLocationDto(
     String countryCode,
     boolean active,
     int lineOrder,
-    BigDecimal surchargeEur) {}
+    BigDecimal surchargeEur,
+    /** user-fe hero / {@code feHandoverSnapshot} satırı. */
+    JsonNode feHandoverSnapshot) {}

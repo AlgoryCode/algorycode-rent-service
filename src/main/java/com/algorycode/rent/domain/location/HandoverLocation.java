@@ -14,7 +14,10 @@ import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.Setter;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import java.math.BigDecimal;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 @Getter
 @Setter
@@ -51,6 +54,11 @@ public class HandoverLocation extends AbstractAuditableLongEntity {
   /** Bu nokta seçildiğinde (rolü: alış veya iade) eklenecek sabit ek ücret (EUR). */
   @Column(name = "surcharge_eur", nullable = false, precision = 10, scale = 2)
   private BigDecimal surchargeEur = BigDecimal.ZERO;
+
+  /** user-fe hero satırı (JSON). */
+  @JdbcTypeCode(SqlTypes.JSON)
+  @Column(name = "fe_handover_snapshot", columnDefinition = "jsonb")
+  private JsonNode feHandoverSnapshot;
 
   @PrePersist
   @PreUpdate

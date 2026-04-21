@@ -87,8 +87,8 @@ logging:
 
 secret:
   data:
-    springDatasourceUrl: jdbc:mysql://45.147.47.129:3306/algorycoderentdb?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
-    springDatasourceUsername: root
+    springDatasourceUrl: jdbc:postgresql://45.147.47.129:5432/algorycoderentdb
+    springDatasourceUsername: postgres
     springDatasourcePassword: algorycode1.
     springRabbitmqUsername: admin
     springRabbitmqPassword: GuvenliSifre123

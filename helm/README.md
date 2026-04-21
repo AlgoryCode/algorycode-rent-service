@@ -5,7 +5,7 @@
 ## Önkoşullar
 
 - Kubernetes kümesi ve `kubectl` / `helm` yapılandırılmış olmalı.
-- Kümede erişilebilir **MySQL** ve **RabbitMQ** (host adlarını `values.yaml` ile eşleştirin).
+- Kümede erişilebilir **PostgreSQL** ve **RabbitMQ** (host adlarını `values.yaml` ile eşleştirin).
 
 ## 1) Jib ile imaj (AuthService / mail-service ile aynı düzen)
 

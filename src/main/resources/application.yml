@@ -7,10 +7,12 @@ spring:
   application:
     name: algorycode-rent-service
   datasource:
-    url: jdbc:mysql://45.147.47.129:3306/algorycoderentdb
-    username: root
+    # algory-workspace-service ile aynı PostgreSQL sunucusu; veritabanı önce oluşturulmalı:
+    # CREATE DATABASE algorycoderentdb;
+    url: jdbc:postgresql://45.147.47.129:5432/algorycoderentdb
+    username: postgres
     password: algorycode1.
-    driver-class-name: com.mysql.cj.jdbc.Driver
+    driver-class-name: org.postgresql.Driver
   jpa:
     show-sql: false
     hibernate:
@@ -18,11 +20,9 @@ spring:
     open-in-view: false
     properties:
       hibernate:
+        dialect: org.hibernate.dialect.PostgreSQLDialect
         jdbc:
           time_zone: UTC
-        # MySQL şeması CHAR(36); Hibernate 7 varsayılanı BINARY(16) — validate uyumu için CHAR kullan.
-        type:
-          preferred_uuid_jdbc_type: CHAR
   # AuthService / mail-service ile aynı broker (DNS: rabbitmq.algorycode.com veya küme içi servis)
   rabbitmq:
     host: localhost
