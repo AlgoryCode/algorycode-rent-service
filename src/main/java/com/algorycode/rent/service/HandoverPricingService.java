@@ -2,8 +2,6 @@ package com.algorycode.rent.service;
 
 import com.algorycode.rent.api.dto.HandoverPricingQuoteDto;
 import com.algorycode.rent.api.error.ResourceNotFoundException;
-import com.algorycode.rent.domain.country.Country;
-import com.algorycode.rent.domain.location.City;
 import com.algorycode.rent.domain.location.HandoverLocation;
 import com.algorycode.rent.repository.HandoverLocationRepository;
 import org.springframework.stereotype.Service;
@@ -34,11 +32,11 @@ public class HandoverPricingService {
     }
     HandoverLocation pickup =
         handoverLocationRepository
-            .findByIdWithCityAndCountry(pickupHandoverId)
+            .findById(pickupHandoverId)
             .orElseThrow(() -> new ResourceNotFoundException("Alış noktası bulunamadı: " + pickupHandoverId));
     HandoverLocation ret =
         handoverLocationRepository
-            .findByIdWithCityAndCountry(returnHandoverId)
+            .findById(returnHandoverId)
             .orElseThrow(() -> new ResourceNotFoundException("Teslim noktası bulunamadı: " + returnHandoverId));
 
     BigDecimal legP = nz(pickup.getSurchargeEur());
@@ -56,10 +54,8 @@ public class HandoverPricingService {
     if (pickup.getId().equals(returnLoc.getId())) {
       return new HandoverPricingQuoteDto(ZERO, ZERO, ZERO, ZERO, false);
     }
-    HandoverLocation p =
-        handoverLocationRepository.findByIdWithCityAndCountry(pickup.getId()).orElse(pickup);
-    HandoverLocation r =
-        handoverLocationRepository.findByIdWithCityAndCountry(returnLoc.getId()).orElse(returnLoc);
+    HandoverLocation p = handoverLocationRepository.findById(pickup.getId()).orElse(pickup);
+    HandoverLocation r = handoverLocationRepository.findById(returnLoc.getId()).orElse(returnLoc);
     BigDecimal legP = nz(p.getSurchargeEur());
     BigDecimal legR = nz(r.getSurchargeEur());
     BigDecimal route = resolveRouteEur(p, r).setScale(2, RoundingMode.HALF_UP);
@@ -75,9 +71,9 @@ public class HandoverPricingService {
     return v.setScale(2, RoundingMode.HALF_UP);
   }
 
-  private BigDecimal resolveRouteEur(HandoverLocation pickup, HandoverLocation returnLoc) {
-    String pc = countryCode(pickup.getCity());
-    String rc = countryCode(returnLoc.getCity());
+  private static BigDecimal resolveRouteEur(HandoverLocation pickup, HandoverLocation returnLoc) {
+    String pc = normalizeCountryCode(pickup.getCountryCode());
+    String rc = normalizeCountryCode(returnLoc.getCountryCode());
     if (pc == null || rc == null || pc.equals(rc)) {
       return ZERO;
     }
@@ -94,11 +90,10 @@ public class HandoverPricingService {
     return (x.equals(a) && y.equals(b)) || (x.equals(b) && y.equals(a));
   }
 
-  private static String countryCode(City city) {
-    if (city == null) {
+  private static String normalizeCountryCode(String raw) {
+    if (raw == null || raw.isBlank()) {
       return null;
     }
-    Country c = city.getCountry();
-    return c != null ? c.getCode() : null;
+    return raw.trim().toUpperCase(java.util.Locale.ROOT);
   }
 }

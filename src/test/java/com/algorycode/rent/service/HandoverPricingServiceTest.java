@@ -1,8 +1,6 @@
 package com.algorycode.rent.service;
 
 import com.algorycode.rent.api.dto.HandoverPricingQuoteDto;
-import com.algorycode.rent.domain.country.Country;
-import com.algorycode.rent.domain.location.City;
 import com.algorycode.rent.domain.location.HandoverLocation;
 import com.algorycode.rent.domain.location.HandoverLocationKind;
 import com.algorycode.rent.repository.HandoverLocationRepository;
@@ -37,8 +35,8 @@ class HandoverPricingServiceTest {
   void quote_alToXK_route60_plus_legs() {
     long pId = 10L;
     long rId = 11L;
-    when(handoverLocationRepository.findByIdWithCityAndCountry(pId)).thenReturn(Optional.of(loc(pId, "AL", new BigDecimal("25"))));
-    when(handoverLocationRepository.findByIdWithCityAndCountry(rId)).thenReturn(Optional.of(loc(rId, "XK", new BigDecimal("0"))));
+    when(handoverLocationRepository.findById(pId)).thenReturn(Optional.of(loc(pId, "AL", new BigDecimal("25"))));
+    when(handoverLocationRepository.findById(rId)).thenReturn(Optional.of(loc(rId, "XK", new BigDecimal("0"))));
     HandoverPricingQuoteDto q = handoverPricingService.quote(pId, rId);
     assertThat(q.pickupLegEur()).isEqualByComparingTo("25.00");
     assertThat(q.returnLegEur()).isEqualByComparingTo("0.00");
@@ -48,16 +46,12 @@ class HandoverPricingServiceTest {
   }
 
   private static HandoverLocation loc(long id, String countryCode, BigDecimal surcharge) {
-    Country c = new Country();
-    c.setCode(countryCode);
-    City city = new City();
-    city.setCountry(c);
     HandoverLocation h = new HandoverLocation();
     h.setId(id);
     h.setKind(HandoverLocationKind.PICKUP);
     h.setName("Test");
     h.setLineOrder(0);
-    h.setCity(city);
+    h.setCountryCode(countryCode);
     h.setSurchargeEur(surcharge);
     return h;
   }

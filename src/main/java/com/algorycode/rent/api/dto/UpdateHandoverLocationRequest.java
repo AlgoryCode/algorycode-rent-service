@@ -10,9 +10,7 @@ public record UpdateHandoverLocationRequest(
     @Size(max = 255) String name,
     @Size(max = 4000) String description,
     @Size(max = 500) String addressLine,
-    Long cityId,
-    /** {@code true} ise {@code cityId} yok sayılır ve şehir bağlantısı kaldırılır. */
-    Boolean clearCity,
+    @Size(max = 64) String countryCode,
     Boolean active,
     Integer lineOrder,
     BigDecimal surchargeEur) {}

@@ -13,6 +13,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.support.StaticMessageSource;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
@@ -20,10 +21,15 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import java.time.LocalDate;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
+import static org.hamcrest.Matchers.containsString;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -38,8 +44,11 @@ class VehicleControllerTest {
 
   @BeforeEach
   void setUp() {
+    StaticMessageSource messageSource = new StaticMessageSource();
+    messageSource.addMessage("vehicle.created", Locale.ENGLISH, "Vehicle created.");
     mockMvc =
-        MockMvcBuilders.standaloneSetup(new VehicleController(vehicleService, vehicleOccupancyService))
+        MockMvcBuilders.standaloneSetup(
+                new VehicleController(vehicleService, vehicleOccupancyService, messageSource))
             .setControllerAdvice(new GlobalExceptionHandler(auditLog))
             .build();
   }
@@ -49,39 +58,37 @@ class VehicleControllerTest {
     var id = 1L;
     when(vehicleService.listAll())
         .thenReturn(
-            List.of(new VehicleDto(
-                id,
-                "34 A 1",
-                "Toyota",
-                "Corolla",
-                2023,
-                false,
-                false,
-                null,
-                null,
-                false,
-                null,
-                null,
-                null,
-                "TR",
-                "Türkiye",
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                Collections.emptyList(),
-                Collections.emptyList(),
-                Collections.emptyList(),
-                Map.of(),
-                null)));
+            List.of(
+                new VehicleDto(
+                    id,
+                    "34 A 1",
+                    "Toyota",
+                    "Corolla",
+                    2023,
+                    false,
+                    false,
+                    null,
+                    null,
+                    false,
+                    null,
+                    null,
+                    null,
+                    "TR",
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    null,
+                    Collections.emptyList(),
+                    Collections.emptyList(),
+                    Collections.emptyList(),
+                    Map.of(),
+                    null)));
 
     mockMvc
         .perform(get("/vehicles").accept(MediaType.APPLICATION_JSON))
@@ -118,6 +125,23 @@ class VehicleControllerTest {
         .andExpect(jsonPath("$.ranges[0].startDate").value("2026-04-19"))
         .andExpect(jsonPath("$.ranges[0].endDate").value("2026-04-21"))
         .andExpect(jsonPath("$.ranges[0].source").value("rental"));
+  }
+
+  @Test
+  void create_returns201WithMessageAndLocation() throws Exception {
+    when(vehicleService.create(any())).thenReturn(42L);
+
+    mockMvc
+        .perform(
+            post("/vehicles")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {"plate":"34 X 1","brand":"Toyota","model":"Corolla","year":2024,"countryCode":"TR"}
+                    """))
+        .andExpect(status().isCreated())
+        .andExpect(header().string("Location", containsString("/vehicles/42")))
+        .andExpect(jsonPath("$.message").value("Vehicle created."));
   }
 
   @Test

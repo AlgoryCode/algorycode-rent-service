@@ -1,6 +1,5 @@
 package com.algorycode.rent.service.readmodel;
 
-import com.algorycode.rent.domain.location.City;
 import com.algorycode.rent.domain.location.HandoverLocation;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -16,17 +15,13 @@ public final class FeHandoverSnapshotJson {
       n.put("id", String.valueOf(e.getId()));
     }
     n.put("label", e.getName() != null ? e.getName() : "");
-    String cc = countryCode(e);
-    n.put("countryCode", cc != null ? cc : "TR");
+    String cc = e.getCountryCode();
+    if (cc != null && !cc.isBlank()) {
+      n.put("countryCode", cc.trim());
+    } else {
+      n.putNull("countryCode");
+    }
     n.put("lineOrder", e.getLineOrder());
     return n;
-  }
-
-  private static String countryCode(HandoverLocation e) {
-    City city = e.getCity();
-    if (city == null || city.getCountry() == null) {
-      return null;
-    }
-    return city.getCountry().getCode();
   }
 }

@@ -9,8 +9,6 @@ import com.algorycode.rent.domain.rental.RentalStatus;
 import com.algorycode.rent.domain.request.RentalRequest;
 import com.algorycode.rent.domain.request.RentalRequestStatus;
 import com.algorycode.rent.domain.vehicle.Vehicle;
-import com.algorycode.rent.repository.CityRepository;
-import com.algorycode.rent.repository.CountryRepository;
 import com.algorycode.rent.logging.AuditLog;
 import com.algorycode.rent.repository.RentalRepository;
 import com.algorycode.rent.repository.RentalRequestRepository;
@@ -48,13 +46,12 @@ class VehicleServiceTest {
   @Mock private VehicleBodyStyleRepository vehicleBodyStyleRepository;
   @Mock private VehicleFuelTypeRepository vehicleFuelTypeRepository;
   @Mock private VehicleTransmissionTypeRepository vehicleTransmissionTypeRepository;
-  @Mock private CountryRepository countryRepository;
-  @Mock private CityRepository cityRepository;
   @Mock private ObjectStorageService objectStorageService;
   @Mock private HandoverLocationService handoverLocationService;
   @Mock private VehicleOptionTemplateService vehicleOptionTemplateService;
   @Mock private RentalRepository rentalRepository;
   @Mock private RentalRequestRepository rentalRequestRepository;
+  @Mock private VehicleImageService vehicleImageService;
 
   private VehicleService vehicleService;
 
@@ -69,8 +66,6 @@ class VehicleServiceTest {
             vehicleBodyStyleRepository,
             vehicleFuelTypeRepository,
             vehicleTransmissionTypeRepository,
-            countryRepository,
-            cityRepository,
             objectStorageService,
             handoverLocationService,
             vehicleOptionTemplateService,
@@ -79,7 +74,7 @@ class VehicleServiceTest {
                 rentalRepository,
                 rentalRequestRepository,
                 new VehicleAvailabilitySlotAnalyzer()),
-            new VehicleImageService(vehicleRepository, objectStorageService),
+            vehicleImageService,
             mock(AuditLog.class),
             mock(FeFleetSnapshotBuilder.class));
   }

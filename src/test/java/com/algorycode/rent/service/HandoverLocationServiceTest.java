@@ -4,7 +4,6 @@ import com.algorycode.rent.api.error.BadRequestException;
 import com.algorycode.rent.api.error.ResourceNotFoundException;
 import com.algorycode.rent.domain.location.HandoverLocation;
 import com.algorycode.rent.domain.location.HandoverLocationKind;
-import com.algorycode.rent.repository.CityRepository;
 import com.algorycode.rent.repository.HandoverLocationRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -22,7 +21,6 @@ import static org.mockito.Mockito.when;
 class HandoverLocationServiceTest {
 
   @Mock private HandoverLocationRepository handoverLocationRepository;
-  @Mock private CityRepository cityRepository;
 
   @InjectMocks private HandoverLocationService handoverLocationService;
 

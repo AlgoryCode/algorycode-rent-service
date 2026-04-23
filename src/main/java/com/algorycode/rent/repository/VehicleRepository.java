@@ -6,6 +6,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
 import java.util.Optional;
+
 public interface VehicleRepository extends JpaRepository<Vehicle, Long> {
 
   Optional<Vehicle> findByPlateIgnoreCase(String plate);
@@ -14,25 +15,17 @@ public interface VehicleRepository extends JpaRepository<Vehicle, Long> {
 
   @EntityGraph(
       attributePaths = {
-        "city",
-        "city.country",
         "defaultPickupHandoverLocation",
         "allowedReturnHandovers",
-        "allowedReturnHandovers.handoverLocation",
-        "allowedReturnHandovers.handoverLocation.city",
-        "allowedReturnHandovers.handoverLocation.city.country"
+        "allowedReturnHandovers.handoverLocation"
       })
   List<Vehicle> findAllByDeletedFalse();
 
   @EntityGraph(
       attributePaths = {
-        "city",
-        "city.country",
         "defaultPickupHandoverLocation",
         "allowedReturnHandovers",
-        "allowedReturnHandovers.handoverLocation",
-        "allowedReturnHandovers.handoverLocation.city",
-        "allowedReturnHandovers.handoverLocation.city.country"
+        "allowedReturnHandovers.handoverLocation"
       })
   Optional<Vehicle> findByIdAndDeletedFalse(Long id);
 

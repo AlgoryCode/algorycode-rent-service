@@ -10,7 +10,6 @@ import com.algorycode.rent.api.error.BadRequestException;
 import com.algorycode.rent.api.error.ConflictException;
 import com.algorycode.rent.api.error.ResourceNotFoundException;
 import com.algorycode.rent.api.mapper.HandoverLocationMapper;
-import com.algorycode.rent.domain.location.City;
 import com.algorycode.rent.domain.location.HandoverLocation;
 import com.algorycode.rent.domain.location.HandoverLocationKind;
 import com.algorycode.rent.domain.vehicle.Vehicle;
@@ -23,8 +22,6 @@ import com.algorycode.rent.domain.vehicle.VehicleImage;
 import com.algorycode.rent.domain.vehicle.VehicleImageSlot;
 import com.algorycode.rent.domain.vehicle.VehicleOptionDefinition;
 import com.algorycode.rent.domain.vehicle.VehicleOptionTemplate;
-import com.algorycode.rent.repository.CityRepository;
-import com.algorycode.rent.repository.CountryRepository;
 import com.algorycode.rent.logging.AuditLog;
 import com.algorycode.rent.repository.VehicleBodyStyleRepository;
 import com.algorycode.rent.repository.VehicleFuelTypeRepository;
@@ -33,6 +30,7 @@ import com.algorycode.rent.repository.VehicleTransmissionTypeRepository;
 import com.algorycode.rent.service.readmodel.FeFleetSnapshotBuilder;
 import com.algorycode.rent.service.support.Text;
 import com.fasterxml.jackson.databind.JsonNode;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -46,17 +44,17 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Filo araçları: CRUD, görseller, uygunluk listesi orkestrasyonu ve vitrin snapshot’ı.
+ */
 @Service
+@RequiredArgsConstructor
 public class VehicleService {
-
-  private static final BigDecimal EXTERNAL_COMMISSION_PERCENT_MAX = BigDecimal.valueOf(100);
 
   private final VehicleRepository vehicleRepository;
   private final VehicleBodyStyleRepository vehicleBodyStyleRepository;
   private final VehicleFuelTypeRepository vehicleFuelTypeRepository;
   private final VehicleTransmissionTypeRepository vehicleTransmissionTypeRepository;
-  private final CountryRepository countryRepository;
-  private final CityRepository cityRepository;
   private final ObjectStorageService objectStorageService;
   private final HandoverLocationService handoverLocationService;
   private final VehicleOptionTemplateService vehicleOptionTemplateService;
@@ -65,45 +63,13 @@ public class VehicleService {
   private final AuditLog auditLog;
   private final FeFleetSnapshotBuilder feFleetSnapshotBuilder;
 
-  public VehicleService(
-      VehicleRepository vehicleRepository,
-      VehicleBodyStyleRepository vehicleBodyStyleRepository,
-      VehicleFuelTypeRepository vehicleFuelTypeRepository,
-      VehicleTransmissionTypeRepository vehicleTransmissionTypeRepository,
-      CountryRepository countryRepository,
-      CityRepository cityRepository,
-      ObjectStorageService objectStorageService,
-      HandoverLocationService handoverLocationService,
-      VehicleOptionTemplateService vehicleOptionTemplateService,
-      VehicleAvailabilityService vehicleAvailabilityService,
-      VehicleImageService vehicleImageService,
-      AuditLog auditLog,
-      FeFleetSnapshotBuilder feFleetSnapshotBuilder) {
-    this.vehicleRepository = vehicleRepository;
-    this.vehicleBodyStyleRepository = vehicleBodyStyleRepository;
-    this.vehicleFuelTypeRepository = vehicleFuelTypeRepository;
-    this.vehicleTransmissionTypeRepository = vehicleTransmissionTypeRepository;
-    this.countryRepository = countryRepository;
-    this.cityRepository = cityRepository;
-    this.objectStorageService = objectStorageService;
-    this.handoverLocationService = handoverLocationService;
-    this.vehicleOptionTemplateService = vehicleOptionTemplateService;
-    this.vehicleAvailabilityService = vehicleAvailabilityService;
-    this.vehicleImageService = vehicleImageService;
-    this.auditLog = auditLog;
-    this.feFleetSnapshotBuilder = feFleetSnapshotBuilder;
-  }
 
   @Transactional(readOnly = true)
   public List<VehicleDto> listAll() {
     return vehicleRepository.findAllByDeletedFalse().stream().map(this::toDto).toList();
   }
 
-  /**
-   * Kiralama uygunluğu: iptal olmayan kiralamalarla çakışma yok + bitiş gününün ertesi takvim günü
-   * tamamen boş (araç hazırlık tamponu). İsteğe bağlı alış ({@code defaultPickup}) ve izinli teslim
-   * noktalarına göre süzülür.
-   */
+
   @Transactional(readOnly = true)
   public List<VehicleDto> listWithAvailabilityFilter(
       LocalDate availableFrom,
@@ -123,6 +89,7 @@ public class VehicleService {
         .toList();
   }
 
+
   @Transactional(readOnly = true)
   public VehicleDto getById(Long id) {
     var v =
@@ -132,58 +99,74 @@ public class VehicleService {
     return toDto(v);
   }
 
+
   @Transactional
-  public VehicleDto create(CreateVehicleRequest req) {
-    String plate = req.plate().trim().replaceAll("\\s+", " ");
-    if (vehicleRepository.existsByPlateIgnoreCaseAndDeletedFalse(plate)) {
+  public Long create(CreateVehicleRequest req) {
+    String rawPlate = req.plate() == null ? "" : req.plate();
+    String plate = rawPlate.trim().replaceAll("\\s+", " ");
+    if (!plate.isBlank() && vehicleRepository.existsByPlateIgnoreCaseAndDeletedFalse(plate)) {
       throw new ConflictException("Bu plaka zaten kayıtlı.");
     }
+
     Vehicle v = new Vehicle();
-    v.setPlate(plate);
-    v.setBrand(req.brand().trim());
-    v.setModel(req.model().trim());
-    v.setYear(req.year());
-    v.setMaintenance(req.maintenance());
-    v.setExternal(req.external());
-    if (req.external()) {
-      if (req.externalCompany() == null || req.externalCompany().isBlank()) {
-        throw new BadRequestException("Harici araç için firma adı zorunludur.");
-      }
-      v.setExternalCompany(req.externalCompany().trim());
-    } else {
-      v.setExternalCompany(null);
+    if (!plate.isBlank()) {
+      v.setPlate(plate);
     }
+    if (req.brand() != null) {
+      v.setBrand(req.brand().trim());
+    }
+    if (req.model() != null) {
+      v.setModel(req.model().trim());
+    }
+    v.setYear(req.year());
+    if (req.maintenance() != null) {
+      v.setMaintenance(req.maintenance());
+    }
+    if (req.external() != null) {
+      v.setExternal(req.external());
+    }
+    v.setExternalCompany(req.externalCompany());
     v.setRentalDailyPrice(req.rentalDailyPrice());
 
     applyCommissionRules(v, req.external(), req.commissionRatePercent(), req.commissionBrokerPhone());
-    applyCountryAndOptionalCity(v, req.countryCode(), req.cityId());
-    v.setDefaultPickupHandoverLocation(
-        handoverLocationService.requireForAssignment(
-            req.defaultPickupHandoverLocationId(), HandoverLocationKind.PICKUP));
+
+    v.setCountryCode(req.countryCode());
+
+    if (req.defaultPickupHandoverLocationId() != null) {
+      v.setDefaultPickupHandoverLocation(
+          handoverLocationService.requireForAssignment(
+              req.defaultPickupHandoverLocationId(), HandoverLocationKind.PICKUP));
+    }
     replaceVehicleReturnHandovers(v, resolveCreateReturnHandoverIds(req));
+
     applyOptionalVehicleSpecs(v, req.engine(), req.seats(), req.luggage());
     v.setFuelType(resolveFuelTypeOrNull(req.fuelType()));
     v.setBodyColor(Text.trimOrNull(req.bodyColor()));
     v.setTransmissionType(resolveTransmissionTypeOrNull(req.transmissionType()));
     v.setBodyStyleCode(resolveBodyStyleCodeOrNull(req.bodyStyleCode()));
     replaceVehicleHighlights(v, req.highlights());
-    vehicleImageService.validateRequiredVehicleImages(req.images());
     v = vehicleRepository.save(v);
+
     List<VehicleOptionDefinitionRequest> merged =
         mergeOptionDefinitions(req.optionTemplateIds(), req.optionDefinitions());
+
     if (!merged.isEmpty()) {
       replaceVehicleOptionDefinitions(v, merged);
       v = vehicleRepository.save(v);
     }
-    if (req.images() != null) {
-      vehicleImageService.applyVehicleImages(v, req.images());
+
+    Map<String, String> createImages = req.images();
+    if (createImages != null && !createImages.isEmpty()) {
+      vehicleImageService.processVehicleImagesAndSnapshotAsync(v.getId(), Map.copyOf(createImages));
+    } else {
+      persistFleetSnapshot(v);
       v = vehicleRepository.save(v);
     }
-    persistFleetSnapshot(v);
-    v = vehicleRepository.save(v);
+
     auditLog.infoEvent("vehicle_created", Map.of("vehicleId", v.getId().toString()));
-    return toDto(v);
+    return v.getId();
   }
+
 
   @Transactional
   public VehicleDto update(Long id, UpdateVehicleRequest req) {
@@ -194,14 +177,14 @@ public class VehicleService {
 
     if (req.plate() != null) {
       String plate = req.plate().trim().replaceAll("\\s+", " ");
-      if (plate.isBlank()) {
-        throw new BadRequestException("Plaka boş olamaz.");
-      }
-      if (!plate.equalsIgnoreCase(v.getPlate())
+      if (!plate.isBlank()
+          && !plate.equalsIgnoreCase(v.getPlate())
           && vehicleRepository.existsByPlateIgnoreCaseAndDeletedFalseAndIdNot(plate, id)) {
         throw new ConflictException("Bu plaka zaten kayıtlı.");
       }
-      v.setPlate(plate);
+      if (!plate.isBlank()) {
+        v.setPlate(plate);
+      }
     }
     if (req.brand() != null) v.setBrand(req.brand().trim());
     if (req.model() != null) v.setModel(req.model().trim());
@@ -213,30 +196,25 @@ public class VehicleService {
 
     String nextExternalCompany = req.externalCompany() != null ? req.externalCompany() : v.getExternalCompany();
     if (nextExternal) {
-      if (nextExternalCompany == null || nextExternalCompany.isBlank()) {
-        throw new BadRequestException("Harici araç için firma adı zorunludur.");
-      }
-      v.setExternalCompany(nextExternalCompany.trim());
+      v.setExternalCompany(
+          nextExternalCompany != null && !nextExternalCompany.isBlank()
+              ? nextExternalCompany.trim()
+              : nextExternalCompany);
     } else {
       v.setExternalCompany(null);
     }
 
     if (req.rentalDailyPrice() != null) {
-      if (req.rentalDailyPrice().compareTo(BigDecimal.ZERO) <= 0) {
-        throw new BadRequestException("Günlük kiralama fiyatı sıfırdan büyük olmalıdır.");
-      }
       v.setRentalDailyPrice(req.rentalDailyPrice());
+    }
+
+    if (req.countryCode() != null) {
+      v.setCountryCode(req.countryCode().isBlank() ? null : req.countryCode().trim());
     }
 
     BigDecimal nextRate = req.commissionRatePercent() != null ? req.commissionRatePercent() : v.getCommissionRatePercent();
     String nextPhone = req.commissionBrokerPhone() != null ? req.commissionBrokerPhone() : v.getCommissionBrokerPhone();
     applyCommissionRules(v, nextExternal, nextRate, nextPhone);
-
-    if (req.cityId() != null) {
-      City city = findCityRequired(req.cityId());
-      v.setCity(city);
-      v.setCountryCode(city.getCountry().getCode());
-    }
 
     if (req.engine() != null) {
       v.setEngine(req.engine().isBlank() ? null : req.engine().trim());
@@ -279,7 +257,6 @@ public class VehicleService {
     }
 
     if (req.images() != null) {
-      vehicleImageService.validateRequiredVehicleImages(req.images());
       vehicleImageService.applyVehicleImages(v, req.images());
     }
 
@@ -292,9 +269,7 @@ public class VehicleService {
     return toDto(vehicleRepository.save(saved));
   }
 
-  /**
-   * Tek görsel slotunu günceller: yeni dosyayı yükler, eski object storage kaydını siler.
-   */
+
   @Transactional
   public VehicleDto replaceImageSlot(Long vehicleId, VehicleImageSlot slot, String imageValue) {
     Vehicle v = vehicleImageService.replaceImageSlot(vehicleId, slot, imageValue);
@@ -302,15 +277,14 @@ public class VehicleService {
     return toDto(vehicleRepository.save(v));
   }
 
-  /**
-   * Tek görsel slotunu kaldırır; object storage’daki nesneyi silmeyi dener.
-   */
+
   @Transactional
   public VehicleDto deleteImageSlot(Long vehicleId, VehicleImageSlot slot) {
     Vehicle v = vehicleImageService.deleteImageSlot(vehicleId, slot);
     persistFleetSnapshot(v);
     return toDto(vehicleRepository.save(v));
   }
+
 
   @Transactional
   public void delete(Long id) {
@@ -434,25 +408,6 @@ public class VehicleService {
     }
   }
 
-  /**
-   * Ülke / şehir ataması: alan doğrulaması {@link com.algorycode.rent.api.dto.CreateVehicleRequest} üzerindeki
-   * Bean Validation ile yapılır ({@code @ExistingCountryCode}, {@code @VehicleCityMatchesCountry}).
-   */
-  private void applyCountryAndOptionalCity(Vehicle v, String countryCodeRaw, Long cityId) {
-    v.setCountryCode(
-        countryRepository
-            .findByCodeIgnoreCase(countryCodeRaw.trim().toUpperCase())
-            .orElseThrow(() -> new IllegalStateException("Bean Validation sonrası ülke bulunamadı: " + countryCodeRaw))
-            .getCode());
-    v.setCity(cityId == null ? null : findCityRequired(cityId));
-  }
-
-  private City findCityRequired(Long cityId) {
-    return cityRepository
-        .findById(cityId)
-        .orElseThrow(() -> new ResourceNotFoundException("Şehir bulunamadı: " + cityId));
-  }
-
   private String resolveBodyStyleCodeOrNull(String raw) {
     String c = Text.trimOrNull(raw);
     return c == null
@@ -489,18 +444,15 @@ public class VehicleService {
     v.setLuggage(luggage);
   }
 
-  private void applyCommissionRules(Vehicle v, boolean external, BigDecimal commissionRatePercent, String brokerPhone) {
-    v.setCommissionEnabled(external);
-    if (!external) {
+  private void applyCommissionRules(
+      Vehicle v, Boolean external, BigDecimal commissionRatePercent, String brokerPhone) {
+    boolean ext = Boolean.TRUE.equals(external);
+    v.setCommissionEnabled(ext);
+    if (!ext) {
       v.setCommissionRatePercent(null);
       v.setCommissionBrokerFullName(null);
       v.setCommissionBrokerPhone(null);
       return;
-    }
-    if (commissionRatePercent == null
-        || commissionRatePercent.compareTo(BigDecimal.ZERO) <= 0
-        || commissionRatePercent.compareTo(EXTERNAL_COMMISSION_PERCENT_MAX) > 0) {
-      throw new BadRequestException("Harici araçta komisyon oranı 0 ile 100 arasında zorunludur.");
     }
     v.setCommissionRatePercent(commissionRatePercent);
     v.setCommissionBrokerFullName(null);
@@ -528,8 +480,6 @@ public class VehicleService {
       }
       images.put(img.getSlot().name(), resolved);
     }
-    City city = v.getCity();
-    var country = city != null ? city.getCountry() : null;
 
     List<HandoverLocationRefDto> returnRefs =
         v.getAllowedReturnHandovers().stream()
@@ -554,7 +504,7 @@ public class VehicleService {
         v.getPlate(),
         v.getBrand(),
         v.getModel(),
-        v.getYear(),
+        v.getYear() != null ? v.getYear() : 0,
         v.isMaintenance(),
         v.isExternal(),
         v.getExternalCompany(),
@@ -563,10 +513,7 @@ public class VehicleService {
         v.getCommissionRatePercent(),
         v.getCommissionBrokerFullName(),
         v.getCommissionBrokerPhone(),
-        country != null ? country.getCode() : v.getCountryCode(),
-        country != null ? country.getName() : null,
-        city != null ? city.getId() : null,
-        city != null ? city.getName() : null,
+        v.getCountryCode(),
         v.getEngine(),
         v.getFuelType(),
         v.getBodyColor(),

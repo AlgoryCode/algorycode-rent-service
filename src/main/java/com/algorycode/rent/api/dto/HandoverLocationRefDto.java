@@ -11,7 +11,5 @@ public record HandoverLocationRefDto(
     String name,
     String description,
     String addressLine,
-    Long cityId,
-    String cityName,
     String countryCode,
     BigDecimal surchargeEur) {}

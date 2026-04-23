@@ -1,6 +1,13 @@
 ---
+description: 
 alwaysApply: true
 ---
+
+# STRICT OPERATIONAL PROTOCOL
+- NO PROSE: Do not explain the code. No "Sure," "Here is the code," or "I hope this helps."
+- NO COMMENTS: Delete all existing comments in the code. Never add new comments.
+- DELTA ONLY: Provide only the modified code blocks, not the whole file.
+- DIRECT OUTPUT: Start the response directly with the code block.
 
 # Java Spring Boot — Agent Rules
 
@@ -21,7 +28,7 @@ alwaysApply: true
       <version>4.0.2</version>
   </parent>
   ```
-- Java versiyonu: **Java 21** (Spring Boot 4.x minimum gereksinimi).
+- Java versiyonu: **Java 25** (Spring Boot 4.x minimum gereksinimi).
 - Dependency management Spring Boot BOM üzerinden yapılır; bağımlılıklara manuel versiyon yazılmaz.
 
 ### 1.2 Zorunlu Starter'lar
@@ -247,3 +254,69 @@ Controller  →  Service (Interface)  →  Repository (Interface)  →  Database
 - Log seviyeleri: ERROR (sistem hatası), WARN (beklenmedik durum), INFO (iş akışı adımı), DEBUG (geliştirici detayı).
 - `log.debug()` çağrısı öncesinde `if (log.isDebugEnabled())` kontrolü yapılır (string concatenation maliyeti).
 - Request/response log'lama `OncePerRequestFilter` ile merkezi tutulur.
+
+## 11. LOMBOK KULLANIM KURALLARI
+
+### 11.1 Zorunlu Annotation'lar
+- Tüm Spring Bean sınıflarında field'lar `private final` tanımlanır.
+- Constructor injection için `@RequiredArgsConstructor` kullanılır; `@AllArgsConstructor` yalnızca tüm field'ların inject edilmesi gerektiğinde kullanılır.
+- `@Autowired` ile birlikte Lombok annotation kullanılmaz.
+
+### 11.2 Entity / Domain Sınıfları
+- Entity'lerde `@Getter` + `@Setter` ayrı ayrı kullanılır; `@Data` kullanılmaz. (`@Data` equals/hashCode üretir — JPA entity'lerde tehlikelidir).
+- `@EqualsAndHashCode` entity'lerde yalnızca `@Id` alanı üzerinden yapılır: `@EqualsAndHashCode(onlyExplicitlyIncluded = true)`.
+
+### 11.3 DTO / Request / Response Sınıfları
+- Immutable DTO'lar için Java `record` tercih edilir.
+- Record kullanılamıyorsa `@Value` (Lombok) kullanılır.
+- `@Builder` ile birlikte `@Value` kullanılabilir: `@Value @Builder`.
+
+### 11.4 Yasaklar
+- `@Data` entity sınıflarında kullanılmaz.
+- `@AllArgsConstructor` Bean sınıflarında kullanılmaz; `@RequiredArgsConstructor` tercih edilir.
+- `@SneakyThrows` checked exception'ları gizlediği için kullanılmaz.
+
+---
+
+## 12. PERFORMANS VE TRANSACTION YÖNETİMİ
+
+### 12.1 Transaction Stratejisi
+- Sadece veri okuyan servis metotlarında `@Transactional(readOnly = true)` kullanımı zorunludur.
+- `@Transactional` yalnızca **public** metotlar üzerinde kullanılır; sınıf içi çağrıların (self-invocation) transaction başlatmayacağı bilinmelidir.
+- Uzun süren dış API çağrıları veya dosya işlemleri transaction bloğunun dışında tutulmalıdır.
+
+### 12.2 Veri Erişimi ve N+1 Problemi
+- İlişkili veriler çekilirken (Lazy Loading) N+1 problemini engellemek için `@EntityGraph` veya `JOIN FETCH` kullanımı zorunludur.
+- Liste dönen tüm API uç noktalarında `Pageable` kullanımı ve Pagination zorunludur. Tüm tabloyu belleğe yükleyen sorgular yasaktır.
+
+---
+
+## 13. API DOKÜMANTASYONU VE STANDARTLARI
+
+### 13.1 OpenAPI (Swagger)
+- Her projede `springdoc-openapi` starter'ı bulunmalıdır.
+- Controller sınıfları `@Tag`, uç noktalar ise `@Operation` ve `@ApiResponse` ile dokümante edilmelidir.
+- API uç noktaları `/api/v1/` ön eki ile versiyonlanmalıdır.
+
+### 13.2 İsimlendirme ve HTTP Metotları
+- Kaynak isimleri çoğul olmalıdır (Örn: `/vehicles`, `/users`).
+- HTTP fiilleri amacına uygun kullanılmalıdır: `GET` (okuma), `POST` (oluşturma), `PUT` (tam güncelleme), `PATCH` (kısmi güncelleme), `DELETE` (silme).
+
+---
+
+## 14. RESILIENCE (DAYANIKLILIK) VE MIGRATION
+
+### 14.1 Resilience4j
+- Dış servis çağrılarında (API, Ödeme Geçitleri vb.) `CircuitBreaker` ve `Retry` mekanizmaları zorunludur.
+- Tüm dış çağrılarda katı `ConnectTimeout` ve `ReadTimeout` değerleri tanımlanmalıdır.
+
+### 14.2 Veritabanı Migration
+- Veritabanı şema değişiklikleri için **Flyway** veya **Liquibase** kullanımı zorunludur.
+- `hibernate.ddl-auto=update` ayarı production ortamında asla kullanılmaz.
+
+---
+
+## 15. CACHE (ÖNBELLEK) YÖNETİMİ
+
+- Doğrudan cache implementasyonu (Redis, Ehcache) yerine Spring Cache Abstraction (`@Cacheable`, `@CacheEvict`) tercih edilmelidir.
+- Önbelleğe alınan her verinin mutlaka bir **TTL (Time To Live)** süresi tanımlanmalıdır; belleğin kontrolsüz büyümesi engellenmelidir.

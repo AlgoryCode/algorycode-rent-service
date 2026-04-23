@@ -5,11 +5,6 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.PrePersist;
-import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
 import lombok.Getter;
 import lombok.Setter;
@@ -19,6 +14,10 @@ import java.math.BigDecimal;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
+/**
+ * Alış veya teslim noktası; şehir / ülke tablolarına FK yoktur. İsteğe bağlı {@code countryCode} yalnızca
+ * ücretlendirme ve vitrin amaçlıdır.
+ */
 @Getter
 @Setter
 @Entity
@@ -38,12 +37,9 @@ public class HandoverLocation extends AbstractAuditableLongEntity {
   @Column(name = "address_line", length = 500)
   private String addressLine;
 
-  @Column(name = "city_id")
-  private Long cityId;
-
-  @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "city_id", insertable = false, updatable = false)
-  private City city;
+  /** ISO ülke kodu vb.; şehir/ülke tablosu ile FK yok. */
+  @Column(name = "country_code", length = 64)
+  private String countryCode;
 
   @Column(nullable = false)
   private boolean active = true;
@@ -59,12 +55,4 @@ public class HandoverLocation extends AbstractAuditableLongEntity {
   @JdbcTypeCode(SqlTypes.JSON)
   @Column(name = "fe_handover_snapshot", columnDefinition = "jsonb")
   private JsonNode feHandoverSnapshot;
-
-  @PrePersist
-  @PreUpdate
-  void syncCityFk() {
-    if (city != null && city.getId() != null) {
-      cityId = city.getId();
-    }
-  }
 }

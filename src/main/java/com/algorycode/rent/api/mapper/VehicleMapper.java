@@ -22,8 +22,7 @@ public final class VehicleMapper {
     for (VehicleImage img : v.getImages()) {
       images.put(img.getSlot().name(), img.getImageUrl());
     }
-    var city = v.getCity();
-    var country = city != null ? city.getCountry() : null;
+
 
     List<HandoverLocationRefDto> returnRefs =
         v.getAllowedReturnHandovers().stream()
@@ -40,7 +39,7 @@ public final class VehicleMapper {
         v.getPlate(),
         v.getBrand(),
         v.getModel(),
-        v.getYear(),
+        v.getYear() != null ? v.getYear() : 0,
         v.isMaintenance(),
         v.isExternal(),
         v.getExternalCompany(),
@@ -49,10 +48,7 @@ public final class VehicleMapper {
         v.getCommissionRatePercent(),
         v.getCommissionBrokerFullName(),
         v.getCommissionBrokerPhone(),
-        country != null ? country.getCode() : v.getCountryCode(),
-        country != null ? country.getName() : null,
-        city != null ? city.getId() : null,
-        city != null ? city.getName() : null,
+        v.getCountryCode(),
         v.getEngine(),
         v.getFuelType(),
         v.getBodyColor(),

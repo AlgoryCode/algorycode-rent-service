@@ -1,13 +1,6 @@
 package com.algorycode.rent.api.dto;
 
-import com.algorycode.rent.validation.ExistingCountryCode;
-import com.algorycode.rent.validation.VehicleCityMatchesCountry;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.DecimalMin;
-import jakarta.validation.constraints.Max;
-import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import java.math.BigDecimal;
 import java.util.List;
@@ -15,44 +8,29 @@ import java.util.Map;
 import lombok.Builder;
 
 @Builder
-@VehicleCityMatchesCountry
 public record CreateVehicleRequest(
-    @NotBlank @Size(max = 32) String plate,
-    @NotBlank @Size(max = 255) String brand,
-    @NotBlank @Size(max = 255) String model,
-    @NotNull @Min(1950) @Max(2100) Integer year,
-    boolean maintenance,
-    /** Araç başka firmadan geldiyse işaretleyin. */
-    boolean external,
+    @Size(max = 32) String plate,
+    @Size(max = 255) String brand,
+    @Size(max = 255) String model,
+    Integer year,
+    Boolean maintenance,
+    Boolean external,
     @Size(max = 255) String externalCompany,
-    @NotNull @DecimalMin(value = "0.01", inclusive = true)
     BigDecimal rentalDailyPrice,
-    @DecimalMin(value = "0.0", inclusive = true)
     BigDecimal commissionRatePercent,
     @Size(max = 32) String commissionBrokerPhone,
-    /** Ülke kodu (ülke tablosu ile eşleşir; en fazla 64 karakter). Şehir yoksa araç yalnızca ülkeye bağlanır. */
-    @NotBlank @Size(max = 64) @ExistingCountryCode String countryCode,
-    /** Opsiyonel; doluysa {@code countryCode} ile aynı ülkeye ait olmalıdır. */
-    Long cityId,
-    /** Kiralama başlangıcında kullanılacak varsayılan alış noktası (PICKUP türü). */
-    @NotNull Long defaultPickupHandoverLocationId,
-    /** Geriye uyumluluk: tek teslim noktası; {@code returnHandoverLocationIds} doluysa yok sayılır. */
+    @Size(max = 64) String countryCode,
+    Long defaultPickupHandoverLocationId,
     Long defaultReturnHandoverLocationId,
-    /**
-     * Bu araca izin verilen teslim (RETURN) noktaları; sıra korunur. Boş veya null: araç bazlı teslim kısıtı yok
-     * (yalnızca {@code defaultReturnHandoverLocationId} doluysa tek elemanlı liste gibi davranır).
-     */
     @Size(max = 50) List<Long> returnHandoverLocationIds,
-    /** Şablondan kopyalanacak opsiyonlar (sıra korunur); ardından {@code optionDefinitions} eklenir. */
     @Size(max = 100) List<Long> optionTemplateIds,
     @Size(max = 100) List<@Valid VehicleOptionDefinitionRequest> optionDefinitions,
     Map<String, String> images,
     @Size(max = 255) String engine,
     @Size(max = 64) String fuelType,
     @Size(max = 64) String bodyColor,
-    @Min(1) @Max(20) Integer seats,
-    @Min(0) Integer luggage,
+    Integer seats,
+    Integer luggage,
     @Size(max = 32) String transmissionType,
     @Size(max = 32) String bodyStyleCode,
-    /** Acente tarafından opsiyonel; liste sırası gösterim sırasıdır. */
-    @Size(max = 30) List<@NotBlank @Size(max = 500) String> highlights) {}
+    @Size(max = 30) List<@Size(max = 500) String> highlights) {}

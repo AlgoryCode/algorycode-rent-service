@@ -6,10 +6,8 @@ import com.algorycode.rent.api.dto.UpdateHandoverLocationRequest;
 import com.algorycode.rent.api.error.BadRequestException;
 import com.algorycode.rent.api.error.ResourceNotFoundException;
 import com.algorycode.rent.api.mapper.HandoverLocationMapper;
-import com.algorycode.rent.domain.location.City;
 import com.algorycode.rent.domain.location.HandoverLocation;
 import com.algorycode.rent.domain.location.HandoverLocationKind;
-import com.algorycode.rent.repository.CityRepository;
 import com.algorycode.rent.repository.HandoverLocationRepository;
 import com.algorycode.rent.service.readmodel.FeHandoverSnapshotJson;
 import com.algorycode.rent.service.support.Text;
@@ -24,12 +22,9 @@ import java.util.List;
 public class HandoverLocationService {
 
   private final HandoverLocationRepository handoverLocationRepository;
-  private final CityRepository cityRepository;
 
-  public HandoverLocationService(
-      HandoverLocationRepository handoverLocationRepository, CityRepository cityRepository) {
+  public HandoverLocationService(HandoverLocationRepository handoverLocationRepository) {
     this.handoverLocationRepository = handoverLocationRepository;
-    this.cityRepository = cityRepository;
   }
 
   @Transactional(readOnly = true)
@@ -81,10 +76,11 @@ public class HandoverLocationService {
   public HandoverLocationDto create(CreateHandoverLocationRequest req) {
     HandoverLocation e = new HandoverLocation();
     e.setKind(req.kind());
-    e.setName(req.name().trim());
+    String name = Text.trimOrNull(req.name());
+    e.setName(name != null ? name : "");
     e.setDescription(Text.trimOrNull(req.description()));
     e.setAddressLine(Text.trimOrNull(req.addressLine()));
-    e.setCity(resolveCity(req.cityId()));
+    e.setCountryCode(Text.trimOrNull(req.countryCode()));
     e.setActive(req.active() == null || Boolean.TRUE.equals(req.active()));
     e.setLineOrder(req.lineOrder());
     e.setSurchargeEur(
@@ -114,10 +110,8 @@ public class HandoverLocationService {
     if (req.addressLine() != null) {
       e.setAddressLine(Text.trimOrNull(req.addressLine()));
     }
-    if (Boolean.TRUE.equals(req.clearCity())) {
-      e.setCity(null);
-    } else if (req.cityId() != null) {
-      e.setCity(resolveCity(req.cityId()));
+    if (req.countryCode() != null) {
+      e.setCountryCode(Text.trimOrNull(req.countryCode()));
     }
     if (req.active() != null) {
       e.setActive(req.active());
@@ -141,14 +135,5 @@ public class HandoverLocationService {
             .orElseThrow(() -> new ResourceNotFoundException("Alış/teslim noktası bulunamadı: " + id));
     e.setActive(false);
     handoverLocationRepository.save(e);
-  }
-
-  private City resolveCity(Long cityId) {
-    if (cityId == null) {
-      return null;
-    }
-    return cityRepository
-        .findById(cityId)
-        .orElseThrow(() -> new ResourceNotFoundException("Şehir bulunamadı: " + cityId));
   }
 }

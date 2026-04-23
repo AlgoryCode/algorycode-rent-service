@@ -2,7 +2,6 @@ package com.algorycode.rent.service.readmodel;
 
 import com.algorycode.rent.api.mapper.HandoverLocationMapper;
 import com.algorycode.rent.config.AppRentalRequestProperties;
-import com.algorycode.rent.domain.location.City;
 import com.algorycode.rent.domain.location.HandoverLocation;
 import com.algorycode.rent.domain.vehicle.Vehicle;
 import com.algorycode.rent.domain.vehicle.VehicleAllowedReturnHandover;
@@ -47,7 +46,6 @@ public class FeFleetSnapshotBuilder {
     root.put("brand", nz(v.getBrand()));
     root.put("name", (nz(v.getBrand()) + " " + nz(v.getModel())).trim());
     root.put("category", v.isMaintenance() ? "Bakımda" : "Kiralık Araç");
-    root.put("pricePerDay", pricePerDayTry(v));
     root.set("specs", specsArray(v, f));
     root.put("transmission", feTransmission(v.getTransmissionType()));
     root.put("seats", v.getSeats() != null && v.getSeats() > 0 ? v.getSeats() : 5);
@@ -89,7 +87,7 @@ public class FeFleetSnapshotBuilder {
     root.put(
         "garageLocation",
         "İstanbul, Maslak — Hazırlık noktası A · Filo garajı (demo). Araç bu noktadan veya anlaşmalı ofisten teslim edilir.");
-    root.put("pickupLocationLabel", pickupLocationLabel(v));
+    //root.put("pickupLocationLabel", pickupLocationLabel(v));
     HandoverLocation defaultPickup = v.getDefaultPickupHandoverLocation();
     if (defaultPickup != null && defaultPickup.getId() != null) {
       root.put("defaultPickupHandoverLocationId", String.valueOf(defaultPickup.getId()));
@@ -126,35 +124,6 @@ public class FeFleetSnapshotBuilder {
     return s == null ? "" : s;
   }
 
-  private int pricePerDayTry(Vehicle v) {
-    BigDecimal daily = v.getRentalDailyPrice() != null ? v.getRentalDailyPrice() : BigDecimal.ZERO;
-    if (daily.compareTo(BigDecimal.ZERO) <= 0) {
-      return 0;
-    }
-    String cc = countryCode(v);
-    boolean nonTr = cc != null && !"TR".equalsIgnoreCase(cc);
-    BigDecimal tryAmount =
-        nonTr
-            ? daily.multiply(rentalRequestProperties.tryPerEur()).setScale(0, RoundingMode.HALF_UP)
-            : daily.setScale(0, RoundingMode.HALF_UP);
-    return tryAmount.intValue();
-  }
-
-  private static String countryCode(Vehicle v) {
-    City city = v.getCity();
-    if (city != null && city.getCountry() != null) {
-      return city.getCountry().getCode();
-    }
-    return v.getCountryCode();
-  }
-
-  private static String pickupLocationLabel(Vehicle v) {
-    City city = v.getCity();
-    if (city != null) {
-      return city.getName();
-    }
-    return null;
-  }
 
   private ArrayNode specsArray(Vehicle v, JsonNodeFactory f) {
     ArrayNode a = f.arrayNode();

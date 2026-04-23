@@ -1,31 +1,44 @@
 package com.algorycode.rent.api.web;
 
-import com.algorycode.rent.api.error.BadRequestException;
 import com.algorycode.rent.api.dto.CreateVehicleRequest;
+import com.algorycode.rent.api.dto.SimpleMessageResponse;
 import com.algorycode.rent.api.dto.UpdateVehicleImageRequest;
 import com.algorycode.rent.api.dto.UpdateVehicleRequest;
 import com.algorycode.rent.api.dto.VehicleCalendarOccupancyDto;
 import com.algorycode.rent.api.dto.VehicleDto;
+import com.algorycode.rent.api.error.BadRequestException;
 import com.algorycode.rent.domain.vehicle.VehicleImageSlot;
 import com.algorycode.rent.service.VehicleOccupancyService;
 import com.algorycode.rent.service.VehicleService;
 import jakarta.validation.Valid;
-import org.springframework.web.bind.annotation.*;
-
+import java.net.URI;
 import java.time.LocalDate;
 import java.util.List;
+import lombok.RequiredArgsConstructor;
+import org.springframework.context.MessageSource;
+import org.springframework.context.i18n.LocaleContextHolder;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 @RestController
 @RequestMapping("/vehicles")
+@RequiredArgsConstructor
 public class VehicleController {
 
   private final VehicleService vehicleService;
   private final VehicleOccupancyService vehicleOccupancyService;
-
-  public VehicleController(VehicleService vehicleService, VehicleOccupancyService vehicleOccupancyService) {
-    this.vehicleService = vehicleService;
-    this.vehicleOccupancyService = vehicleOccupancyService;
-  }
+  private final MessageSource messageSource;
 
   /**
    * Araç takvimi: iptal olmayan kiralamalar + reddedilmemiş talepler (pending/approved). Yalnızca
@@ -83,8 +96,12 @@ public class VehicleController {
   }
 
   @PostMapping
-  public VehicleDto create(@Valid @RequestBody CreateVehicleRequest body) {
-    return vehicleService.create(body);
+  public ResponseEntity<SimpleMessageResponse> create(@Valid @RequestBody CreateVehicleRequest body) {
+    Long id = vehicleService.create(body);
+    URI location = ServletUriComponentsBuilder.fromCurrentRequest().path("/{id}").buildAndExpand(id).toUri();
+    String message =
+        messageSource.getMessage("vehicle.created", null, LocaleContextHolder.getLocale());
+    return ResponseEntity.status(HttpStatus.CREATED).location(location).body(new SimpleMessageResponse(message));
   }
 
   @PatchMapping("/{id}")

@@ -5,49 +5,37 @@ import com.algorycode.rent.api.error.ResourceNotFoundException;
 import com.algorycode.rent.domain.vehicle.Vehicle;
 import com.algorycode.rent.domain.vehicle.VehicleImage;
 import com.algorycode.rent.domain.vehicle.VehicleImageSlot;
+import com.algorycode.rent.repository.VehicleImageRepository;
 import com.algorycode.rent.repository.VehicleRepository;
+import com.algorycode.rent.service.readmodel.FeFleetSnapshotBuilder;
 import java.util.ArrayList;
-import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
-/** Araç görsel slotları: yükleme, doğrulama, toplu uygulama. */
+/** Araç görsel slotları: yükleme, doğrulama, toplu uygulama ve asenkron tamamlama. */
 @Service
+@RequiredArgsConstructor
+@Slf4j
 public class VehicleImageService {
 
-  private static final EnumSet<VehicleImageSlot> REQUIRED_IMAGE_SLOTS =
-      EnumSet.of(
-          VehicleImageSlot.front,
-          VehicleImageSlot.rear,
-          VehicleImageSlot.left,
-          VehicleImageSlot.right,
-          VehicleImageSlot.interiorDash,
-          VehicleImageSlot.interiorRear);
-
   private final VehicleRepository vehicleRepository;
+  private final VehicleImageRepository vehicleImageRepository;
   private final ObjectStorageService objectStorageService;
-
-  public VehicleImageService(VehicleRepository vehicleRepository, ObjectStorageService objectStorageService) {
-    this.vehicleRepository = vehicleRepository;
-    this.objectStorageService = objectStorageService;
-  }
-
-  public void validateRequiredVehicleImages(Map<String, String> images) {
-    if (images == null) {
-      throw new BadRequestException("Araç görselleri zorunludur (ön, arka, sol, sağ, kokpit, arka koltuk).");
-    }
-    for (VehicleImageSlot requiredSlot : REQUIRED_IMAGE_SLOTS) {
-      String value = images.get(requiredSlot.name());
-      if (value == null || value.isBlank()) {
-        throw new BadRequestException("Araç görsellerinde " + requiredSlot.name() + " zorunludur.");
-      }
-    }
-  }
+  private final FeFleetSnapshotBuilder feFleetSnapshotBuilder;
+  private final TransactionTemplate transactionTemplate;
 
   public void applyVehicleImages(Vehicle vehicle, Map<String, String> images) {
     removeStoredVehicleImages(vehicle);
+    if (images == null || images.isEmpty()) {
+      return;
+    }
     for (var e : images.entrySet()) {
       String imageValue = e.getValue();
       if (imageValue == null || imageValue.isBlank()) {
@@ -70,6 +58,125 @@ public class VehicleImageService {
       img.setImageUrl(storedKey);
       vehicle.getImages().add(img);
     }
+  }
+
+  @Async("vehicleAsyncTaskExecutor")
+  public void processVehicleImagesAndSnapshotAsync(Long vehicleId, Map<String, String> images) {
+    try {
+      if (images == null || images.isEmpty()) {
+        return;
+      }
+      List<ResolvedSlot> resolved = new ArrayList<>();
+      for (var e : images.entrySet()) {
+        if (e.getValue() == null || e.getValue().isBlank()) {
+          continue;
+        }
+        try {
+          resolved.add(
+              new ResolvedSlot(VehicleImageSlot.valueOf(e.getKey()), e.getValue().trim()));
+        } catch (IllegalArgumentException ex) {
+          log.error(
+              "Async vehicle images failed at stage=S3 vehicleId={} invalidSlot={}",
+              vehicleId,
+              e.getKey(),
+              ex);
+          return;
+        }
+      }
+      if (resolved.isEmpty()) {
+        try {
+          transactionTemplate.executeWithoutResult(
+              status -> persistFleetSnapshotOnly(vehicleId));
+        } catch (Exception ex) {
+          log.error(
+              "Async vehicle images failed at stage=SNAPSHOT vehicleId={} message={}",
+              vehicleId,
+              ex.getMessage(),
+              ex);
+        }
+        return;
+      }
+      List<SlotKey> uploaded;
+      try {
+        List<CompletableFuture<SlotKey>> futures =
+            resolved.stream()
+                .map(
+                    r ->
+                        CompletableFuture.supplyAsync(
+                            () -> uploadOne(vehicleId, r.slot(), r.imageValue())))
+                .toList();
+        CompletableFuture.allOf(futures.toArray(new CompletableFuture[0])).join();
+        uploaded = futures.stream().map(CompletableFuture::join).toList();
+      } catch (Exception ex) {
+        log.error(
+            "Async vehicle images failed at stage=S3 vehicleId={} message={}",
+            vehicleId,
+            ex.getMessage(),
+            ex);
+        return;
+      }
+      try {
+        transactionTemplate.executeWithoutResult(
+            status -> persistVehicleImages(vehicleId, uploaded));
+      } catch (Exception ex) {
+        log.error(
+            "Async vehicle images failed at stage=DB vehicleId={} message={}",
+            vehicleId,
+            ex.getMessage(),
+            ex);
+        return;
+      }
+      try {
+        transactionTemplate.executeWithoutResult(status -> persistFleetSnapshotOnly(vehicleId));
+      } catch (Exception ex) {
+        log.error(
+            "Async vehicle images failed at stage=SNAPSHOT vehicleId={} message={}",
+            vehicleId,
+            ex.getMessage(),
+            ex);
+      }
+    } catch (Exception ex) {
+      log.error(
+          "Async vehicle images failed vehicleId={} message={}", vehicleId, ex.getMessage(), ex);
+    }
+  }
+
+  private SlotKey uploadOne(Long vehicleId, VehicleImageSlot slot, String imageValue) {
+    String storedKey =
+            objectStorageService.uploadDataUrl(
+                    "vehicles/" + vehicleId + "/" + slot.name(), slot.name(), imageValue);
+    if (storedKey == null || storedKey.isBlank()) {
+      throw new IllegalStateException("S3 upload returned empty key for slot " + slot.name());
+    }
+    return new SlotKey(slot, storedKey);
+  }
+
+  private void persistVehicleImages(Long vehicleId, List<SlotKey> uploaded) {
+    Vehicle v =
+        vehicleRepository
+            .findByIdAndDeletedFalse(vehicleId)
+            .orElseThrow(() -> new ResourceNotFoundException("Vehicle not found: " + vehicleId));
+    v.getImages().clear();
+    List<VehicleImage> rows = new ArrayList<>();
+    for (SlotKey sk : uploaded) {
+      VehicleImage img = new VehicleImage();
+      img.setVehicle(v);
+      img.setSlot(sk.slot());
+      img.setImageUrl(sk.storedKey());
+      v.getImages().add(img);
+      rows.add(img);
+    }
+    vehicleImageRepository.saveAll(rows);
+    vehicleRepository.save(v);
+  }
+
+  private void persistFleetSnapshotOnly(Long vehicleId) {
+    Vehicle v =
+        vehicleRepository
+            .findByIdAndDeletedFalse(vehicleId)
+            .orElseThrow(() -> new ResourceNotFoundException("Vehicle not found: " + vehicleId));
+    v.setFeFleetSnapshot(feFleetSnapshotBuilder.build(v));
+    vehicleRepository.save(v);
   }
 
   @Transactional
@@ -139,4 +246,8 @@ public class VehicleImageService {
     }
     vehicle.getImages().clear();
   }
+
+  private record ResolvedSlot(VehicleImageSlot slot, String imageValue) {}
+
+  private record SlotKey(VehicleImageSlot slot, String storedKey) {}
 }

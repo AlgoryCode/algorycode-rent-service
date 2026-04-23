@@ -1,7 +1,6 @@
 package com.algorycode.rent.domain.vehicle;
 
 import com.algorycode.rent.domain.AbstractAuditableLongEntity;
-import com.algorycode.rent.domain.location.City;
 import com.algorycode.rent.domain.location.HandoverLocation;
 import com.fasterxml.jackson.databind.JsonNode;
 import jakarta.persistence.CascadeType;
@@ -12,11 +11,8 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.OrderBy;
-import jakarta.persistence.PrePersist;
-import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
-import lombok.Getter;
-import lombok.Setter;
+import lombok.*;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
@@ -27,8 +23,11 @@ import java.util.List;
 
 @Getter
 @Setter
+@Builder
 @Entity
 @Table(name = "vehicles")
+@AllArgsConstructor
+@NoArgsConstructor
 public class Vehicle extends AbstractAuditableLongEntity {
 
   /** Silinmemiş kayıtlar arasında plaka benzersizliği serviste doğrulanır (yumuşak silinen plaka yeniden kullanılabilir). */
@@ -44,10 +43,10 @@ public class Vehicle extends AbstractAuditableLongEntity {
   @Column(nullable = false, length = 255)
   private String model;
 
-  @Column(nullable = false)
+
   private Integer year;
 
-  @Column(nullable = false)
+
   private boolean maintenance = false;
 
   /** Araç başka bir firmadan geldiyse işaretlenir. */
@@ -77,16 +76,9 @@ public class Vehicle extends AbstractAuditableLongEntity {
   @Column(name = "commission_broker_phone", length = 32)
   private String commissionBrokerPhone;
 
-  /** Geçici geriye uyumluluk alanı (yeni modelde country city üzerinden okunur). */
+  /** Araç kayıtlı ülke kodu (şehir FK’si yok). */
   @Column(name = "country_code", length = 64)
   private String countryCode;
-
-  @Column(name = "city_id")
-  private Long cityId;
-
-  @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "city_id", insertable = false, updatable = false)
-  private City city;
 
   /** Varsayılan alış noktası; kiralama tamamlanınca son teslim noktasına güncellenebilir. */
   @Column(name = "default_pickup_handover_location_id")
@@ -141,18 +133,7 @@ public class Vehicle extends AbstractAuditableLongEntity {
   @Column(name = "fe_fleet_snapshot", columnDefinition = "json")
   private JsonNode feFleetSnapshot;
 
-  @PrePersist
-  @PreUpdate
-  void syncLocationFks() {
-    if (city != null && city.getId() != null) {
-      cityId = city.getId();
-    }
-    if (defaultPickupHandoverLocation != null && defaultPickupHandoverLocation.getId() != null) {
-      defaultPickupHandoverLocationId = defaultPickupHandoverLocation.getId();
-    }
-  }
 
-  /** Kiralama / talep çözümlemesi için izin verilen RETURN handover kimlikleri (sıralı). */
   public List<Long> orderedReturnHandoverLocationIds() {
     if (allowedReturnHandovers == null || allowedReturnHandovers.isEmpty()) {
       return List.of();
