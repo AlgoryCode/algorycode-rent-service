@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @RestController
-@RequestMapping("/vehicle-statuses")
+@RequestMapping("/rent/vehicle-statuses")
 public class VehicleStatusDefinitionController {
 
   private final VehicleStatusDefinitionService vehicleStatusDefinitionService;
