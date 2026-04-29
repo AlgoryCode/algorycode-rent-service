@@ -14,7 +14,7 @@ spring:
   datasource:
     # algory-workspace-service ile aynı PostgreSQL sunucusu; veritabanı önce oluşturulmalı:
     # CREATE DATABASE algorycoderentdb;
-    url: jdbc:postgresql://45.147.47.129:5432/algorycoderentdb
+    url: jdbc:postgresql://195.85.207.153:5432/algorycoderentdb
     username: postgres
     password: algorycode1.
     driver-class-name: org.postgresql.Driver
