@@ -100,6 +100,7 @@ public class VehicleController {
   @PatchMapping("/{id:\\d+}")
   public VehicleDto update(@PathVariable Long id, @Valid @RequestBody UpdateVehicleRequest body) {
     return vehicleService.update(id, body);
+
   }
 
   @DeleteMapping("/{id:\\d+}")
