@@ -9,11 +9,13 @@ import com.algorycode.rent.domain.rental.Rental;
 import com.algorycode.rent.domain.rental.RentalCommissionFlow;
 import com.algorycode.rent.domain.rental.RentalStatus;
 import com.algorycode.rent.domain.vehicle.Vehicle;
+import com.algorycode.rent.domain.vehicle.VehicleStatus;
 import com.algorycode.rent.logging.AuditLog;
 import com.algorycode.rent.repository.RentalRepository;
 import com.algorycode.rent.repository.ReservationExtraOptionTemplateRepository;
 import com.algorycode.rent.repository.VehicleOptionDefinitionRepository;
 import com.algorycode.rent.repository.VehicleRepository;
+import com.algorycode.rent.service.support.VehicleTestFixtures;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -136,10 +138,8 @@ class RentalServiceTest {
     Vehicle vehicle = new Vehicle();
     vehicle.setId(vehicleId);
     vehicle.setPlate("34 T 1");
-    vehicle.setBrand("Toyota");
-    vehicle.setModel("Corolla");
+    VehicleTestFixtures.attachBrandModelStatus(vehicle, "Toyota", "Corolla", VehicleStatus.available);
     vehicle.setYear(2023);
-    vehicle.setMaintenance(false);
     vehicle.setDefaultPickupHandoverLocation(oldDefaultPickup);
     vehicle.setCreatedAt(Instant.now());
     vehicle.setUpdatedAt(Instant.now());
@@ -197,10 +197,8 @@ class RentalServiceTest {
     Vehicle vehicle = new Vehicle();
     vehicle.setId(vehicleId);
     vehicle.setPlate("06 A 2");
-    vehicle.setBrand("VW");
-    vehicle.setModel("Polo");
+    VehicleTestFixtures.attachBrandModelStatus(vehicle, "VW", "Polo", VehicleStatus.available);
     vehicle.setYear(2021);
-    vehicle.setMaintenance(false);
     vehicle.setCreatedAt(Instant.now());
     vehicle.setUpdatedAt(Instant.now());
 
@@ -237,14 +235,40 @@ class RentalServiceTest {
     verify(vehicleRepository, never()).save(any());
   }
 
+  @Test
+  void updateStatus_whenCancelled_setsCancelled() {
+    Rental rental = sampleRental(1L);
+    rental.setId(9L);
+    when(rentalRepository.findById(9L)).thenReturn(Optional.of(rental));
+    when(rentalRepository.save(any(Rental.class))).thenAnswer(invocation -> invocation.getArgument(0));
+    when(objectStorageService.resolvePublicUrl(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+    var dto = rentalService.updateStatus(9L, RentalStatus.cancelled);
+
+    assertThat(dto.status()).isEqualTo(RentalStatus.cancelled);
+    verify(rentalRepository).save(any(Rental.class));
+  }
+
+  @Test
+  void updateStatus_whenUnchanged_skipsSave() {
+    Rental rental = sampleRental(1L);
+    rental.setId(11L);
+    rental.setStatus(RentalStatus.active);
+    when(rentalRepository.findById(11L)).thenReturn(Optional.of(rental));
+    when(objectStorageService.resolvePublicUrl(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+    var dto = rentalService.updateStatus(11L, RentalStatus.active);
+
+    assertThat(dto.status()).isEqualTo(RentalStatus.active);
+    verify(rentalRepository, never()).save(any());
+  }
+
   private static Rental sampleRental(Long vehicleId) {
     var vehicle = new Vehicle();
     vehicle.setId(vehicleId);
     vehicle.setPlate("06 X 06");
-    vehicle.setBrand("VW");
-    vehicle.setModel("Golf");
+    VehicleTestFixtures.attachBrandModelStatus(vehicle, "VW", "Golf", VehicleStatus.available);
     vehicle.setYear(2022);
-    vehicle.setMaintenance(false);
     vehicle.setCreatedAt(Instant.now());
     vehicle.setUpdatedAt(Instant.now());
 

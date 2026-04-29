@@ -3,6 +3,7 @@ package com.algorycode.rent.api.web;
 import com.algorycode.rent.api.dto.CreateRentalRequest;
 import com.algorycode.rent.api.dto.RentalDto;
 import com.algorycode.rent.api.dto.UpdateRentalRequest;
+import com.algorycode.rent.api.dto.UpdateRentalStatusRequest;
 import com.algorycode.rent.domain.rental.RentalStatus;
 import com.algorycode.rent.service.RentalService;
 import jakarta.validation.Valid;
@@ -50,5 +51,11 @@ public class RentalController {
   @PatchMapping("/{id}")
   public RentalDto update(@PathVariable Long id, @Valid @RequestBody UpdateRentalRequest body) {
     return rentalService.update(id, body);
+  }
+
+  @PatchMapping("/{id}/status")
+  public RentalDto updateStatus(
+      @PathVariable Long id, @Valid @RequestBody UpdateRentalStatusRequest body) {
+    return rentalService.updateStatus(id, body.status());
   }
 }

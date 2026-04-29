@@ -21,8 +21,10 @@ import java.util.List;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.ArgumentMatchers.nullable;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -81,5 +83,40 @@ class RentalControllerTest {
     when(rentalService.list(isNull(), isNull(), isNull(), isNull())).thenReturn(List.of());
 
     mockMvc.perform(get("/rentals")).andExpect(status().isOk()).andExpect(jsonPath("$").isArray());
+  }
+
+  @Test
+  void updateStatus_delegatesToService() throws Exception {
+    var dto =
+        new RentalDto(
+            1L,
+            2L,
+            null,
+            LocalDate.of(2026, 1, 1),
+            LocalDate.of(2026, 1, 5),
+            null,
+            null,
+            Instant.parse("2025-12-01T10:00:00Z"),
+            RentalStatus.cancelled,
+            java.math.BigDecimal.valueOf(100),
+            RentalCommissionFlow.collect,
+            null,
+            new RentalDto.CustomerDto("A", "1", "P", "+90", null, null, null, null, null),
+            List.of(),
+            null,
+            List.of(),
+            List.of(),
+            List.of());
+    when(rentalService.updateStatus(1L, RentalStatus.cancelled)).thenReturn(dto);
+
+    mockMvc
+        .perform(
+            patch("/rentals/1/status")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"status\":\"cancelled\"}"))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.status").value("cancelled"));
+
+    verify(rentalService).updateStatus(1L, RentalStatus.cancelled);
   }
 }

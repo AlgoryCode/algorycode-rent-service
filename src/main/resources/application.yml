@@ -2,6 +2,11 @@ server:
   port: 8090
 
 spring:
+  flyway:
+    enabled: true
+    baseline-on-migrate: true
+    baseline-version: "20260432"
+    locations: classpath:db/migration
   thymeleaf:
     encoding: UTF-8
   application:

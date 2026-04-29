@@ -20,17 +20,23 @@ import com.algorycode.rent.domain.vehicle.VehicleTransmissionType;
 import com.algorycode.rent.domain.vehicle.VehicleHighlight;
 import com.algorycode.rent.domain.vehicle.VehicleImage;
 import com.algorycode.rent.domain.vehicle.VehicleImageSlot;
+import com.algorycode.rent.domain.vehicle.VehicleModel;
 import com.algorycode.rent.domain.vehicle.VehicleOptionDefinition;
 import com.algorycode.rent.domain.vehicle.VehicleOptionTemplate;
+import com.algorycode.rent.domain.vehicle.VehicleStatusDefinition;
 import com.algorycode.rent.logging.AuditLog;
 import com.algorycode.rent.repository.VehicleBodyStyleRepository;
 import com.algorycode.rent.repository.VehicleFuelTypeRepository;
+import com.algorycode.rent.repository.VehicleModelRepository;
 import com.algorycode.rent.repository.VehicleRepository;
+import com.algorycode.rent.repository.VehicleStatusDefinitionRepository;
 import com.algorycode.rent.repository.VehicleTransmissionTypeRepository;
 import com.algorycode.rent.service.readmodel.FeFleetSnapshotBuilder;
 import com.algorycode.rent.service.support.Text;
 import com.fasterxml.jackson.databind.JsonNode;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.MessageSource;
+import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -44,14 +50,13 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 
-/**
- * Filo araçları: CRUD, görseller, uygunluk listesi orkestrasyonu ve vitrin snapshot’ı.
- */
 @Service
 @RequiredArgsConstructor
 public class VehicleService {
 
   private final VehicleRepository vehicleRepository;
+  private final VehicleModelRepository vehicleModelRepository;
+  private final VehicleStatusDefinitionRepository vehicleStatusDefinitionRepository;
   private final VehicleBodyStyleRepository vehicleBodyStyleRepository;
   private final VehicleFuelTypeRepository vehicleFuelTypeRepository;
   private final VehicleTransmissionTypeRepository vehicleTransmissionTypeRepository;
@@ -62,7 +67,11 @@ public class VehicleService {
   private final VehicleImageService vehicleImageService;
   private final AuditLog auditLog;
   private final FeFleetSnapshotBuilder feFleetSnapshotBuilder;
+  private final MessageSource messageSource;
 
+  private String message(String code) {
+    return messageSource.getMessage(code, null, LocaleContextHolder.getLocale());
+  }
 
   @Transactional(readOnly = true)
   public List<VehicleDto> listAll() {
@@ -112,16 +121,22 @@ public class VehicleService {
     if (!plate.isBlank()) {
       v.setPlate(plate);
     }
-    if (req.brand() != null) {
-      v.setBrand(req.brand().trim());
-    }
-    if (req.model() != null) {
-      v.setModel(req.model().trim());
-    }
+    VehicleModel model =
+        vehicleModelRepository
+            .findById(req.vehicleModelId())
+            .orElseThrow(() -> new BadRequestException(message("vehicle.error.modelNotFound")));
+    v.setVehicleModel(model);
+    VehicleStatusDefinition statusDef =
+        req.vehicleStatusId() != null
+            ? vehicleStatusDefinitionRepository
+                .findById(req.vehicleStatusId())
+                .orElseThrow(() -> new BadRequestException(message("vehicle.error.statusNotFound")))
+            : vehicleStatusDefinitionRepository
+                .findByCodeIgnoreCase("available")
+                .orElseThrow(
+                    () -> new BadRequestException(message("vehicle.error.defaultStatusMissing")));
+    v.setStatusDefinition(statusDef);
     v.setYear(req.year());
-    if (req.maintenance() != null) {
-      v.setMaintenance(req.maintenance());
-    }
     if (req.external() != null) {
       v.setExternal(req.external());
     }
@@ -186,10 +201,19 @@ public class VehicleService {
         v.setPlate(plate);
       }
     }
-    if (req.brand() != null) v.setBrand(req.brand().trim());
-    if (req.model() != null) v.setModel(req.model().trim());
+    if (req.vehicleModelId() != null) {
+      v.setVehicleModel(
+          vehicleModelRepository
+              .findById(req.vehicleModelId())
+              .orElseThrow(() -> new BadRequestException(message("vehicle.error.modelNotFound"))));
+    }
+    if (req.vehicleStatusId() != null) {
+      v.setStatusDefinition(
+          vehicleStatusDefinitionRepository
+              .findById(req.vehicleStatusId())
+              .orElseThrow(() -> new BadRequestException(message("vehicle.error.statusNotFound"))));
+    }
     if (req.year() != null) v.setYear(req.year());
-    if (req.maintenance() != null) v.setMaintenance(req.maintenance());
 
     boolean nextExternal = req.external() != null ? req.external() : v.isExternal();
     v.setExternal(nextExternal);
@@ -471,9 +495,6 @@ public class VehicleService {
   private VehicleDto toDto(Vehicle v) {
     Map<String, String> images = new HashMap<>();
     for (VehicleImage img : v.getImages()) {
-      if (img.getSlot() == null) {
-        continue;
-      }
       String resolved = objectStorageService.resolvePublicUrl(img.getImageUrl());
       if (resolved == null || resolved.isBlank()) {
         continue;
@@ -501,11 +522,13 @@ public class VehicleService {
 
     return new VehicleDto(
         v.getId(),
+        v.getVehicleModel().getId(),
+        v.getStatusDefinition().getId(),
         v.getPlate(),
         v.getBrand(),
         v.getModel(),
         v.getYear() != null ? v.getYear() : 0,
-        v.isMaintenance(),
+        v.getStatus(),
         v.isExternal(),
         v.getExternalCompany(),
         v.getRentalDailyPrice(),

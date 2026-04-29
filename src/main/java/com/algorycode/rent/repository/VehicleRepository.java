@@ -15,6 +15,9 @@ public interface VehicleRepository extends JpaRepository<Vehicle, Long> {
 
   @EntityGraph(
       attributePaths = {
+        "statusDefinition",
+        "vehicleModel",
+        "vehicleModel.brand",
         "defaultPickupHandoverLocation",
         "allowedReturnHandovers",
         "allowedReturnHandovers.handoverLocation"
@@ -23,6 +26,9 @@ public interface VehicleRepository extends JpaRepository<Vehicle, Long> {
 
   @EntityGraph(
       attributePaths = {
+        "statusDefinition",
+        "vehicleModel",
+        "vehicleModel.brand",
         "defaultPickupHandoverLocation",
         "allowedReturnHandovers",
         "allowedReturnHandovers.handoverLocation"
@@ -38,4 +44,6 @@ public interface VehicleRepository extends JpaRepository<Vehicle, Long> {
   long countByFuelTypeAndDeletedFalse(String fuelType);
 
   long countByTransmissionTypeAndDeletedFalse(String transmissionType);
+
+  long countByStatusDefinition_IdAndDeletedFalse(Long statusDefinitionId);
 }

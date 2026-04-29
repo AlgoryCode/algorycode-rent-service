@@ -9,10 +9,9 @@ import java.util.Map;
 
 public record UpdateVehicleRequest(
     @Size(max = 32) String plate,
-    @Size(max = 255) String brand,
-    @Size(max = 255) String model,
+    Long vehicleModelId,
+    Long vehicleStatusId,
     Integer year,
-    Boolean maintenance,
     Boolean external,
     @Size(max = 255) String externalCompany,
     BigDecimal rentalDailyPrice,

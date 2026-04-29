@@ -6,7 +6,9 @@ import com.algorycode.rent.domain.rental.Rental;
 import com.algorycode.rent.domain.rental.RentalOption;
 import com.algorycode.rent.domain.rental.RentalStatus;
 import com.algorycode.rent.domain.vehicle.Vehicle;
+import com.algorycode.rent.domain.vehicle.VehicleStatus;
 import com.algorycode.rent.repository.RentalRepository;
+import com.algorycode.rent.service.support.VehicleTestFixtures;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -74,8 +76,7 @@ class RentalReportServiceTest {
     Vehicle v = new Vehicle();
     v.setId(vehicleId);
     v.setPlate("34 X 1");
-    v.setBrand("Test");
-    v.setModel("Car");
+    VehicleTestFixtures.attachBrandModelStatus(v, "Test", "Car", VehicleStatus.available);
     v.setRentalDailyPrice(new BigDecimal("100.00"));
 
     RentalOption opt = new RentalOption();

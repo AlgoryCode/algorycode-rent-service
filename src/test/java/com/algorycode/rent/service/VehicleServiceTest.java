@@ -9,13 +9,17 @@ import com.algorycode.rent.domain.rental.RentalStatus;
 import com.algorycode.rent.domain.request.RentalRequest;
 import com.algorycode.rent.domain.request.RentalRequestStatus;
 import com.algorycode.rent.domain.vehicle.Vehicle;
+import com.algorycode.rent.domain.vehicle.VehicleStatus;
 import com.algorycode.rent.logging.AuditLog;
 import com.algorycode.rent.repository.RentalRepository;
 import com.algorycode.rent.repository.RentalRequestRepository;
 import com.algorycode.rent.repository.VehicleBodyStyleRepository;
 import com.algorycode.rent.repository.VehicleFuelTypeRepository;
+import com.algorycode.rent.repository.VehicleModelRepository;
 import com.algorycode.rent.repository.VehicleRepository;
+import com.algorycode.rent.repository.VehicleStatusDefinitionRepository;
 import com.algorycode.rent.repository.VehicleTransmissionTypeRepository;
+import com.algorycode.rent.service.support.VehicleTestFixtures;
 import com.algorycode.rent.service.readmodel.FeFleetSnapshotBuilder;
 import com.algorycode.rent.service.support.VehicleAvailabilitySlotAnalyzer;
 import org.junit.jupiter.api.BeforeEach;
@@ -23,6 +27,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.MessageSource;
 
 import java.time.Instant;
 import java.time.LocalDate;
@@ -43,6 +48,8 @@ import static org.mockito.Mockito.when;
 class VehicleServiceTest {
 
   @Mock private VehicleRepository vehicleRepository;
+  @Mock private VehicleModelRepository vehicleModelRepository;
+  @Mock private VehicleStatusDefinitionRepository vehicleStatusDefinitionRepository;
   @Mock private VehicleBodyStyleRepository vehicleBodyStyleRepository;
   @Mock private VehicleFuelTypeRepository vehicleFuelTypeRepository;
   @Mock private VehicleTransmissionTypeRepository vehicleTransmissionTypeRepository;
@@ -52,6 +59,7 @@ class VehicleServiceTest {
   @Mock private RentalRepository rentalRepository;
   @Mock private RentalRequestRepository rentalRequestRepository;
   @Mock private VehicleImageService vehicleImageService;
+  @Mock private MessageSource messageSource;
 
   private VehicleService vehicleService;
 
@@ -60,9 +68,14 @@ class VehicleServiceTest {
     lenient()
         .when(rentalRequestRepository.findPotentiallyBlockingRequestsForAvailability(any(), any(), anyList()))
         .thenReturn(Collections.emptyList());
+    lenient()
+        .when(messageSource.getMessage(any(), any(), any()))
+        .thenAnswer(invocation -> invocation.getArgument(0).toString());
     vehicleService =
         new VehicleService(
             vehicleRepository,
+            vehicleModelRepository,
+            vehicleStatusDefinitionRepository,
             vehicleBodyStyleRepository,
             vehicleFuelTypeRepository,
             vehicleTransmissionTypeRepository,
@@ -76,7 +89,8 @@ class VehicleServiceTest {
                 new VehicleAvailabilitySlotAnalyzer()),
             vehicleImageService,
             mock(AuditLog.class),
-            mock(FeFleetSnapshotBuilder.class));
+            mock(FeFleetSnapshotBuilder.class),
+            messageSource);
   }
 
   @Test
@@ -256,10 +270,8 @@ class VehicleServiceTest {
     var v = new Vehicle();
     v.setId(301L);
     v.setPlate("34 ABC 101");
-    v.setBrand("Toyota");
-    v.setModel("Corolla");
+    VehicleTestFixtures.attachBrandModelStatus(v, "Toyota", "Corolla", VehicleStatus.available);
     v.setYear(2023);
-    v.setMaintenance(false);
     v.setCreatedAt(Instant.parse("2026-01-01T00:00:00Z"));
     v.setUpdatedAt(Instant.parse("2026-01-01T00:00:00Z"));
     return v;

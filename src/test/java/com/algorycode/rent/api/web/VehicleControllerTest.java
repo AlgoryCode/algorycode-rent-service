@@ -2,10 +2,12 @@ package com.algorycode.rent.api.web;
 
 import com.algorycode.rent.api.dto.VehicleCalendarOccupancyDto;
 import com.algorycode.rent.api.dto.VehicleDto;
+import com.algorycode.rent.domain.vehicle.VehicleStatus;
 import com.algorycode.rent.api.dto.VehicleOccupancyRangeDto;
 import com.algorycode.rent.api.dto.VehicleOccupancySource;
 import com.algorycode.rent.api.error.ResourceNotFoundException;
 import com.algorycode.rent.logging.AuditLog;
+import com.algorycode.rent.service.VehicleFormCatalogService;
 import com.algorycode.rent.service.VehicleOccupancyService;
 import com.algorycode.rent.service.VehicleService;
 import org.junit.jupiter.api.BeforeEach;
@@ -38,6 +40,7 @@ class VehicleControllerTest {
 
   @Mock private VehicleService vehicleService;
   @Mock private VehicleOccupancyService vehicleOccupancyService;
+  @Mock private VehicleFormCatalogService vehicleFormCatalogService;
   @Mock private AuditLog auditLog;
 
   private MockMvc mockMvc;
@@ -48,7 +51,8 @@ class VehicleControllerTest {
     messageSource.addMessage("vehicle.created", Locale.ENGLISH, "Vehicle created.");
     mockMvc =
         MockMvcBuilders.standaloneSetup(
-                new VehicleController(vehicleService, vehicleOccupancyService, messageSource))
+                new VehicleController(
+                    vehicleService, vehicleOccupancyService, vehicleFormCatalogService, messageSource))
             .setControllerAdvice(new GlobalExceptionHandler(auditLog))
             .build();
   }
@@ -61,11 +65,13 @@ class VehicleControllerTest {
             List.of(
                 new VehicleDto(
                     id,
+                    9L,
+                    1L,
                     "34 A 1",
                     "Toyota",
                     "Corolla",
                     2023,
-                    false,
+                    VehicleStatus.available,
                     false,
                     null,
                     null,
@@ -137,7 +143,7 @@ class VehicleControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(
                     """
-                    {"plate":"34 X 1","brand":"Toyota","model":"Corolla","year":2024,"countryCode":"TR"}
+                    {"plate":"34 X 1","vehicleModelId":5,"year":2024,"countryCode":"TR"}
                     """))
         .andExpect(status().isCreated())
         .andExpect(header().string("Location", containsString("/vehicles/42")))

@@ -1,6 +1,10 @@
 package com.algorycode.rent.api.mapper;
 
 import com.algorycode.rent.domain.vehicle.Vehicle;
+import com.algorycode.rent.domain.vehicle.VehicleBrand;
+import com.algorycode.rent.domain.vehicle.VehicleModel;
+import com.algorycode.rent.domain.vehicle.VehicleStatus;
+import com.algorycode.rent.domain.vehicle.VehicleStatusDefinition;
 import com.algorycode.rent.domain.vehicle.VehicleImage;
 import com.algorycode.rent.domain.vehicle.VehicleImageSlot;
 import org.junit.jupiter.api.Test;
@@ -16,10 +20,16 @@ class VehicleMapperTest {
     var v = new Vehicle();
     v.setId(1L);
     v.setPlate("34 X 1");
-    v.setBrand("B");
-    v.setModel("M");
+    VehicleBrand brand = new VehicleBrand();
+    brand.setName("B");
+    VehicleModel model = new VehicleModel();
+    model.setBrand(brand);
+    model.setName("M");
+    v.setVehicleModel(model);
+    VehicleStatusDefinition sd = new VehicleStatusDefinition();
+    sd.setCode("maintenance");
+    v.setStatusDefinition(sd);
     v.setYear(2024);
-    v.setMaintenance(true);
     v.setCreatedAt(Instant.now());
     v.setUpdatedAt(Instant.now());
 
@@ -35,7 +45,7 @@ class VehicleMapperTest {
     var dto = VehicleMapper.toDto(v);
 
     assertThat(dto.images()).containsEntry("front", "https://example.com/a.jpg");
-    assertThat(dto.maintenance()).isTrue();
+    assertThat(dto.status()).isEqualTo(VehicleStatus.maintenance);
     assertThat(dto.defaultPickupHandoverLocation()).isNull();
     assertThat(dto.defaultReturnHandoverLocation()).isNull();
     assertThat(dto.returnHandoverLocations()).isEmpty();

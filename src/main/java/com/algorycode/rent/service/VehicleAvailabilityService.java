@@ -5,6 +5,7 @@ import com.algorycode.rent.domain.request.RentalRequest;
 import com.algorycode.rent.domain.request.RentalRequestStatus;
 import com.algorycode.rent.domain.rental.Rental;
 import com.algorycode.rent.domain.vehicle.Vehicle;
+import com.algorycode.rent.domain.vehicle.VehicleStatus;
 import com.algorycode.rent.repository.RentalRepository;
 import com.algorycode.rent.repository.RentalRequestRepository;
 import com.algorycode.rent.repository.VehicleRepository;
@@ -63,7 +64,7 @@ public class VehicleAvailabilityService {
             availableFrom, windowEnd, BLOCKING_REQUEST_STATUSES);
 
     return vehicleRepository.findAllByDeletedFalse().stream()
-        .filter(v -> !v.isMaintenance())
+        .filter(v -> v.getStatus() != VehicleStatus.maintenance)
         .filter(v -> matchesHandoverFilters(v, pickupHandoverLocationId, returnHandoverLocationId))
         .filter(
             v ->

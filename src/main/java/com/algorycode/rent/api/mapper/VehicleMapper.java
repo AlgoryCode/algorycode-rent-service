@@ -36,11 +36,13 @@ public final class VehicleMapper {
 
     return new VehicleDto(
         v.getId(),
+        v.getVehicleModel().getId(),
+        v.getStatusDefinition().getId(),
         v.getPlate(),
         v.getBrand(),
         v.getModel(),
         v.getYear() != null ? v.getYear() : 0,
-        v.isMaintenance(),
+        v.getStatus(),
         v.isExternal(),
         v.getExternalCompany(),
         v.getRentalDailyPrice(),

@@ -1,5 +1,6 @@
 package com.algorycode.rent.api.dto;
 
+import com.algorycode.rent.domain.vehicle.VehicleStatus;
 import com.fasterxml.jackson.databind.JsonNode;
 
 import java.math.BigDecimal;
@@ -9,11 +10,13 @@ import java.util.Map;
 /** AlgoryRent FE {@code Vehicle} ile uyumlu alanlar. */
 public record VehicleDto(
     Long id,
+    Long vehicleModelId,
+    Long vehicleStatusId,
     String plate,
     String brand,
     String model,
     int year,
-    boolean maintenance,
+    VehicleStatus status,
     boolean external,
     String externalCompany,
     BigDecimal rentalDailyPrice,

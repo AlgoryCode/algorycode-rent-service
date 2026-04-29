@@ -17,9 +17,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Takvim UI için birleşik doluluk: {@code GET /rentals} ile gelmeyen onaylı/bekleyen
- * {@code RentalRequest} aralıkları burada {@code Rental} ile birlikte döner. Tarihler gün bazlı
- * ve uçlar dahildir.
+ * Takvim UI için birleşik doluluk: yalnızca aktif statülü kiralamalar ile onaylı/bekleyen
+ * {@code RentalRequest} aralıkları. Tarihler gün bazlı ve uçlar dahildir.
  */
 @Service
 public class VehicleOccupancyService {

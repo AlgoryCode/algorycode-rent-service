@@ -17,6 +17,7 @@ import com.algorycode.rent.domain.rental.RentalCommissionFlow;
 import com.algorycode.rent.domain.rental.RentalOption;
 import com.algorycode.rent.domain.rental.RentalStatus;
 import com.algorycode.rent.domain.vehicle.Vehicle;
+import com.algorycode.rent.domain.vehicle.VehicleStatus;
 import com.algorycode.rent.logging.AuditLog;
 import com.algorycode.rent.logging.SafeReasonCodes;
 import com.algorycode.rent.repository.RentalRepository;
@@ -110,7 +111,7 @@ public class RentalService {
         vehicleRepository
             .findByIdAndDeletedFalse(req.vehicleId())
             .orElseThrow(() -> new ResourceNotFoundException("Vehicle not found: " + req.vehicleId()));
-    if (vehicle.isMaintenance()) {
+    if (vehicle.getStatus() == VehicleStatus.maintenance) {
       throw new ConflictException("Bakımdaki araç kiralanamaz.");
     }
     RentalCommissionValidator.validate(
@@ -181,6 +182,35 @@ public class RentalService {
             "vehicleId", rental.getVehicle().getId().toString(),
             "status", rental.getStatus().name()));
     return RentalMapper.toDto(rental, objectStorageService::resolvePublicUrl);
+  }
+
+  @Transactional
+  public RentalDto updateStatus(Long id, RentalStatus status) {
+    Rental rental =
+        rentalRepository
+            .findById(id)
+            .orElseThrow(() -> new ResourceNotFoundException("Rental not found: " + id));
+    if (rental.getStatus() == status) {
+      return RentalMapper.toDto(rental, objectStorageService::resolvePublicUrl);
+    }
+    if (status != RentalStatus.cancelled) {
+      List<Rental> sameVehicle =
+          rentalRepository.findByVehicle_IdOrderByCreatedAtDesc(rental.getVehicle().getId());
+      ensureNoOverlap(sameVehicle, rental.getStartDate(), rental.getEndDate(), rental.getId());
+    }
+    rental.setStatus(status);
+    Rental saved = rentalRepository.save(rental);
+    if (status == RentalStatus.completed) {
+      Vehicle v = saved.getVehicle();
+      if (v != null && saved.getReturnHandoverLocation() != null) {
+        v.setDefaultPickupHandoverLocation(saved.getReturnHandoverLocation());
+        vehicleRepository.save(v);
+      }
+    }
+    auditLog.infoEvent(
+        "rental_status_updated",
+        Map.of("rentalId", saved.getId().toString(), "status", status.name()));
+    return RentalMapper.toDto(saved, objectStorageService::resolvePublicUrl);
   }
 
   @Transactional

@@ -2,9 +2,9 @@ package com.algorycode.rent.service.vehiclecatalog;
 
 import com.algorycode.rent.domain.vehicle.VehicleBodyStyle;
 import com.algorycode.rent.domain.vehicle.VehicleFuelType;
+import com.algorycode.rent.domain.vehicle.VehicleStatusDefinition;
 import com.algorycode.rent.domain.vehicle.VehicleTransmissionType;
 
-/** Katalog satırı üretimi — {@code new} + alan atamalarını tek yerde toplar. */
 public final class VehicleCatalogEntityFactory {
 
   private VehicleCatalogEntityFactory() {}
@@ -27,6 +27,14 @@ public final class VehicleCatalogEntityFactory {
 
   public static VehicleTransmissionType newTransmissionType(String code, String labelTr, int sortOrder) {
     VehicleTransmissionType e = new VehicleTransmissionType();
+    e.setCode(code);
+    e.setLabelTr(labelTr);
+    e.setSortOrder(sortOrder);
+    return e;
+  }
+
+  public static VehicleStatusDefinition newVehicleStatusDefinition(String code, String labelTr, int sortOrder) {
+    VehicleStatusDefinition e = new VehicleStatusDefinition();
     e.setCode(code);
     e.setLabelTr(labelTr);
     e.setSortOrder(sortOrder);

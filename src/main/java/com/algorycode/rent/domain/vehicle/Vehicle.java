@@ -37,17 +37,15 @@ public class Vehicle extends AbstractAuditableLongEntity {
   @Column(name = "is_deleted", nullable = false)
   private boolean deleted;
 
-  @Column(nullable = false, length = 255)
-  private String brand;
-
-  @Column(nullable = false, length = 255)
-  private String model;
-
-
   private Integer year;
 
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "vehicle_status_id", nullable = false)
+  private VehicleStatusDefinition statusDefinition;
 
-  private boolean maintenance = false;
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "vehicle_model_id", nullable = false)
+  private VehicleModel vehicleModel;
 
   /** Araç başka bir firmadan geldiyse işaretlenir. */
   @Column(name = "external_vehicle", nullable = false)
@@ -133,9 +131,20 @@ public class Vehicle extends AbstractAuditableLongEntity {
   @Column(name = "fe_fleet_snapshot", columnDefinition = "json")
   private JsonNode feFleetSnapshot;
 
+  public VehicleStatus getStatus() {
+    return VehicleStatus.fromCode(statusDefinition.getCode());
+  }
+
+  public String getBrand() {
+    return vehicleModel.getBrand().getName();
+  }
+
+  public String getModel() {
+    return vehicleModel.getName();
+  }
 
   public List<Long> orderedReturnHandoverLocationIds() {
-    if (allowedReturnHandovers == null || allowedReturnHandovers.isEmpty()) {
+    if (allowedReturnHandovers.isEmpty()) {
       return List.of();
     }
     return allowedReturnHandovers.stream()

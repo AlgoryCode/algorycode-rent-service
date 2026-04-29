@@ -4,7 +4,7 @@ import java.time.LocalDate;
 import java.util.List;
 
 /**
- * Bir araç için pencere içi dolu aralıklar: iptal olmayan {@link VehicleOccupancySource#rental}
+ * Bir araç için pencere içi dolu aralıklar: yalnızca aktif statülü {@link VehicleOccupancySource#rental}
  * ile reddedilmemiş talepler ({@link VehicleOccupancySource#rental_request}). Tarihler uçtan uca
  * dahildir.
  */

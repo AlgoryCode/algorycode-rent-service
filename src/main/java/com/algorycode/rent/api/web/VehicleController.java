@@ -6,8 +6,10 @@ import com.algorycode.rent.api.dto.UpdateVehicleImageRequest;
 import com.algorycode.rent.api.dto.UpdateVehicleRequest;
 import com.algorycode.rent.api.dto.VehicleCalendarOccupancyDto;
 import com.algorycode.rent.api.dto.VehicleDto;
+import com.algorycode.rent.api.dto.VehicleFormCatalogDto;
 import com.algorycode.rent.api.error.BadRequestException;
 import com.algorycode.rent.domain.vehicle.VehicleImageSlot;
+import com.algorycode.rent.service.VehicleFormCatalogService;
 import com.algorycode.rent.service.VehicleOccupancyService;
 import com.algorycode.rent.service.VehicleService;
 import jakarta.validation.Valid;
@@ -38,29 +40,20 @@ public class VehicleController {
 
   private final VehicleService vehicleService;
   private final VehicleOccupancyService vehicleOccupancyService;
+  private final VehicleFormCatalogService vehicleFormCatalogService;
   private final MessageSource messageSource;
 
-  /**
-   * Araç takvimi: iptal olmayan kiralamalar + reddedilmemiş talepler (pending/approved). Yalnızca
-   * bu endpoint her iki kaynağı birleştirir; {@code GET /rentals} yalnızca kesin kira,
-   * {@code GET /rental-requests} yalnızca talepleri döndürür. Her aralıkta {@code startDate} ve
-   * {@code endDate} <strong>dahil</strong> (19–21 seçimi → üç gün de dolu sayılmalı).
-   */
-  @GetMapping("/{id}/calendar/occupancy")
+  @GetMapping("/{id:\\d+}/calendar/occupancy")
   public VehicleCalendarOccupancyDto calendarOccupancy(
       @PathVariable Long id, @RequestParam LocalDate from, @RequestParam LocalDate to) {
     return vehicleOccupancyService.occupancy(id, from, to);
   }
 
-  /**
-   * Tarih + alış/teslim noktası: {@code availableFrom}, {@code availableTo} (YYYY-MM-DD) birlikte
-   * verilirse yalnız uygun araçlar döner. İptal olmayan kiralamalar ile pending/approved talepler aynı
-   * çakışma + tampon kuralından geçer. Tampon: bitiş gününün ertesi günü başka kiralama
-   * olmamalı. Alış: araç {@code defaultPickupHandoverLocation}. Teslim: izinli return listesi doluysa
-   * bu noktada aranır; liste boşsa teslim kısıtı yok sayılır (tüm RETURN noktalarıyla uyumlu).
-   * {@code includePartialAvailability}: true iken tam aralık dolu olsa bile, seçilen aralığın
-   * başında alış günü + ertesi gün için müsait araçlar da listelenir (varsayılan false).
-   */
+  @GetMapping("/form-catalog")
+  public VehicleFormCatalogDto formCatalog() {
+    return vehicleFormCatalogService.load();
+  }
+
   @GetMapping
   public List<VehicleDto> list(
       @RequestParam(required = false) LocalDate availableFrom,
@@ -90,7 +83,7 @@ public class VehicleController {
         Boolean.TRUE.equals(includePartialAvailability));
   }
 
-  @GetMapping("/{id}")
+  @GetMapping("/{id:\\d+}")
   public VehicleDto get(@PathVariable Long id) {
     return vehicleService.getById(id);
   }
@@ -104,18 +97,17 @@ public class VehicleController {
     return ResponseEntity.status(HttpStatus.CREATED).location(location).body(new SimpleMessageResponse(message));
   }
 
-  @PatchMapping("/{id}")
+  @PatchMapping("/{id:\\d+}")
   public VehicleDto update(@PathVariable Long id, @Valid @RequestBody UpdateVehicleRequest body) {
     return vehicleService.update(id, body);
   }
 
-  @DeleteMapping("/{id}")
+  @DeleteMapping("/{id:\\d+}")
   public void delete(@PathVariable Long id) {
     vehicleService.delete(id);
   }
 
-  /** Tek slot görseli: data URL veya mevcut object referansı ile günceller, eski nesneyi S3’ten siler. */
-  @PutMapping("/{id}/images/{slot}")
+  @PutMapping("/{id:\\d+}/images/{slot}")
   public VehicleDto replaceImage(
       @PathVariable Long id,
       @PathVariable String slot,
@@ -123,8 +115,7 @@ public class VehicleController {
     return vehicleService.replaceImageSlot(id, parseImageSlot(slot), body.image());
   }
 
-  /** Tek slot görselini kaldırır (DB + object storage). */
-  @DeleteMapping("/{id}/images/{slot}")
+  @DeleteMapping("/{id:\\d+}/images/{slot}")
   public VehicleDto deleteImage(@PathVariable Long id, @PathVariable String slot) {
     return vehicleService.deleteImageSlot(id, parseImageSlot(slot));
   }

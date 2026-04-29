@@ -74,14 +74,14 @@ public interface RentalRepository extends JpaRepository<Rental, Long>, JpaSpecif
       @Param("from") LocalDate from, @Param("toOrDayAfter") LocalDate toOrDayAfter);
 
   /**
-   * Araç takvim doluluğu: iptal olmayan kiralamalar, [from, to] ile kesişen (uçlar dahil).
+   * Araç takvim doluluğu: yalnızca aktif kiralamalar, [from, to] ile kesişen (uçlar dahil).
    */
   @Query(
       """
       select r from Rental r join r.vehicle v
       where v.id = :vehicleId
         and v.deleted = false
-        and r.status <> 'cancelled'
+        and r.status = 'active'
         and r.endDate >= :from
         and r.startDate <= :to
       order by r.startDate asc, r.endDate asc

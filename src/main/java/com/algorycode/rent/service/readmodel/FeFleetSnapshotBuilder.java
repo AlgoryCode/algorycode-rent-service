@@ -20,6 +20,7 @@ import java.math.RoundingMode;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
+import java.util.Optional;
 
 /**
  * user-fe {@code parseFeFleetSnapshot} ile uyumlu vitrin paketi (TRY günlük fiyat, handover UUID string).
@@ -45,7 +46,7 @@ public class FeFleetSnapshotBuilder {
     root.put("id", String.valueOf(v.getId()));
     root.put("brand", nz(v.getBrand()));
     root.put("name", (nz(v.getBrand()) + " " + nz(v.getModel())).trim());
-    root.put("category", v.isMaintenance() ? "Bakımda" : "Kiralık Araç");
+    root.put("category", categoryLabel(v));
     root.set("specs", specsArray(v, f));
     root.put("transmission", feTransmission(v.getTransmissionType()));
     root.put("seats", v.getSeats() != null && v.getSeats() > 0 ? v.getSeats() : 5);
@@ -87,37 +88,38 @@ public class FeFleetSnapshotBuilder {
     root.put(
         "garageLocation",
         "İstanbul, Maslak — Hazırlık noktası A · Filo garajı (demo). Araç bu noktadan veya anlaşmalı ofisten teslim edilir.");
-    //root.put("pickupLocationLabel", pickupLocationLabel(v));
     HandoverLocation defaultPickup = v.getDefaultPickupHandoverLocation();
-    if (defaultPickup != null && defaultPickup.getId() != null) {
+    if (defaultPickup != null) {
       root.put("defaultPickupHandoverLocationId", String.valueOf(defaultPickup.getId()));
       root.put("defaultPickupHandoverName", defaultPickup.getName());
     }
     ArrayNode returns = returnBookingArray(v, f);
-    if (returns.size() > 0) {
+    ObjectNode pickupBooking = handoverBooking(f, defaultPickup);
+    if (!returns.isEmpty()) {
       root.set("returnHandoversForBooking", returns);
       HandoverLocation firstReturn = firstReturnLocation(v);
-      if (firstReturn != null && firstReturn.getId() != null) {
+      if (firstReturn != null) {
         root.put("defaultReturnHandoverLocationId", String.valueOf(firstReturn.getId()));
         root.put("defaultReturnHandoverName", firstReturn.getName());
       }
-      if (defaultPickup != null && defaultPickup.getId() != null) {
-        ObjectNode pb = handoverBooking(f, defaultPickup);
-        if (pb != null) {
-          root.set("pickupHandoverForBooking", pb);
-        }
+      if (pickupBooking != null) {
+        root.set("pickupHandoverForBooking", pickupBooking);
       }
-    } else if (defaultPickup != null && defaultPickup.getId() != null) {
-      ObjectNode pb = handoverBooking(f, defaultPickup);
-      if (pb != null) {
-        root.set("pickupHandoverForBooking", pb);
-      }
+    } else if (pickupBooking != null) {
+      root.set("pickupHandoverForBooking", pickupBooking);
     }
     ArrayNode opts = optionDefsArray(v, f);
-    if (opts.size() > 0) {
+    if (!opts.isEmpty()) {
       root.set("rentOptionDefinitions", opts);
     }
     return root;
+  }
+
+  private static String categoryLabel(Vehicle v) {
+    return Optional.ofNullable(v.getStatusDefinition().getLabelTr())
+        .map(String::trim)
+        .filter(s -> !s.isEmpty())
+        .orElse("Müsait");
   }
 
   private static String nz(String s) {
@@ -165,9 +167,6 @@ public class FeFleetSnapshotBuilder {
 
   private String pickPrimaryImage(Vehicle v) {
     for (VehicleImage img : v.getImages()) {
-      if (img.getSlot() == null) {
-        continue;
-      }
       String resolved = objectStorageService.resolvePublicUrl(img.getImageUrl());
       if (resolved != null && !resolved.isBlank()) {
         return resolved;
@@ -202,9 +201,6 @@ public class FeFleetSnapshotBuilder {
 
   private ArrayNode returnBookingArray(Vehicle v, JsonNodeFactory f) {
     ArrayNode arr = f.arrayNode();
-    if (v.getAllowedReturnHandovers() == null) {
-      return arr;
-    }
     v.getAllowedReturnHandovers().stream()
         .sorted(
             Comparator.comparingInt(VehicleAllowedReturnHandover::getLineOrder)
@@ -222,7 +218,7 @@ public class FeFleetSnapshotBuilder {
   }
 
   private static HandoverLocation firstReturnLocation(Vehicle v) {
-    if (v.getAllowedReturnHandovers() == null || v.getAllowedReturnHandovers().isEmpty()) {
+    if (v.getAllowedReturnHandovers().isEmpty()) {
       return null;
     }
     return v.getAllowedReturnHandovers().stream()
