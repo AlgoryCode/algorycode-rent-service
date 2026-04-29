@@ -1,7 +1,6 @@
 package com.algorycode.rent.api.dto;
 
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import java.math.BigDecimal;
 import java.util.List;
@@ -11,7 +10,7 @@ import lombok.Builder;
 @Builder
 public record CreateVehicleRequest(
     @Size(max = 32) String plate,
-    @NotNull Long vehicleModelId,
+    Long vehicleModelId,
     Long vehicleStatusId,
     Integer year,
     Boolean external,

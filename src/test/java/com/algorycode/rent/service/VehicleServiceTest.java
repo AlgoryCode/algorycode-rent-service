@@ -1,5 +1,6 @@
 package com.algorycode.rent.service;
 
+import com.algorycode.rent.api.dto.CreateVehicleRequest;
 import com.algorycode.rent.api.error.BadRequestException;
 import com.algorycode.rent.api.error.ResourceNotFoundException;
 import com.algorycode.rent.domain.location.HandoverLocation;
@@ -8,8 +9,11 @@ import com.algorycode.rent.domain.rental.Rental;
 import com.algorycode.rent.domain.rental.RentalStatus;
 import com.algorycode.rent.domain.request.RentalRequest;
 import com.algorycode.rent.domain.request.RentalRequestStatus;
+import com.algorycode.rent.domain.vehicle.VehicleBrand;
 import com.algorycode.rent.domain.vehicle.Vehicle;
+import com.algorycode.rent.domain.vehicle.VehicleModel;
 import com.algorycode.rent.domain.vehicle.VehicleStatus;
+import com.algorycode.rent.domain.vehicle.VehicleStatusDefinition;
 import com.algorycode.rent.logging.AuditLog;
 import com.algorycode.rent.repository.RentalRepository;
 import com.algorycode.rent.repository.RentalRequestRepository;
@@ -42,6 +46,7 @@ import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -264,6 +269,38 @@ class VehicleServiceTest {
     assertThatThrownBy(() -> vehicleService.getById(id))
         .isInstanceOf(ResourceNotFoundException.class)
         .hasMessageContaining("Vehicle not found");
+  }
+
+  @Test
+  void create_whenVehicleModelIdMissing_usesFirstModel() {
+    var model = new VehicleModel();
+    model.setId(11L);
+    var brand = new VehicleBrand();
+    brand.setName("Genel");
+    model.setBrand(brand);
+    model.setName("—");
+    var available = new VehicleStatusDefinition();
+    available.setId(1L);
+    available.setCode("available");
+    when(vehicleModelRepository.findFirstByOrderByIdAsc()).thenReturn(Optional.of(model));
+    when(vehicleStatusDefinitionRepository.findByCodeIgnoreCase("available"))
+        .thenReturn(Optional.of(available));
+    when(vehicleRepository.save(any(Vehicle.class)))
+        .thenAnswer(
+            invocation -> {
+              Vehicle vehicle = invocation.getArgument(0);
+              if (vehicle.getId() == null) {
+                vehicle.setId(999L);
+              }
+              return vehicle;
+            });
+
+    Long createdId =
+        vehicleService.create(
+            CreateVehicleRequest.builder().plate("34 TEST 34").countryCode("TR").build());
+
+    assertThat(createdId).isEqualTo(999L);
+    verify(vehicleModelRepository).findFirstByOrderByIdAsc();
   }
 
   private static Vehicle sampleVehicle() {

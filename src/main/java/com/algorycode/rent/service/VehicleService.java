@@ -121,10 +121,7 @@ public class VehicleService {
     if (!plate.isBlank()) {
       v.setPlate(plate);
     }
-    VehicleModel model =
-        vehicleModelRepository
-            .findById(req.vehicleModelId())
-            .orElseThrow(() -> new BadRequestException(message("vehicle.error.modelNotFound")));
+    VehicleModel model = resolveVehicleModelForCreate(req.vehicleModelId());
     v.setVehicleModel(model);
     VehicleStatusDefinition statusDef =
         req.vehicleStatusId() != null
@@ -180,6 +177,17 @@ public class VehicleService {
 
     auditLog.infoEvent("vehicle_created", Map.of("vehicleId", v.getId().toString()));
     return v.getId();
+  }
+
+  private VehicleModel resolveVehicleModelForCreate(Long vehicleModelId) {
+    if (vehicleModelId != null) {
+      return vehicleModelRepository
+          .findById(vehicleModelId)
+          .orElseThrow(() -> new BadRequestException(message("vehicle.error.modelNotFound")));
+    }
+    return vehicleModelRepository
+        .findFirstByOrderByIdAsc()
+        .orElseThrow(() -> new BadRequestException(message("vehicle.error.modelNotFound")));
   }
 
 

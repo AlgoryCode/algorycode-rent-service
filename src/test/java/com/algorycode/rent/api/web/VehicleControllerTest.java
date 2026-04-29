@@ -151,6 +151,23 @@ class VehicleControllerTest {
   }
 
   @Test
+  void create_withoutVehicleModelId_returns201() throws Exception {
+    when(vehicleService.create(any())).thenReturn(52L);
+
+    mockMvc
+        .perform(
+            post("/vehicles")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {"plate":"34 X 2","year":2024,"countryCode":"TR"}
+                    """))
+        .andExpect(status().isCreated())
+        .andExpect(header().string("Location", containsString("/vehicles/52")))
+        .andExpect(jsonPath("$.message").value("Vehicle created."));
+  }
+
+  @Test
   void getById_notFound_returnsProblemDetail() throws Exception {
     var id = 1L;
     when(vehicleService.getById(id)).thenThrow(new ResourceNotFoundException("Vehicle not found: " + id));
