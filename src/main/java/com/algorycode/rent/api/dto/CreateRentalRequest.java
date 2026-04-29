@@ -38,14 +38,14 @@ public record CreateRentalRequest(
       @Email @Size(max = 255) String email,
       LocalDate birthDate,
       @Size(max = 64) String driverLicenseNo,
-      @Size(max = 6_000_000) String driverLicenseImageDataUrl,
-      @Size(max = 6_000_000) String passportImageDataUrl) {}
+      @Size(max = 67_000_000) String driverLicenseImageDataUrl,
+      @Size(max = 67_000_000) String passportImageDataUrl) {}
 
   public record AdditionalDriverBody(
       @NotBlank @Size(max = 255) String fullName,
       @NotNull LocalDate birthDate,
       @Size(max = 64) String driverLicenseNo,
       @Size(max = 64) String passportNo,
-      @NotBlank @Size(max = 6_000_000) String driverLicenseImageDataUrl,
-      @NotBlank @Size(max = 6_000_000) String passportImageDataUrl) {}
+      @NotBlank @Size(max = 67_000_000) String driverLicenseImageDataUrl,
+      @NotBlank @Size(max = 67_000_000) String passportImageDataUrl) {}
 }

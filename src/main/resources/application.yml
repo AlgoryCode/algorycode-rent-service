@@ -1,7 +1,13 @@
 server:
   port: 8090
+  tomcat:
+    max-http-form-post-size: 120MB
 
 spring:
+  servlet:
+    multipart:
+      max-file-size: 55MB
+      max-request-size: 120MB
   flyway:
     enabled: true
     baseline-on-migrate: true
