@@ -80,6 +80,15 @@ public class Rental extends AbstractAuditableLongEntity {
   @Column(name = "commission_company", length = 255)
   private String commissionCompany;
 
+  @Column(name = "discount_amount", nullable = false, precision = 12, scale = 2)
+  private BigDecimal discountAmount = BigDecimal.ZERO;
+
+  @Column(name = "discount_type", length = 16)
+  private String discountType;
+
+  @Column(name = "net_amount", precision = 12, scale = 2)
+  private BigDecimal netAmount;
+
   @OneToMany(mappedBy = "rental", cascade = CascadeType.ALL, orphanRemoval = true)
   private List<RentalAdditionalDriver> additionalDrivers = new ArrayList<>();
 

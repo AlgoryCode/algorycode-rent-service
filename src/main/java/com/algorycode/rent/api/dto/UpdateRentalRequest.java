@@ -19,6 +19,8 @@ public record UpdateRentalRequest(
     @DecimalMin(value = "0", inclusive = true) BigDecimal commissionAmount,
     RentalCommissionFlow commissionFlow,
     @Size(max = 255) String commissionCompany,
+    @DecimalMin(value = "0", inclusive = true) BigDecimal discountAmount,
+    @Size(max = 16) String discountType,
     RentalStatus status,
     @Valid CustomerBody customer,
     @Size(max = 100) List<@Valid RentalOptionRequest> options) {

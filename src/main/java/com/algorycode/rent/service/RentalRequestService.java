@@ -4,6 +4,7 @@ import com.algorycode.rent.api.dto.CreateRentalRequestFormRequest;
 import com.algorycode.rent.api.dto.RentalOptionRequest;
 import com.algorycode.rent.api.dto.RentalRequestDto;
 import com.algorycode.rent.api.dto.UpdateRentalRequestStatusRequest;
+import com.algorycode.rent.api.dto.ValidateCouponResponse;
 import com.algorycode.rent.api.error.BadRequestException;
 import com.algorycode.rent.api.error.ResourceNotFoundException;
 import com.algorycode.rent.api.mapper.RentalRequestMapper;
@@ -15,6 +16,8 @@ import com.algorycode.rent.domain.request.RentalRequest;
 import com.algorycode.rent.domain.request.RentalRequestAdditionalDriver;
 import com.algorycode.rent.domain.request.RentalRequestCustomerSnapshot;
 import com.algorycode.rent.domain.request.RentalRequestOption;
+import com.algorycode.rent.domain.request.RentalRequestPricedLine;
+import com.algorycode.rent.domain.request.RentalRequestPricedLineType;
 import com.algorycode.rent.domain.request.RentalRequestStatus;
 import com.algorycode.rent.domain.vehicle.Vehicle;
 import com.algorycode.rent.events.RentalRequestCreatedMailEvent;
@@ -36,6 +39,7 @@ import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.time.format.DateTimeFormatter;
@@ -70,6 +74,7 @@ public class RentalRequestService {
   private final RentalRequestNotificationService rentalRequestNotificationService;
   private final AuditLog auditLog;
   private final RentalRequestPricedLineAssembler rentalRequestPricedLineAssembler;
+  private final DiscountCouponService discountCouponService;
 
   public RentalRequestService(
       RentalRequestRepository rentalRequestRepository,
@@ -86,7 +91,8 @@ public class RentalRequestService {
       ApplicationEventPublisher applicationEventPublisher,
       RentalRequestNotificationService rentalRequestNotificationService,
       AuditLog auditLog,
-      RentalRequestPricedLineAssembler rentalRequestPricedLineAssembler) {
+      RentalRequestPricedLineAssembler rentalRequestPricedLineAssembler,
+      DiscountCouponService discountCouponService) {
     this.rentalRequestRepository = rentalRequestRepository;
     this.vehicleRepository = vehicleRepository;
     this.rentalRequestProperties = rentalRequestProperties;
@@ -102,6 +108,7 @@ public class RentalRequestService {
     this.rentalRequestNotificationService = rentalRequestNotificationService;
     this.auditLog = auditLog;
     this.rentalRequestPricedLineAssembler = rentalRequestPricedLineAssembler;
+    this.discountCouponService = discountCouponService;
   }
 
   @Transactional
@@ -177,6 +184,10 @@ public class RentalRequestService {
         handoverQuote,
         entity.getRentalNights() != null ? entity.getRentalNights() : 0,
         greenInsuranceFee);
+
+    if (req.couponCode() != null && !req.couponCode().isBlank()) {
+      applyDiscountCoupon(entity, req.couponCode().trim());
+    }
 
     entity = rentalRequestRepository.save(entity);
     persistRequestMediaToObjectStorage(entity);
@@ -413,6 +424,36 @@ public class RentalRequestService {
   private RentalOptionLineResolution.Resolved resolveRequestOptionLine(Vehicle vehicle, RentalOptionRequest o) {
     return RentalOptionLineResolution.resolve(
         vehicle, o, vehicleOptionDefinitionRepository, reservationExtraOptionTemplateRepository);
+  }
+
+  private void applyDiscountCoupon(RentalRequest entity, String code) {
+    ValidateCouponResponse validation = discountCouponService.validate(code);
+    if (!validation.valid()) {
+      return;
+    }
+    BigDecimal total = entity.getPricingTotalTry() != null ? entity.getPricingTotalTry() : BigDecimal.ZERO;
+    BigDecimal discountAmt;
+    if ("PERCENT".equalsIgnoreCase(validation.discountType())) {
+      discountAmt = total.multiply(validation.discountValue())
+          .divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
+    } else {
+      discountAmt = validation.discountValue().setScale(2, RoundingMode.HALF_UP);
+    }
+    discountAmt = discountAmt.min(total);
+    RentalRequestPricedLine discountLine = new RentalRequestPricedLine();
+    discountLine.setRentalRequest(entity);
+    discountLine.setLineType(RentalRequestPricedLineType.DISCOUNT);
+    discountLine.setTitle("İndirim Kuponu: " + code.toUpperCase());
+    discountLine.setDescription(validation.discountType() + " - " + validation.discountValue());
+    discountLine.setLineOrder(entity.getPricedLines().size());
+    discountLine.setQuantity(1);
+    discountLine.setUnitAmount(discountAmt.negate());
+    discountLine.setLineAmount(discountAmt.negate());
+    discountLine.setCurrency("TRY");
+    discountLine.setPricedAt(Instant.now());
+    entity.getPricedLines().add(discountLine);
+    entity.setPricingTotalTry(total.subtract(discountAmt).setScale(2, RoundingMode.HALF_UP));
+    discountCouponService.incrementUsage(code);
   }
 
   private HandoverLocation resolvePickupForRequest(Vehicle vehicle, Long requestPickupId) {

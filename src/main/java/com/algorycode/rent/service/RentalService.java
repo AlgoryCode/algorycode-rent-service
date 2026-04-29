@@ -34,6 +34,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
 
@@ -174,6 +175,7 @@ public class RentalService {
     }
     rental = rentalRepository.save(rental);
     persistRentalMediaToObjectStorage(rental);
+    rental.setNetAmount(computeNetAmount(rental, vehicle));
     rental = rentalRepository.save(rental);
     auditLog.infoEvent(
         "rental_created",
@@ -263,6 +265,13 @@ public class RentalService {
     rental.setCommissionFlow(nextFlow);
     rental.setCommissionCompany(nextCompany);
 
+    if (req.discountAmount() != null) {
+      rental.setDiscountAmount(req.discountAmount().setScale(2, RoundingMode.HALF_UP));
+    }
+    if (req.discountType() != null) {
+      rental.setDiscountType(req.discountType().isBlank() ? null : req.discountType().trim().toUpperCase());
+    }
+
     if (req.customer() != null) {
       CustomerSnapshot c = rental.getCustomer();
       if (req.customer().fullName() != null) c.setFullName(req.customer().fullName().trim());
@@ -295,6 +304,7 @@ public class RentalService {
       replaceRentalOptions(rental, req.options());
     }
 
+    rental.setNetAmount(computeNetAmount(rental, rental.getVehicle()));
     Rental saved = rentalRepository.save(rental);
     if (nextStatus == RentalStatus.completed) {
       Vehicle v = saved.getVehicle();
@@ -397,6 +407,27 @@ public class RentalService {
       row.setLineOrder(i++);
       rental.getOptions().add(row);
     }
+  }
+
+  private BigDecimal computeNetAmount(Rental rental, Vehicle vehicle) {
+    long days = ChronoUnit.DAYS.between(rental.getStartDate(), rental.getEndDate()) + 1;
+    BigDecimal dailyPrice = vehicle.getRentalDailyPrice() != null ? vehicle.getRentalDailyPrice() : BigDecimal.ZERO;
+    BigDecimal base = dailyPrice.multiply(BigDecimal.valueOf(days));
+    BigDecimal optionsSum = rental.getOptions().stream()
+        .map(o -> o.getPrice() != null ? o.getPrice() : BigDecimal.ZERO)
+        .reduce(BigDecimal.ZERO, BigDecimal::add);
+    BigDecimal commission = rental.getCommissionAmount() != null ? rental.getCommissionAmount() : BigDecimal.ZERO;
+    BigDecimal commissionSigned = rental.getCommissionFlow() == RentalCommissionFlow.pay
+        ? commission.negate()
+        : commission;
+    BigDecimal discountAmt = rental.getDiscountAmount() != null ? rental.getDiscountAmount() : BigDecimal.ZERO;
+    BigDecimal discount;
+    if ("PERCENT".equalsIgnoreCase(rental.getDiscountType())) {
+      discount = base.multiply(discountAmt).divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
+    } else {
+      discount = discountAmt;
+    }
+    return base.add(optionsSum).add(commissionSigned).subtract(discount).setScale(2, RoundingMode.HALF_UP);
   }
 
   private HandoverLocation resolvePickupHandover(Vehicle vehicle, Long requestPickupId) {

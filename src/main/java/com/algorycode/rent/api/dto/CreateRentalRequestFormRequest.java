@@ -30,7 +30,8 @@ public record CreateRentalRequestFormRequest(
     List<@Valid AdditionalDriverBody> additionalDrivers,
     @Size(max = 100) List<@Valid RentalOptionRequest> options,
     /** İstemci özeti (denetim); zorunlu değil — sunucu {@code rental_request_priced_lines} üretir. */
-    @Size(max = 64) List<@Valid PricedLineRequest> pricingLines) {
+    @Size(max = 64) List<@Valid PricedLineRequest> pricingLines,
+    @Size(max = 64) String couponCode) {
 
   public CreateRentalRequestFormRequest {
     pricingLines = Objects.requireNonNullElse(pricingLines, List.of());

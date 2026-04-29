@@ -13,5 +13,7 @@ public enum RentalRequestPricedLineType {
   /** Araç opsiyon tanımı. */
   VEHICLE_OPTION,
   /** Serbest satır (şablonsuz). */
-  CUSTOM_LINE
+  CUSTOM_LINE,
+  /** İndirim kuponu uygulaması (negatif tutar). */
+  DISCOUNT
 }
