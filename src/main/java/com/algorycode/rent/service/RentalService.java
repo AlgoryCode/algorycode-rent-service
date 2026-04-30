@@ -24,6 +24,8 @@ import com.algorycode.rent.repository.RentalRepository;
 import com.algorycode.rent.repository.ReservationExtraOptionTemplateRepository;
 import com.algorycode.rent.repository.VehicleOptionDefinitionRepository;
 import com.algorycode.rent.repository.VehicleRepository;
+import com.algorycode.rent.repository.VehicleStatusDefinitionRepository;
+import com.algorycode.rent.service.readmodel.FeFleetSnapshotBuilder;
 import com.algorycode.rent.service.support.DateRangeValidator;
 import com.algorycode.rent.service.support.RentalCommissionValidator;
 import com.algorycode.rent.service.support.RentalOptionLineResolution;
@@ -33,8 +35,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 
@@ -48,6 +52,8 @@ public class RentalService {
   private final HandoverLocationService handoverLocationService;
   private final VehicleOptionDefinitionRepository vehicleOptionDefinitionRepository;
   private final ReservationExtraOptionTemplateRepository reservationExtraOptionTemplateRepository;
+  private final VehicleStatusDefinitionRepository vehicleStatusDefinitionRepository;
+  private final FeFleetSnapshotBuilder feFleetSnapshotBuilder;
   private final AuditLog auditLog;
 
   public RentalService(
@@ -58,6 +64,8 @@ public class RentalService {
       HandoverLocationService handoverLocationService,
       VehicleOptionDefinitionRepository vehicleOptionDefinitionRepository,
       ReservationExtraOptionTemplateRepository reservationExtraOptionTemplateRepository,
+      VehicleStatusDefinitionRepository vehicleStatusDefinitionRepository,
+      FeFleetSnapshotBuilder feFleetSnapshotBuilder,
       AuditLog auditLog) {
     this.rentalRepository = rentalRepository;
     this.vehicleRepository = vehicleRepository;
@@ -66,6 +74,8 @@ public class RentalService {
     this.handoverLocationService = handoverLocationService;
     this.vehicleOptionDefinitionRepository = vehicleOptionDefinitionRepository;
     this.reservationExtraOptionTemplateRepository = reservationExtraOptionTemplateRepository;
+    this.vehicleStatusDefinitionRepository = vehicleStatusDefinitionRepository;
+    this.feFleetSnapshotBuilder = feFleetSnapshotBuilder;
     this.auditLog = auditLog;
   }
 
@@ -174,6 +184,7 @@ public class RentalService {
       replaceRentalOptions(rental, req.options());
     }
     rental = rentalRepository.save(rental);
+    syncVehicleStatusWithRentals(rental.getVehicle(), rental.getId(), rental.getStatus(), false);
     persistRentalMediaToObjectStorage(rental);
     rental.setNetAmount(computeNetAmount(rental, vehicle));
     rental = rentalRepository.save(rental);
@@ -193,6 +204,7 @@ public class RentalService {
             .findById(id)
             .orElseThrow(() -> new ResourceNotFoundException("Rental not found: " + id));
     if (rental.getStatus() == status) {
+      syncVehicleStatusWithRentals(rental.getVehicle(), rental.getId(), rental.getStatus(), false);
       return RentalMapper.toDto(rental, objectStorageService::resolvePublicUrl);
     }
     if (status != RentalStatus.cancelled) {
@@ -202,6 +214,11 @@ public class RentalService {
     }
     rental.setStatus(status);
     Rental saved = rentalRepository.save(rental);
+    syncVehicleStatusWithRentals(
+        saved.getVehicle(),
+        saved.getId(),
+        saved.getStatus(),
+        status == RentalStatus.completed || status == RentalStatus.cancelled);
     if (status == RentalStatus.completed) {
       Vehicle v = saved.getVehicle();
       if (v != null && saved.getReturnHandoverLocation() != null) {
@@ -306,6 +323,11 @@ public class RentalService {
 
     rental.setNetAmount(computeNetAmount(rental, rental.getVehicle()));
     Rental saved = rentalRepository.save(rental);
+    syncVehicleStatusWithRentals(
+        saved.getVehicle(),
+        saved.getId(),
+        saved.getStatus(),
+        req.status() == RentalStatus.completed || req.status() == RentalStatus.cancelled);
     if (nextStatus == RentalStatus.completed) {
       Vehicle v = saved.getVehicle();
       if (v != null && saved.getReturnHandoverLocation() != null) {
@@ -428,6 +450,52 @@ public class RentalService {
       discount = discountAmt;
     }
     return base.add(optionsSum).add(commissionSigned).subtract(discount).setScale(2, RoundingMode.HALF_UP);
+  }
+
+  private void syncVehicleStatusWithRentals(
+      Vehicle vehicle,
+      Long currentRentalId,
+      RentalStatus currentRentalStatus,
+      boolean forceTouchUpdatedAt) {
+    if (vehicle == null || vehicle.getId() == null) {
+      return;
+    }
+    boolean currentRentalBlocks =
+        currentRentalStatus == RentalStatus.active || currentRentalStatus == RentalStatus.pending;
+    boolean hasBlockingRental =
+        currentRentalBlocks
+            || rentalRepository.existsByVehicle_IdAndStatusInAndIdNot(
+                vehicle.getId(),
+                EnumSet.of(RentalStatus.active, RentalStatus.pending),
+                currentRentalId != null ? currentRentalId : -1L);
+    VehicleStatus targetStatus;
+    if (hasBlockingRental) {
+      targetStatus = VehicleStatus.rented;
+    } else if (vehicle.getStatus() == VehicleStatus.maintenance) {
+      return;
+    } else {
+      targetStatus = VehicleStatus.available;
+    }
+    String targetCode = targetStatus.name();
+    if (vehicle.getStatusDefinition() != null
+        && targetCode.equalsIgnoreCase(vehicle.getStatusDefinition().getCode())) {
+      if (forceTouchUpdatedAt) {
+        vehicle.setUpdatedAt(Instant.now());
+        vehicle.setFeFleetSnapshot(feFleetSnapshotBuilder.build(vehicle));
+        vehicleRepository.save(vehicle);
+      }
+      return;
+    }
+    var definition =
+        vehicleStatusDefinitionRepository
+            .findByCodeIgnoreCase(targetCode)
+            .orElseThrow(
+                () ->
+                    new BadRequestException(
+                        "Araç statüsü tanımı bulunamadı: " + targetCode));
+    vehicle.setStatusDefinition(definition);
+    vehicle.setFeFleetSnapshot(feFleetSnapshotBuilder.build(vehicle));
+    vehicleRepository.save(vehicle);
   }
 
   private HandoverLocation resolvePickupHandover(Vehicle vehicle, Long requestPickupId) {

@@ -9,6 +9,7 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDate;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -27,6 +28,11 @@ public interface RentalRepository extends JpaRepository<Rental, Long>, JpaSpecif
   List<Rental> findByVehicle_IdAndStatusOrderByCreatedAtDesc(Long vehicleId, RentalStatus status);
 
   boolean existsByVehicle_Id(Long vehicleId);
+
+  boolean existsByVehicle_IdAndStatusIn(Long vehicleId, Collection<RentalStatus> statuses);
+
+  boolean existsByVehicle_IdAndStatusInAndIdNot(
+      Long vehicleId, Collection<RentalStatus> statuses, Long id);
 
   @EntityGraph(attributePaths = {"vehicle", "options"})
   @Query("select r from Rental r where r.id = :id")
