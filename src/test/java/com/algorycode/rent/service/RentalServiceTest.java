@@ -117,7 +117,7 @@ class RentalServiceTest {
     var id = 1L;
     var r = sampleRental(1L);
     r.setId(id);
-    when(rentalRepository.findById(id)).thenReturn(Optional.of(r));
+    when(rentalRepository.findByIdWithVehicleAndOptions(id)).thenReturn(Optional.of(r));
 
     var dto = rentalService.getById(id);
 
@@ -128,7 +128,7 @@ class RentalServiceTest {
   @Test
   void getById_throwsWhenMissing() {
     var id = 1L;
-    when(rentalRepository.findById(id)).thenReturn(Optional.empty());
+    when(rentalRepository.findByIdWithVehicleAndOptions(id)).thenReturn(Optional.empty());
 
     assertThatThrownBy(() -> rentalService.getById(id))
         .isInstanceOf(ResourceNotFoundException.class)
@@ -197,7 +197,6 @@ class RentalServiceTest {
             null,
             null,
             null,
-            null,
             RentalStatus.completed,
             null,
             null);
@@ -248,8 +247,7 @@ class RentalServiceTest {
 
     rentalService.update(
         rentalId,
-        new UpdateRentalRequest(
-            null, null, null, null, null, null, null, RentalStatus.completed, null, null));
+        new UpdateRentalRequest(null, null, null, null, null, null, RentalStatus.completed, null, null));
 
     verify(vehicleRepository, never()).save(any());
   }
@@ -273,7 +271,7 @@ class RentalServiceTest {
 
     assertThat(dto.status()).isEqualTo(RentalStatus.cancelled);
     verify(rentalRepository).save(any(Rental.class));
-    verify(vehicleRepository).save(any(Vehicle.class));
+    verify(vehicleRepository, never()).save(any(Vehicle.class));
   }
 
   @Test
@@ -314,14 +312,15 @@ class RentalServiceTest {
 
     rentalService.updateStatus(21L, RentalStatus.pending);
 
-    verify(vehicleRepository).save(any(Vehicle.class));
+    verify(vehicleRepository, never()).save(any(Vehicle.class));
   }
 
   @Test
-  void create_whenVehicleRented_throwsConflict() {
+  void create_whenVehicleMaintenance_throwsConflict() {
     Vehicle vehicle = new Vehicle();
     vehicle.setId(1L);
-    VehicleTestFixtures.attachBrandModelStatus(vehicle, "Fiat", "Egea", VehicleStatus.rented);
+    vehicle.setRentalDailyPrice(BigDecimal.valueOf(100));
+    VehicleTestFixtures.attachBrandModelStatus(vehicle, "Fiat", "Egea", VehicleStatus.maintenance);
     when(vehicleRepository.findByIdAndDeletedFalse(1L)).thenReturn(Optional.of(vehicle));
 
     CreateRentalRequest req =
@@ -333,30 +332,34 @@ class RentalServiceTest {
             null,
             null,
             new CreateRentalRequest.CustomerBody("Ali", "", "P", "+90", null, null, null, null),
-            BigDecimal.ZERO,
-            RentalCommissionFlow.collect,
-            null,
             null,
             null,
             null);
 
-    var vehicle = new Vehicle();
-    vehicle.setId(vehicleId);
-    vehicle.setPlate("06 X 06");
-    VehicleTestFixtures.attachBrandModelStatus(vehicle, "VW", "Golf", VehicleStatus.available);
-    vehicle.setYear(2022);
-    vehicle.setCreatedAt(Instant.now());
-    vehicle.setUpdatedAt(Instant.now());
+    assertThatThrownBy(() -> rentalService.create(req))
+        .isInstanceOf(ConflictException.class)
+        .hasMessageContaining("Bakım");
+    verify(rentalRepository, never()).save(any());
+  }
 
-    var customer = new CustomerSnapshot();
+  private Rental sampleRental(Long vehicleIdParam) {
+    Vehicle v = new Vehicle();
+    v.setId(vehicleIdParam);
+    v.setPlate("06 X 06");
+    v.setRentalDailyPrice(BigDecimal.valueOf(100));
+    VehicleTestFixtures.attachBrandModelStatus(v, "VW", "Golf", VehicleStatus.available);
+    v.setYear(2022);
+    v.setCreatedAt(Instant.now());
+    v.setUpdatedAt(Instant.now());
+
+    CustomerSnapshot customer = new CustomerSnapshot();
     customer.setFullName("Test User");
     customer.setNationalId("11111111111");
     customer.setPassportNo("P1");
     customer.setPhone("+90");
 
-    var rental = new Rental();
-    rental.setId(1L);
-    rental.setVehicle(vehicle);
+    Rental rental = new Rental();
+    rental.setVehicle(v);
     rental.setStartDate(LocalDate.of(2026, 4, 1));
     rental.setEndDate(LocalDate.of(2026, 4, 10));
     RentalTestFixtures.attachRentalStatus(rental, RentalStatus.active);

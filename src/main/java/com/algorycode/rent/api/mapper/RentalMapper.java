@@ -14,8 +14,8 @@ import com.algorycode.rent.domain.rental.Rental;
 import com.algorycode.rent.domain.rental.RentalFeedback;
 import com.algorycode.rent.domain.rental.RentalOption;
 import com.algorycode.rent.domain.rental.RentalPhoto;
+import com.algorycode.rent.service.support.RentalCommissionFromVehicle;
 
-import java.util.Locale;
 import java.util.List;
 import java.util.function.Function;
 
@@ -48,11 +48,10 @@ public final class RentalMapper {
     List<AccidentReportDto> accidents =
         r.getAccidentReports().stream().map(a -> accidentDto(a, assetResolver)).toList();
     List<RentalOptionDto> options = r.getOptions().stream().map(RentalMapper::optionDto).toList();
-    var sd = r.getStatusDefinition();
-    String statusCode =
-        sd == null || sd.getCode() == null || sd.getCode().isBlank()
-            ? r.getStatus().name()
-            : sd.getCode().trim().toLowerCase(Locale.ROOT);
+    var commissionSnap =
+        r.getVehicle() != null
+            ? RentalCommissionFromVehicle.deriveSnapshot(r, r.getVehicle())
+            : RentalCommissionFromVehicle.clearedSnapshot();
     return new RentalDto(
         r.getId(),
         r.getVehicleId(),
@@ -63,10 +62,9 @@ public final class RentalMapper {
         HandoverLocationMapper.toRef(r.getReturnHandoverLocation()),
         r.getCreatedAt(),
         r.getStatus(),
-        statusCode,
-        r.getCommissionAmount(),
-        r.getCommissionFlow(),
-        r.getCommissionCompany(),
+        commissionSnap.amount(),
+        commissionSnap.flow(),
+        commissionSnap.company(),
         r.getDiscountAmount(),
         r.getDiscountType(),
         r.getNetAmount(),

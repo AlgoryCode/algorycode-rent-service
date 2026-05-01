@@ -1,6 +1,5 @@
 package com.algorycode.rent.api.dto;
 
-import com.algorycode.rent.domain.rental.RentalCommissionFlow;
 import com.algorycode.rent.domain.rental.RentalStatus;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.DecimalMin;
@@ -15,10 +14,6 @@ public record UpdateRentalRequest(
     LocalDate endDate,
     Long pickupHandoverLocationId,
     Long returnHandoverLocationId,
-    /** Sıfır geçerlidir (kendi aracı, komisyonsuz kapatma vb.). */
-    @DecimalMin(value = "0", inclusive = true) BigDecimal commissionAmount,
-    RentalCommissionFlow commissionFlow,
-    @Size(max = 255) String commissionCompany,
     @DecimalMin(value = "0", inclusive = true) BigDecimal discountAmount,
     @Size(max = 16) String discountType,
     RentalStatus status,

@@ -1,15 +1,12 @@
 package com.algorycode.rent.api.dto;
 
 import com.algorycode.rent.domain.rental.RentalStatus;
-import com.algorycode.rent.domain.rental.RentalCommissionFlow;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 
-import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
@@ -22,9 +19,6 @@ public record CreateRentalRequest(
     Long pickupHandoverLocationId,
     Long returnHandoverLocationId,
     @NotNull @Valid CustomerBody customer,
-    @NotNull @DecimalMin(value = "0", inclusive = true) BigDecimal commissionAmount,
-    @NotNull RentalCommissionFlow commissionFlow,
-    @Size(max = 255) String commissionCompany,
     @Size(max = 1)
     List<@Valid AdditionalDriverBody> additionalDrivers,
     RentalStatus status,
