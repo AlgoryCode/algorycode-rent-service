@@ -16,11 +16,13 @@ import com.algorycode.rent.domain.rental.Rental;
 import com.algorycode.rent.domain.rental.RentalCommissionFlow;
 import com.algorycode.rent.domain.rental.RentalOption;
 import com.algorycode.rent.domain.rental.RentalStatus;
+import com.algorycode.rent.domain.rental.RentalStatusDefinition;
 import com.algorycode.rent.domain.vehicle.Vehicle;
 import com.algorycode.rent.domain.vehicle.VehicleStatus;
 import com.algorycode.rent.logging.AuditLog;
 import com.algorycode.rent.logging.SafeReasonCodes;
 import com.algorycode.rent.repository.RentalRepository;
+import com.algorycode.rent.repository.RentalStatusDefinitionRepository;
 import com.algorycode.rent.repository.ReservationExtraOptionTemplateRepository;
 import com.algorycode.rent.repository.VehicleOptionDefinitionRepository;
 import com.algorycode.rent.repository.VehicleRepository;
@@ -38,7 +40,6 @@ import java.math.RoundingMode;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
-import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 
@@ -53,6 +54,7 @@ public class RentalService {
   private final VehicleOptionDefinitionRepository vehicleOptionDefinitionRepository;
   private final ReservationExtraOptionTemplateRepository reservationExtraOptionTemplateRepository;
   private final VehicleStatusDefinitionRepository vehicleStatusDefinitionRepository;
+  private final RentalStatusDefinitionRepository rentalStatusDefinitionRepository;
   private final FeFleetSnapshotBuilder feFleetSnapshotBuilder;
   private final AuditLog auditLog;
 
@@ -65,6 +67,7 @@ public class RentalService {
       VehicleOptionDefinitionRepository vehicleOptionDefinitionRepository,
       ReservationExtraOptionTemplateRepository reservationExtraOptionTemplateRepository,
       VehicleStatusDefinitionRepository vehicleStatusDefinitionRepository,
+      RentalStatusDefinitionRepository rentalStatusDefinitionRepository,
       FeFleetSnapshotBuilder feFleetSnapshotBuilder,
       AuditLog auditLog) {
     this.rentalRepository = rentalRepository;
@@ -75,6 +78,7 @@ public class RentalService {
     this.vehicleOptionDefinitionRepository = vehicleOptionDefinitionRepository;
     this.reservationExtraOptionTemplateRepository = reservationExtraOptionTemplateRepository;
     this.vehicleStatusDefinitionRepository = vehicleStatusDefinitionRepository;
+    this.rentalStatusDefinitionRepository = rentalStatusDefinitionRepository;
     this.feFleetSnapshotBuilder = feFleetSnapshotBuilder;
     this.auditLog = auditLog;
   }
@@ -85,11 +89,13 @@ public class RentalService {
 
     List<Rental> base;
     if (vehicleId != null && status != null) {
-      base = rentalRepository.findByVehicle_IdAndStatusOrderByCreatedAtDesc(vehicleId, status);
+      base =
+          rentalRepository.findByVehicle_IdAndStatusDefinition_CodeOrderByCreatedAtDesc(
+              vehicleId, status.name());
     } else if (vehicleId != null) {
       base = rentalRepository.findByVehicle_IdOrderByCreatedAtDesc(vehicleId);
     } else if (status != null) {
-      base = rentalRepository.findByStatusOrderByCreatedAtDesc(status);
+      base = rentalRepository.findByStatusDefinition_CodeOrderByCreatedAtDesc(status.name());
     } else {
       base = rentalRepository.findAllByOrderByCreatedAtDesc();
     }
@@ -125,6 +131,9 @@ public class RentalService {
     if (vehicle.getStatus() == VehicleStatus.maintenance) {
       throw new ConflictException("Bakımdaki araç kiralanamaz.");
     }
+    if (vehicle.getStatus() == VehicleStatus.rented) {
+      throw new ConflictException("Kirada olan araç kiralanamaz.");
+    }
     RentalCommissionValidator.validate(
         req.commissionAmount(), req.commissionFlow(), req.commissionCompany());
     RentalStatus status = req.status() != null ? req.status() : RentalStatus.active;
@@ -139,7 +148,7 @@ public class RentalService {
         resolvePickupHandover(vehicle, req.pickupHandoverLocationId()));
     rental.setReturnHandoverLocation(
         resolveReturnHandover(vehicle, req.returnHandoverLocationId()));
-    rental.setStatus(status);
+    rental.setStatusDefinition(requireRentalStatusDefinition(status));
     rental.setCommissionAmount(req.commissionAmount().setScale(2, RoundingMode.HALF_UP));
     rental.setCommissionFlow(req.commissionFlow());
     rental.setCommissionCompany(
@@ -212,7 +221,7 @@ public class RentalService {
           rentalRepository.findByVehicle_IdOrderByCreatedAtDesc(rental.getVehicle().getId());
       ensureNoOverlap(sameVehicle, rental.getStartDate(), rental.getEndDate(), rental.getId());
     }
-    rental.setStatus(status);
+    rental.setStatusDefinition(requireRentalStatusDefinition(status));
     Rental saved = rentalRepository.save(rental);
     syncVehicleStatusWithRentals(
         saved.getVehicle(),
@@ -277,7 +286,7 @@ public class RentalService {
       rental.setReturnHandoverLocation(
           handoverLocationService.requireForAssignment(rid, HandoverLocationKind.RETURN));
     }
-    rental.setStatus(nextStatus);
+    rental.setStatusDefinition(requireRentalStatusDefinition(nextStatus));
     rental.setCommissionAmount(nextCommission);
     rental.setCommissionFlow(nextFlow);
     rental.setCommissionCompany(nextCompany);
@@ -327,7 +336,7 @@ public class RentalService {
         saved.getVehicle(),
         saved.getId(),
         saved.getStatus(),
-        req.status() == RentalStatus.completed || req.status() == RentalStatus.cancelled);
+        nextStatus == RentalStatus.completed || nextStatus == RentalStatus.cancelled);
     if (nextStatus == RentalStatus.completed) {
       Vehicle v = saved.getVehicle();
       if (v != null && saved.getReturnHandoverLocation() != null) {
@@ -452,6 +461,13 @@ public class RentalService {
     return base.add(optionsSum).add(commissionSigned).subtract(discount).setScale(2, RoundingMode.HALF_UP);
   }
 
+  private RentalStatusDefinition requireRentalStatusDefinition(RentalStatus status) {
+    return rentalStatusDefinitionRepository
+        .findByCodeIgnoreCase(status.name())
+        .orElseThrow(
+            () -> new BadRequestException("Kiralama statüsü tanımı bulunamadı: " + status.name()));
+  }
+
   private void syncVehicleStatusWithRentals(
       Vehicle vehicle,
       Long currentRentalId,
@@ -464,9 +480,9 @@ public class RentalService {
         currentRentalStatus == RentalStatus.active || currentRentalStatus == RentalStatus.pending;
     boolean hasBlockingRental =
         currentRentalBlocks
-            || rentalRepository.existsByVehicle_IdAndStatusInAndIdNot(
+            || rentalRepository.existsByVehicle_IdAndStatusDefinition_CodeInAndIdNot(
                 vehicle.getId(),
-                EnumSet.of(RentalStatus.active, RentalStatus.pending),
+                List.of(RentalStatus.active.name(), RentalStatus.pending.name()),
                 currentRentalId != null ? currentRentalId : -1L);
     VehicleStatus targetStatus;
     if (hasBlockingRental) {

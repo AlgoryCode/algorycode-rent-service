@@ -8,6 +8,7 @@ import com.algorycode.rent.domain.rental.RentalStatus;
 import com.algorycode.rent.domain.vehicle.Vehicle;
 import com.algorycode.rent.domain.vehicle.VehicleStatus;
 import com.algorycode.rent.repository.RentalRepository;
+import com.algorycode.rent.service.support.RentalTestFixtures;
 import com.algorycode.rent.service.support.VehicleTestFixtures;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -86,7 +87,7 @@ class RentalReportServiceTest {
     r.setVehicle(v);
     r.setStartDate(LocalDate.of(2026, 1, 5));
     r.setEndDate(LocalDate.of(2026, 1, 7));
-    r.setStatus(RentalStatus.active);
+    RentalTestFixtures.attachRentalStatus(r, RentalStatus.active);
     r.setCommissionAmount(new BigDecimal("12.34"));
     r.setOptions(List.of(opt));
 
@@ -114,7 +115,7 @@ class RentalReportServiceTest {
     LocalDate to = LocalDate.of(2026, 2, 28);
 
     Rental cancelled = new Rental();
-    cancelled.setStatus(RentalStatus.cancelled);
+    RentalTestFixtures.attachRentalStatus(cancelled, RentalStatus.cancelled);
     cancelled.setVehicle(new Vehicle());
     cancelled.getVehicle().setId(1L);
     cancelled.getVehicle().setRentalDailyPrice(BigDecimal.TEN);

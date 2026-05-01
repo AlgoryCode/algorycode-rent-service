@@ -1,7 +1,6 @@
 package com.algorycode.rent.repository;
 
 import com.algorycode.rent.domain.rental.Rental;
-import com.algorycode.rent.domain.rental.RentalStatus;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
@@ -15,26 +14,26 @@ import java.util.Optional;
 
 public interface RentalRepository extends JpaRepository<Rental, Long>, JpaSpecificationExecutor<Rental> {
 
-  @EntityGraph(attributePaths = {"vehicle"})
+  @EntityGraph(attributePaths = {"vehicle", "statusDefinition"})
   List<Rental> findAllByOrderByCreatedAtDesc();
 
-  @EntityGraph(attributePaths = {"vehicle"})
-  List<Rental> findByStatusOrderByCreatedAtDesc(RentalStatus status);
+  @EntityGraph(attributePaths = {"vehicle", "statusDefinition"})
+  List<Rental> findByStatusDefinition_CodeOrderByCreatedAtDesc(String code);
 
-  @EntityGraph(attributePaths = {"vehicle"})
+  @EntityGraph(attributePaths = {"vehicle", "statusDefinition"})
   List<Rental> findByVehicle_IdOrderByCreatedAtDesc(Long vehicleId);
 
-  @EntityGraph(attributePaths = {"vehicle"})
-  List<Rental> findByVehicle_IdAndStatusOrderByCreatedAtDesc(Long vehicleId, RentalStatus status);
+  @EntityGraph(attributePaths = {"vehicle", "statusDefinition"})
+  List<Rental> findByVehicle_IdAndStatusDefinition_CodeOrderByCreatedAtDesc(Long vehicleId, String code);
 
   boolean existsByVehicle_Id(Long vehicleId);
 
-  boolean existsByVehicle_IdAndStatusIn(Long vehicleId, Collection<RentalStatus> statuses);
+  boolean existsByVehicle_IdAndStatusDefinition_CodeIn(Long vehicleId, Collection<String> codes);
 
-  boolean existsByVehicle_IdAndStatusInAndIdNot(
-      Long vehicleId, Collection<RentalStatus> statuses, Long id);
+  boolean existsByVehicle_IdAndStatusDefinition_CodeInAndIdNot(
+      Long vehicleId, Collection<String> codes, Long id);
 
-  @EntityGraph(attributePaths = {"vehicle", "options"})
+  @EntityGraph(attributePaths = {"vehicle", "statusDefinition", "options"})
   @Query("select r from Rental r where r.id = :id")
   Optional<Rental> findByIdWithVehicleAndOptions(@Param("id") Long id);
 
@@ -46,16 +45,11 @@ public interface RentalRepository extends JpaRepository<Rental, Long>, JpaSpecif
       """)
   List<Long> findIdsByCustomerRecordKey(@Param("recordKey") String recordKey);
 
-  /**
-   * Rapor: iptal haric, tarih araligiyla kesisen kiralamalar; gelir gunluk fiyat * gun + opsiyonlardan.
-   */
-  @EntityGraph(attributePaths = {"vehicle", "options"})
+  @EntityGraph(attributePaths = {"vehicle", "statusDefinition", "options"})
   @Query(
       """
-      select distinct r from Rental r
-      join fetch r.vehicle v
-      left join fetch r.options
-      where r.status <> 'cancelled'
+      select distinct r from Rental r join r.vehicle v
+      where r.statusDefinition.code <> 'cancelled'
         and r.endDate >= :from
         and r.startDate <= :to
         and (:vehicleId is null or v.id = :vehicleId)
@@ -63,15 +57,11 @@ public interface RentalRepository extends JpaRepository<Rental, Long>, JpaSpecif
   List<Rental> findForRevenueReport(
       @Param("from") LocalDate from, @Param("to") LocalDate to, @Param("vehicleId") Long vehicleId);
 
-  /**
-   * Araç uygunluk listesi: [from, to] veya to+1 günüyle kesişebilecek iptal olmayan kiralamalar
-   * (from/to dahil çakışma + bitiş ertesi gün tamponu).
-   */
-  @EntityGraph(attributePaths = {"vehicle"})
+  @EntityGraph(attributePaths = {"vehicle", "statusDefinition"})
   @Query(
       """
       select r from Rental r join r.vehicle v
-      where r.status <> 'cancelled'
+      where r.statusDefinition.code <> 'cancelled'
         and v.deleted = false
         and r.endDate >= :from
         and r.startDate <= :toOrDayAfter
@@ -79,15 +69,13 @@ public interface RentalRepository extends JpaRepository<Rental, Long>, JpaSpecif
   List<Rental> findPotentiallyBlockingForAvailability(
       @Param("from") LocalDate from, @Param("toOrDayAfter") LocalDate toOrDayAfter);
 
-  /**
-   * Araç takvim doluluğu: yalnızca aktif kiralamalar, [from, to] ile kesişen (uçlar dahil).
-   */
+  @EntityGraph(attributePaths = {"vehicle", "statusDefinition"})
   @Query(
       """
       select r from Rental r join r.vehicle v
       where v.id = :vehicleId
         and v.deleted = false
-        and r.status = 'active'
+        and r.statusDefinition.code = 'active'
         and r.endDate >= :from
         and r.startDate <= :to
       order by r.startDate asc, r.endDate asc

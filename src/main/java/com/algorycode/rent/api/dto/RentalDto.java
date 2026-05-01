@@ -19,6 +19,7 @@ public record RentalDto(
     HandoverLocationRefDto returnHandoverLocation,
     Instant createdAt,
     RentalStatus status,
+    String statusCode,
     BigDecimal commissionAmount,
     RentalCommissionFlow commissionFlow,
     String commissionCompany,

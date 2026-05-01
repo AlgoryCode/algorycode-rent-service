@@ -60,9 +60,9 @@ public class Rental extends AbstractAuditableLongEntity {
   @JoinColumn(name = "return_handover_location_id", insertable = false, updatable = false)
   private HandoverLocation returnHandoverLocation;
 
-  @Enumerated(EnumType.STRING)
-  @Column(nullable = false, length = 24)
-  private RentalStatus status = RentalStatus.active;
+  @ManyToOne(fetch = FetchType.LAZY, optional = false)
+  @JoinColumn(name = "rental_status_id", nullable = false)
+  private RentalStatusDefinition statusDefinition;
 
   @Embedded
   private CustomerSnapshot customer;
@@ -104,6 +104,13 @@ public class Rental extends AbstractAuditableLongEntity {
   @OneToMany(mappedBy = "rental", cascade = CascadeType.ALL, orphanRemoval = true)
   @OrderBy("lineOrder ASC")
   private List<RentalOption> options = new ArrayList<>();
+
+  public RentalStatus getStatus() {
+    if (statusDefinition == null) {
+      return RentalStatus.active;
+    }
+    return RentalStatus.fromCode(statusDefinition.getCode());
+  }
 
   @PrePersist
   @PreUpdate

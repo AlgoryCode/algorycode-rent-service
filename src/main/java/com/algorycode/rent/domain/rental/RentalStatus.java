@@ -5,5 +5,12 @@ public enum RentalStatus {
   active,
   pending,
   completed,
-  cancelled
+  cancelled;
+
+  public static RentalStatus fromCode(String code) {
+    if (code == null || code.isBlank()) {
+      return active;
+    }
+    return valueOf(code.trim().toLowerCase());
+  }
 }

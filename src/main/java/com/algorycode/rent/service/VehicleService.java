@@ -528,6 +528,11 @@ public class VehicleService {
                 .map(VehicleBodyStyle::getLabelTr)
                 .orElse(null);
 
+    String statusCode =
+        v.getStatusDefinition().getCode() == null || v.getStatusDefinition().getCode().isBlank()
+            ? v.getStatus().name()
+            : v.getStatusDefinition().getCode().trim().toLowerCase(java.util.Locale.ROOT);
+
     return new VehicleDto(
         v.getId(),
         v.getVehicleModel().getId(),
@@ -537,6 +542,7 @@ public class VehicleService {
         v.getModel(),
         v.getYear() != null ? v.getYear() : 0,
         v.getStatus(),
+        statusCode,
         v.isExternal(),
         v.getExternalCompany(),
         v.getRentalDailyPrice(),

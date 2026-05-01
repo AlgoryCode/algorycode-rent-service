@@ -23,6 +23,7 @@ import com.algorycode.rent.repository.VehicleModelRepository;
 import com.algorycode.rent.repository.VehicleRepository;
 import com.algorycode.rent.repository.VehicleStatusDefinitionRepository;
 import com.algorycode.rent.repository.VehicleTransmissionTypeRepository;
+import com.algorycode.rent.service.support.RentalTestFixtures;
 import com.algorycode.rent.service.support.VehicleTestFixtures;
 import com.algorycode.rent.service.readmodel.FeFleetSnapshotBuilder;
 import com.algorycode.rent.service.support.VehicleAvailabilitySlotAnalyzer;
@@ -106,7 +107,7 @@ class VehicleServiceTest {
     Rental r = new Rental();
     r.setStartDate(LocalDate.of(2026, 6, 15));
     r.setEndDate(LocalDate.of(2026, 6, 16));
-    r.setStatus(RentalStatus.active);
+    RentalTestFixtures.attachRentalStatus(r, RentalStatus.active);
     Vehicle rv = new Vehicle();
     rv.setId(vid);
     r.setVehicle(rv);
@@ -215,7 +216,7 @@ class VehicleServiceTest {
     Rental r = new Rental();
     r.setStartDate(LocalDate.of(2026, 6, 20));
     r.setEndDate(LocalDate.of(2026, 6, 22));
-    r.setStatus(RentalStatus.active);
+    RentalTestFixtures.attachRentalStatus(r, RentalStatus.active);
     Vehicle rv = new Vehicle();
     rv.setId(vid);
     r.setVehicle(rv);

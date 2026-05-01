@@ -6,6 +6,7 @@ import com.algorycode.rent.api.dto.RentalRequestDto;
 import com.algorycode.rent.api.dto.UpdateRentalRequestStatusRequest;
 import com.algorycode.rent.api.dto.ValidateCouponResponse;
 import com.algorycode.rent.api.error.BadRequestException;
+import com.algorycode.rent.api.error.ConflictException;
 import com.algorycode.rent.api.error.ResourceNotFoundException;
 import com.algorycode.rent.api.mapper.RentalRequestMapper;
 import com.algorycode.rent.config.AppRentalRequestProperties;
@@ -20,6 +21,7 @@ import com.algorycode.rent.domain.request.RentalRequestPricedLine;
 import com.algorycode.rent.domain.request.RentalRequestPricedLineType;
 import com.algorycode.rent.domain.request.RentalRequestStatus;
 import com.algorycode.rent.domain.vehicle.Vehicle;
+import com.algorycode.rent.domain.vehicle.VehicleStatus;
 import com.algorycode.rent.events.RentalRequestCreatedMailEvent;
 import com.algorycode.rent.logging.AuditLog;
 import com.algorycode.rent.repository.RentalRequestRepository;
@@ -120,6 +122,12 @@ public class RentalRequestService {
           vehicleRepository
               .findByIdAndDeletedFalse(req.vehicleId())
               .orElseThrow(() -> new ResourceNotFoundException("Vehicle not found: " + req.vehicleId()));
+      if (vehicle.getStatus() == VehicleStatus.maintenance) {
+        throw new ConflictException("Bakımdaki araç için talep oluşturulamaz.");
+      }
+      if (vehicle.getStatus() == VehicleStatus.rented) {
+        throw new ConflictException("Kirada olan araç için talep oluşturulamaz.");
+      }
     }
 
     RentalRequest entity = new RentalRequest();

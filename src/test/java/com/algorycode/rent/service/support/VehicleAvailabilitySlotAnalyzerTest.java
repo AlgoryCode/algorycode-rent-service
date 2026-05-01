@@ -99,7 +99,7 @@ class VehicleAvailabilitySlotAnalyzerTest {
     Rental r = new Rental();
     r.setStartDate(start);
     r.setEndDate(end);
-    r.setStatus(RentalStatus.active);
+    RentalTestFixtures.attachRentalStatus(r, RentalStatus.active);
     Vehicle v = new Vehicle();
     v.setId(vehicleId);
     r.setVehicle(v);

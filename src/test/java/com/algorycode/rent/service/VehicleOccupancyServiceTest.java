@@ -10,6 +10,7 @@ import com.algorycode.rent.domain.vehicle.Vehicle;
 import com.algorycode.rent.repository.RentalRepository;
 import com.algorycode.rent.repository.RentalRequestRepository;
 import com.algorycode.rent.repository.VehicleRepository;
+import com.algorycode.rent.service.support.RentalTestFixtures;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
@@ -46,7 +47,7 @@ class VehicleOccupancyServiceTest {
     rental.setId(rid);
     rental.setStartDate(LocalDate.of(2026, 4, 19));
     rental.setEndDate(LocalDate.of(2026, 4, 21));
-    rental.setStatus(RentalStatus.active);
+    RentalTestFixtures.attachRentalStatus(rental, RentalStatus.active);
     when(rentalRepository.findCalendarBlockingRentals(eq(vid), any(), any())).thenReturn(List.of(rental));
 
     Long qid = 1L;

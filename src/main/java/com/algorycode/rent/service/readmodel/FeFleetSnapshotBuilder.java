@@ -47,6 +47,7 @@ public class FeFleetSnapshotBuilder {
     root.put("brand", nz(v.getBrand()));
     root.put("name", (nz(v.getBrand()) + " " + nz(v.getModel())).trim());
     root.put("category", categoryLabel(v));
+    root.put("statusCode", feStatusCode(v));
     root.set("specs", specsArray(v, f));
     root.put("transmission", feTransmission(v.getTransmissionType()));
     root.put("seats", v.getSeats() != null && v.getSeats() > 0 ? v.getSeats() : 5);
@@ -113,6 +114,14 @@ public class FeFleetSnapshotBuilder {
       root.set("rentOptionDefinitions", opts);
     }
     return root;
+  }
+
+  private static String feStatusCode(Vehicle v) {
+    if (v.getStatusDefinition() == null || v.getStatusDefinition().getCode() == null) {
+      return v.getStatus().name();
+    }
+    String c = v.getStatusDefinition().getCode().trim();
+    return c.isEmpty() ? v.getStatus().name() : c.toLowerCase(Locale.ROOT);
   }
 
   private static String categoryLabel(Vehicle v) {

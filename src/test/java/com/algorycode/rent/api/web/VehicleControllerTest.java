@@ -72,6 +72,7 @@ class VehicleControllerTest {
                     "Corolla",
                     2023,
                     VehicleStatus.available,
+                    "available",
                     false,
                     null,
                     null,

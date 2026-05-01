@@ -17,6 +17,7 @@ public record VehicleDto(
     String model,
     int year,
     VehicleStatus status,
+    String statusCode,
     boolean external,
     String externalCompany,
     BigDecimal rentalDailyPrice,

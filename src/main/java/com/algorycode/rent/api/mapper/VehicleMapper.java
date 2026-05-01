@@ -11,6 +11,7 @@ import com.algorycode.rent.domain.vehicle.VehicleImage;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 public final class VehicleMapper {
@@ -34,6 +35,10 @@ public final class VehicleMapper {
             .toList();
     HandoverLocationRefDto firstReturn = returnRefs.isEmpty() ? null : returnRefs.get(0);
 
+    String statusCode =
+        v.getStatusDefinition().getCode() == null || v.getStatusDefinition().getCode().isBlank()
+            ? v.getStatus().name()
+            : v.getStatusDefinition().getCode().trim().toLowerCase(Locale.ROOT);
     return new VehicleDto(
         v.getId(),
         v.getVehicleModel().getId(),
@@ -43,6 +48,7 @@ public final class VehicleMapper {
         v.getModel(),
         v.getYear() != null ? v.getYear() : 0,
         v.getStatus(),
+        statusCode,
         v.isExternal(),
         v.getExternalCompany(),
         v.getRentalDailyPrice(),

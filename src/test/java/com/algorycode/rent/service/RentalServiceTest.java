@@ -1,6 +1,8 @@
 package com.algorycode.rent.service;
 
+import com.algorycode.rent.api.dto.CreateRentalRequest;
 import com.algorycode.rent.api.dto.UpdateRentalRequest;
+import com.algorycode.rent.api.error.ConflictException;
 import com.algorycode.rent.api.error.ResourceNotFoundException;
 import com.algorycode.rent.domain.location.HandoverLocation;
 import com.algorycode.rent.domain.location.HandoverLocationKind;
@@ -13,12 +15,15 @@ import com.algorycode.rent.domain.vehicle.VehicleStatus;
 import com.algorycode.rent.domain.vehicle.VehicleStatusDefinition;
 import com.algorycode.rent.logging.AuditLog;
 import com.algorycode.rent.repository.RentalRepository;
+import com.algorycode.rent.repository.RentalStatusDefinitionRepository;
 import com.algorycode.rent.repository.ReservationExtraOptionTemplateRepository;
 import com.algorycode.rent.repository.VehicleOptionDefinitionRepository;
 import com.algorycode.rent.repository.VehicleRepository;
 import com.algorycode.rent.repository.VehicleStatusDefinitionRepository;
 import com.algorycode.rent.service.readmodel.FeFleetSnapshotBuilder;
+import com.algorycode.rent.service.support.RentalTestFixtures;
 import com.algorycode.rent.service.support.VehicleTestFixtures;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -35,6 +40,7 @@ import org.mockito.ArgumentCaptor;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -51,10 +57,18 @@ class RentalServiceTest {
   @Mock private VehicleOptionDefinitionRepository vehicleOptionDefinitionRepository;
   @Mock private ReservationExtraOptionTemplateRepository reservationExtraOptionTemplateRepository;
   @Mock private VehicleStatusDefinitionRepository vehicleStatusDefinitionRepository;
+  @Mock private RentalStatusDefinitionRepository rentalStatusDefinitionRepository;
   @Mock private FeFleetSnapshotBuilder feFleetSnapshotBuilder;
   @Mock private AuditLog auditLog;
 
   @InjectMocks private RentalService rentalService;
+
+  @BeforeEach
+  void stubRentalStatusDefinitions() {
+    when(rentalStatusDefinitionRepository.findByCodeIgnoreCase(anyString()))
+        .thenAnswer(
+            invocation -> Optional.of(RentalTestFixtures.rentalStatusDefinition(invocation.getArgument(0))));
+  }
 
   @Test
   void list_withoutFilters_usesFindAllByOrder() {
@@ -77,25 +91,25 @@ class RentalServiceTest {
 
   @Test
   void list_withStatus_callsStatusQuery() {
-    when(rentalRepository.findByStatusOrderByCreatedAtDesc(RentalStatus.pending))
+    when(rentalRepository.findByStatusDefinition_CodeOrderByCreatedAtDesc("pending"))
         .thenReturn(List.of());
 
     rentalService.list(null, RentalStatus.pending, null, null);
 
-    verify(rentalRepository).findByStatusOrderByCreatedAtDesc(RentalStatus.pending);
+    verify(rentalRepository).findByStatusDefinition_CodeOrderByCreatedAtDesc("pending");
   }
 
   @Test
   void list_withVehicleIdAndStatus_callsCombinedQuery() {
     var vid = 1L;
-    when(rentalRepository.findByVehicle_IdAndStatusOrderByCreatedAtDesc(vid, RentalStatus.active))
+    when(rentalRepository.findByVehicle_IdAndStatusDefinition_CodeOrderByCreatedAtDesc(vid, "active"))
         .thenReturn(List.of(sampleRental(vid)));
 
     var rows = rentalService.list(vid, RentalStatus.active, null, null);
 
     assertThat(rows).hasSize(1);
     assertThat(rows.getFirst().status()).isEqualTo(RentalStatus.active);
-    verify(rentalRepository).findByVehicle_IdAndStatusOrderByCreatedAtDesc(vid, RentalStatus.active);
+    verify(rentalRepository).findByVehicle_IdAndStatusDefinition_CodeOrderByCreatedAtDesc(vid, "active");
   }
 
   @Test
@@ -155,7 +169,7 @@ class RentalServiceTest {
     rental.setStartDate(LocalDate.of(2026, 4, 1));
     rental.setEndDate(LocalDate.of(2026, 4, 10));
     rental.setReturnHandoverLocation(returnLoc);
-    rental.setStatus(RentalStatus.active);
+    RentalTestFixtures.attachRentalStatus(rental, RentalStatus.active);
     rental.setCommissionAmount(BigDecimal.ZERO);
     rental.setCommissionFlow(RentalCommissionFlow.collect);
     rental.setCreatedAt(Instant.parse("2026-03-01T10:00:00Z"));
@@ -213,7 +227,7 @@ class RentalServiceTest {
     rental.setStartDate(LocalDate.of(2026, 5, 1));
     rental.setEndDate(LocalDate.of(2026, 5, 5));
     rental.setReturnHandoverLocation(null);
-    rental.setStatus(RentalStatus.active);
+    RentalTestFixtures.attachRentalStatus(rental, RentalStatus.active);
     rental.setCommissionAmount(BigDecimal.ZERO);
     rental.setCommissionFlow(RentalCommissionFlow.collect);
     rental.setCreatedAt(Instant.now());
@@ -245,9 +259,9 @@ class RentalServiceTest {
     Rental rental = sampleRental(1L);
     rental.setId(9L);
     when(rentalRepository.findById(9L)).thenReturn(Optional.of(rental));
-    when(rentalRepository.existsByVehicle_IdAndStatusInAndIdNot(
+    when(rentalRepository.existsByVehicle_IdAndStatusDefinition_CodeInAndIdNot(
             vehicleIdOf(rental),
-            java.util.EnumSet.of(RentalStatus.active, RentalStatus.pending),
+            List.of(RentalStatus.active.name(), RentalStatus.pending.name()),
             rental.getId()))
         .thenReturn(false);
     when(vehicleStatusDefinitionRepository.findByCodeIgnoreCase("available"))
@@ -266,11 +280,11 @@ class RentalServiceTest {
   void updateStatus_whenUnchanged_skipsSave() {
     Rental rental = sampleRental(1L);
     rental.setId(11L);
-    rental.setStatus(RentalStatus.active);
+    RentalTestFixtures.attachRentalStatus(rental, RentalStatus.active);
     when(rentalRepository.findById(11L)).thenReturn(Optional.of(rental));
-    when(rentalRepository.existsByVehicle_IdAndStatusInAndIdNot(
+    when(rentalRepository.existsByVehicle_IdAndStatusDefinition_CodeInAndIdNot(
             vehicleIdOf(rental),
-            java.util.EnumSet.of(RentalStatus.active, RentalStatus.pending),
+            List.of(RentalStatus.active.name(), RentalStatus.pending.name()),
             rental.getId()))
         .thenReturn(false);
     when(objectStorageService.resolvePublicUrl(any())).thenAnswer(invocation -> invocation.getArgument(0));
@@ -286,11 +300,11 @@ class RentalServiceTest {
   void updateStatus_whenPending_setsVehicleRented() {
     Rental rental = sampleRental(1L);
     rental.setId(21L);
-    rental.setStatus(RentalStatus.active);
+    RentalTestFixtures.attachRentalStatus(rental, RentalStatus.active);
     when(rentalRepository.findById(21L)).thenReturn(Optional.of(rental));
-    when(rentalRepository.existsByVehicle_IdAndStatusInAndIdNot(
+    when(rentalRepository.existsByVehicle_IdAndStatusDefinition_CodeInAndIdNot(
             vehicleIdOf(rental),
-            java.util.EnumSet.of(RentalStatus.active, RentalStatus.pending),
+            List.of(RentalStatus.active.name(), RentalStatus.pending.name()),
             rental.getId()))
         .thenReturn(false);
     when(vehicleStatusDefinitionRepository.findByCodeIgnoreCase("rented"))
@@ -303,7 +317,29 @@ class RentalServiceTest {
     verify(vehicleRepository).save(any(Vehicle.class));
   }
 
-  private static Rental sampleRental(Long vehicleId) {
+  @Test
+  void create_whenVehicleRented_throwsConflict() {
+    Vehicle vehicle = new Vehicle();
+    vehicle.setId(1L);
+    VehicleTestFixtures.attachBrandModelStatus(vehicle, "Fiat", "Egea", VehicleStatus.rented);
+    when(vehicleRepository.findByIdAndDeletedFalse(1L)).thenReturn(Optional.of(vehicle));
+
+    CreateRentalRequest req =
+        new CreateRentalRequest(
+            1L,
+            null,
+            LocalDate.of(2026, 7, 1),
+            LocalDate.of(2026, 7, 5),
+            null,
+            null,
+            new CreateRentalRequest.CustomerBody("Ali", "", "P", "+90", null, null, null, null),
+            BigDecimal.ZERO,
+            RentalCommissionFlow.collect,
+            null,
+            null,
+            null,
+            null);
+
     var vehicle = new Vehicle();
     vehicle.setId(vehicleId);
     vehicle.setPlate("06 X 06");
@@ -323,7 +359,7 @@ class RentalServiceTest {
     rental.setVehicle(vehicle);
     rental.setStartDate(LocalDate.of(2026, 4, 1));
     rental.setEndDate(LocalDate.of(2026, 4, 10));
-    rental.setStatus(RentalStatus.active);
+    RentalTestFixtures.attachRentalStatus(rental, RentalStatus.active);
     rental.setCustomer(customer);
     rental.setCreatedAt(Instant.parse("2026-03-01T10:00:00Z"));
     rental.setUpdatedAt(Instant.parse("2026-03-01T10:00:00Z"));
