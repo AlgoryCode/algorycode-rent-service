@@ -21,12 +21,13 @@ CI’de ek etiket için AuthService’teki gibi: `-Djib.to.image=... -Djib.to.ta
 
 ## 2) Helm ile kurulum / güncelleme
 
+PostgreSQL bağlantısı imaj içindeki `application.yml` ile gelir; Helm Secret’ta `SPRING_DATASOURCE_*` yok.
+
 ```bash
 helm upgrade --install rent-api ./helm/algorycode-rent-service \
   --namespace YOUR_NS --create-namespace \
   --set image.repository=YOUR_REGISTRY/algorycode-rent-service \
   --set image.tag=r1 \
-  --set secret.data.springDatasourcePassword='***' \
   --set secret.data.springRabbitmqPassword='***' \
   --set rabbitmq.host=rabbitmq.YOUR_NS.svc.cluster.local
 ```
