@@ -5,6 +5,7 @@ import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 
 public interface VehicleRepository extends JpaRepository<Vehicle, Long> {
 
@@ -45,4 +46,24 @@ public interface VehicleRepository extends JpaRepository<Vehicle, Long> {
   long countByTransmissionTypeAndDeletedFalse(String transmissionType);
 
   long countByStatusDefinition_IdAndDeletedFalse(Long statusDefinitionId);
+
+  @Query(
+      value =
+          """
+          select
+            v.id as id,
+            v.plate as plate,
+            v.year as year,
+            lower(coalesce(vs.code, 'available')) as statusCode,
+            v.external_vehicle as external,
+            v.rental_daily_price as rentalDailyPrice,
+            v.country_code as countryCode,
+            cast(v.fe_fleet_snapshot as text) as snapshotText
+          from vehicles v
+          left join vehicle_statuses vs on vs.id = v.vehicle_status_id
+          where v.is_deleted = false
+          order by v.id desc
+          """,
+      nativeQuery = true)
+  List<VehicleSnapshotRow> findAllSnapshotsByDeletedFalse();
 }

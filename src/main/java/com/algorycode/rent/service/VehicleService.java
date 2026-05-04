@@ -29,11 +29,15 @@ import com.algorycode.rent.repository.VehicleBodyStyleRepository;
 import com.algorycode.rent.repository.VehicleFuelTypeRepository;
 import com.algorycode.rent.repository.VehicleModelRepository;
 import com.algorycode.rent.repository.VehicleRepository;
+import com.algorycode.rent.repository.VehicleSnapshotRow;
 import com.algorycode.rent.repository.VehicleStatusDefinitionRepository;
 import com.algorycode.rent.repository.VehicleTransmissionTypeRepository;
 import com.algorycode.rent.service.readmodel.FeFleetSnapshotBuilder;
 import com.algorycode.rent.service.support.Text;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
@@ -67,6 +71,7 @@ public class VehicleService {
   private final AuditLog auditLog;
   private final FeFleetSnapshotBuilder feFleetSnapshotBuilder;
   private final MessageSource messageSource;
+  private final ObjectMapper objectMapper;
 
   private String message(String code) {
     return messageSource.getMessage(code, null, LocaleContextHolder.getLocale());
@@ -75,6 +80,11 @@ public class VehicleService {
   @Transactional(readOnly = true)
   public List<VehicleDto> listAll() {
     return vehicleRepository.findAllByDeletedFalse().stream().map(this::toDto).toList();
+  }
+
+  @Transactional(readOnly = true)
+  public List<JsonNode> listAllSnapshots() {
+    return vehicleRepository.findAllSnapshotsByDeletedFalse().stream().map(this::toSnapshotNode).toList();
   }
 
   @Transactional(readOnly = true)
@@ -581,5 +591,38 @@ public class VehicleService {
             .toList(),
         Map.copyOf(images),
         fleetSnapshotForResponse(v));
+  }
+
+  private JsonNode toSnapshotNode(VehicleSnapshotRow row) {
+    ObjectNode node = JsonNodeFactory.instance.objectNode();
+    String snapshotText = row.getSnapshotText();
+    if (snapshotText != null && !snapshotText.isBlank() && !"null".equalsIgnoreCase(snapshotText.trim())) {
+      try {
+        JsonNode parsed = objectMapper.readTree(snapshotText);
+        if (parsed != null && parsed.isObject()) {
+          node = (ObjectNode) parsed.deepCopy();
+        }
+      } catch (Exception ignored) {
+      }
+    }
+    node.put("id", String.valueOf(row.getId()));
+    if (row.getPlate() != null) {
+      node.put("plate", row.getPlate());
+    }
+    if (row.getYear() != null) {
+      node.put("year", row.getYear());
+    }
+    if (row.getStatusCode() != null) {
+      node.put("statusCode", row.getStatusCode());
+      node.put("maintenance", "maintenance".equalsIgnoreCase(row.getStatusCode()));
+    }
+    node.put("external", Boolean.TRUE.equals(row.getExternal()));
+    if (row.getRentalDailyPrice() != null) {
+      node.put("rentalDailyPrice", row.getRentalDailyPrice().doubleValue());
+    }
+    if (row.getCountryCode() != null) {
+      node.put("countryCode", row.getCountryCode());
+    }
+    return node;
   }
 }

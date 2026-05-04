@@ -39,7 +39,9 @@ public class FeFleetSnapshotBuilder {
     JsonNodeFactory f = JsonNodeFactory.instance;
     ObjectNode root = f.objectNode();
     root.put("id", String.valueOf(v.getId()));
+    root.put("plate", nz(v.getPlate()));
     root.put("brand", nz(v.getBrand()));
+    root.put("model", nz(v.getModel()));
     root.put("name", (nz(v.getBrand()) + " " + nz(v.getModel())).trim());
     root.put("category", categoryLabel(v));
     root.put("statusCode", feStatusCode(v));

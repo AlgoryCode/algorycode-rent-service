@@ -12,6 +12,7 @@ import com.algorycode.rent.domain.vehicle.VehicleImageSlot;
 import com.algorycode.rent.service.VehicleFormCatalogService;
 import com.algorycode.rent.service.VehicleOccupancyService;
 import com.algorycode.rent.service.VehicleService;
+import com.fasterxml.jackson.databind.JsonNode;
 import jakarta.validation.Valid;
 import java.net.URI;
 import java.time.LocalDate;
@@ -81,6 +82,11 @@ public class VehicleController {
         pickupHandoverLocationId,
         returnHandoverLocationId,
         Boolean.TRUE.equals(includePartialAvailability));
+  }
+
+  @GetMapping("/snapshots")
+  public List<JsonNode> listSnapshots() {
+    return vehicleService.listAllSnapshots();
   }
 
   @GetMapping("/{id:\\d+}")
