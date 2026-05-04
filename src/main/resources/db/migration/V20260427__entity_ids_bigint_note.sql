@@ -1,2 +1,1 @@
--- Uygulama PK/FK: BIGINT + AUTO_INCREMENT (JPA GenerationType.IDENTITY).
--- Eski CHAR(36) şemasından geçiş: FK sırasıyla tabloları güncelleyin veya geliştirme ortamında Hibernate ddl-auto=update ile şemayı yenileyin.
+SELECT 1;

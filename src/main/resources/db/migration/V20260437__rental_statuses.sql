@@ -22,16 +22,17 @@ WHERE NOT EXISTS (
   WHERE lower(trim(s.code)) = lower(trim(t.code))
 );
 
-ALTER TABLE rentals ADD COLUMN IF NOT EXISTS rental_status_id BIGINT;
-
-DO $$
+DO $migration$
 BEGIN
+  IF to_regclass('public.rentals') IS NULL THEN
+    RETURN;
+  END IF;
+
+  ALTER TABLE rentals ADD COLUMN IF NOT EXISTS rental_status_id BIGINT;
+
   IF EXISTS (
-    SELECT 1
-    FROM information_schema.columns
-    WHERE table_schema = 'public'
-      AND table_name = 'rentals'
-      AND column_name = 'status'
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'public' AND table_name = 'rentals' AND column_name = 'status'
   ) THEN
     UPDATE rentals r
     SET rental_status_id = s.id
@@ -39,27 +40,18 @@ BEGIN
     WHERE trim(lower(coalesce(r.status::text, ''))) = trim(lower(coalesce(s.code, '')))
       AND r.rental_status_id IS NULL;
   END IF;
-END $$;
 
-UPDATE rentals
-SET rental_status_id = (SELECT id FROM rental_statuses WHERE lower(trim(code)) = 'active' LIMIT 1)
-WHERE rental_status_id IS NULL;
+  UPDATE rentals
+  SET rental_status_id = (SELECT id FROM rental_statuses WHERE lower(trim(code)) = 'active' LIMIT 1)
+  WHERE rental_status_id IS NULL;
 
-ALTER TABLE rentals ALTER COLUMN rental_status_id SET NOT NULL;
+  ALTER TABLE rentals ALTER COLUMN rental_status_id SET NOT NULL;
 
-DO $$
-BEGIN
-  IF NOT EXISTS (
-    SELECT 1
-    FROM information_schema.table_constraints
-    WHERE table_schema = 'public'
-      AND table_name = 'rentals'
-      AND constraint_name = 'fk_rentals_rental_status'
-  ) THEN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_rentals_rental_status') THEN
     ALTER TABLE rentals
       ADD CONSTRAINT fk_rentals_rental_status
       FOREIGN KEY (rental_status_id) REFERENCES rental_statuses (id);
   END IF;
-END $$;
 
-ALTER TABLE rentals DROP COLUMN IF EXISTS status;
+  ALTER TABLE rentals DROP COLUMN IF EXISTS status;
+END $migration$;

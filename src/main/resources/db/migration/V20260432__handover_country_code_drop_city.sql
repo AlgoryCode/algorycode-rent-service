@@ -1,8 +1,9 @@
--- Handover: şehir FK kaldırıldı; isteğe bağlı ülke kodu (FK değil).
--- Araç: eski city_id varsa kaldırılır.
-
-ALTER TABLE handover_locations
-  ADD COLUMN IF NOT EXISTS country_code VARCHAR(64);
+DO $migration$
+BEGIN
+  IF to_regclass('public.handover_locations') IS NOT NULL THEN
+    ALTER TABLE handover_locations ADD COLUMN IF NOT EXISTS country_code VARCHAR(64);
+  END IF;
+END $migration$;
 
 DO $$
 BEGIN
@@ -19,7 +20,7 @@ BEGIN
     JOIN countries co ON co.id = c.country_id
     WHERE hl.city_id IS NOT NULL
       AND hl.city_id = c.id
-      AND (hl.country_code IS NULL OR btrim(hl.country_code) = '');
+      AND (hl.country_code IS NULL OR btrim(hl.country_code::text) = '');
 
     ALTER TABLE handover_locations DROP COLUMN city_id CASCADE;
   END IF;

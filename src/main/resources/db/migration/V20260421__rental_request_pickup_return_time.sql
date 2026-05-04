@@ -1,3 +1,8 @@
-ALTER TABLE rental_requests
-  ADD COLUMN start_time TIME NULL AFTER end_date,
-  ADD COLUMN return_time TIME NULL AFTER start_time;
+DO $migration$
+BEGIN
+  IF to_regclass('public.rental_requests') IS NULL THEN
+    RETURN;
+  END IF;
+  ALTER TABLE rental_requests ADD COLUMN IF NOT EXISTS start_time TIME NULL;
+  ALTER TABLE rental_requests ADD COLUMN IF NOT EXISTS return_time TIME NULL;
+END $migration$;

@@ -38,56 +38,48 @@ CREATE TABLE IF NOT EXISTS vehicle_models (
 
 CREATE UNIQUE INDEX IF NOT EXISTS uq_vehicle_models_brand_name_lower ON vehicle_models (brand_id, lower(trim(name)));
 
-ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS vehicle_status_id BIGINT;
-
-DO $$
+DO $migration$
 BEGIN
+  IF to_regclass('public.vehicles') IS NULL THEN
+    INSERT INTO vehicle_brands (name, sort_order)
+    SELECT 'Genel', 0
+    WHERE NOT EXISTS (SELECT 1 FROM vehicle_brands);
+    INSERT INTO vehicle_models (brand_id, name, sort_order)
+    SELECT (SELECT MIN(id) FROM vehicle_brands), '—', 0
+    WHERE NOT EXISTS (SELECT 1 FROM vehicle_models);
+    RETURN;
+  END IF;
+
+  ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS vehicle_status_id BIGINT;
+
   IF EXISTS (
-    SELECT 1
-    FROM information_schema.columns
-    WHERE table_schema = 'public'
-      AND table_name = 'vehicles'
-      AND column_name = 'status'
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'public' AND table_name = 'vehicles' AND column_name = 'status'
   ) THEN
     UPDATE vehicles v
     SET vehicle_status_id = s.id
     FROM vehicle_statuses s
-    WHERE v.status = s.code
+    WHERE v.status::text = s.code
       AND v.vehicle_status_id IS NULL;
   END IF;
-END $$;
 
-UPDATE vehicles
-SET vehicle_status_id = (SELECT id FROM vehicle_statuses WHERE code = 'available' LIMIT 1)
-WHERE vehicle_status_id IS NULL;
+  UPDATE vehicles
+  SET vehicle_status_id = (SELECT id FROM vehicle_statuses WHERE code = 'available' LIMIT 1)
+  WHERE vehicle_status_id IS NULL;
 
-ALTER TABLE vehicles ALTER COLUMN vehicle_status_id SET NOT NULL;
+  ALTER TABLE vehicles ALTER COLUMN vehicle_status_id SET NOT NULL;
 
-DO $$
-BEGIN
-  IF NOT EXISTS (
-    SELECT 1
-    FROM information_schema.table_constraints
-    WHERE table_schema = 'public'
-      AND table_name = 'vehicles'
-      AND constraint_name = 'fk_vehicles_vehicle_status'
-  ) THEN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_vehicles_vehicle_status') THEN
     ALTER TABLE vehicles
       ADD CONSTRAINT fk_vehicles_vehicle_status
       FOREIGN KEY (vehicle_status_id) REFERENCES vehicle_statuses (id);
   END IF;
-END $$;
 
-ALTER TABLE vehicles DROP COLUMN IF EXISTS status;
+  ALTER TABLE vehicles DROP COLUMN IF EXISTS status;
 
-DO $$
-BEGIN
   IF EXISTS (
-    SELECT 1
-    FROM information_schema.columns
-    WHERE table_schema = 'public'
-      AND table_name = 'vehicles'
-      AND column_name = 'brand'
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'public' AND table_name = 'vehicles' AND column_name = 'brand'
   ) THEN
     INSERT INTO vehicle_brands (name, sort_order)
     SELECT DISTINCT trim(t.name), 0
@@ -98,26 +90,17 @@ BEGIN
       SELECT 1 FROM vehicle_brands b WHERE lower(trim(b.name)) = lower(trim(t.name))
     );
   END IF;
-END $$;
 
-INSERT INTO vehicle_brands (name, sort_order)
-SELECT 'Genel', 0
-WHERE NOT EXISTS (SELECT 1 FROM vehicle_brands);
+  INSERT INTO vehicle_brands (name, sort_order)
+  SELECT 'Genel', 0
+  WHERE NOT EXISTS (SELECT 1 FROM vehicle_brands);
 
-DO $$
-BEGIN
   IF EXISTS (
-    SELECT 1
-    FROM information_schema.columns
-    WHERE table_schema = 'public'
-      AND table_name = 'vehicles'
-      AND column_name = 'brand'
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'public' AND table_name = 'vehicles' AND column_name = 'brand'
   ) AND EXISTS (
-    SELECT 1
-    FROM information_schema.columns
-    WHERE table_schema = 'public'
-      AND table_name = 'vehicles'
-      AND column_name = 'model'
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'public' AND table_name = 'vehicles' AND column_name = 'model'
   ) THEN
     INSERT INTO vehicle_models (brand_id, name, sort_order)
     SELECT b.id, trim(t.mn), 0
@@ -134,28 +117,19 @@ BEGIN
       WHERE m.brand_id = b.id AND lower(trim(m.name)) = lower(trim(t.mn))
     );
   END IF;
-END $$;
 
-INSERT INTO vehicle_models (brand_id, name, sort_order)
-SELECT (SELECT MIN(id) FROM vehicle_brands), '—', 0
-WHERE NOT EXISTS (SELECT 1 FROM vehicle_models);
+  INSERT INTO vehicle_models (brand_id, name, sort_order)
+  SELECT (SELECT MIN(id) FROM vehicle_brands), '—', 0
+  WHERE NOT EXISTS (SELECT 1 FROM vehicle_models);
 
-ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS vehicle_model_id BIGINT;
+  ALTER TABLE vehicles ADD COLUMN IF NOT EXISTS vehicle_model_id BIGINT;
 
-DO $$
-BEGIN
   IF EXISTS (
-    SELECT 1
-    FROM information_schema.columns
-    WHERE table_schema = 'public'
-      AND table_name = 'vehicles'
-      AND column_name = 'brand'
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'public' AND table_name = 'vehicles' AND column_name = 'brand'
   ) AND EXISTS (
-    SELECT 1
-    FROM information_schema.columns
-    WHERE table_schema = 'public'
-      AND table_name = 'vehicles'
-      AND column_name = 'model'
+    SELECT 1 FROM information_schema.columns
+    WHERE table_schema = 'public' AND table_name = 'vehicles' AND column_name = 'model'
   ) THEN
     UPDATE vehicles v
     SET vehicle_model_id = m.id
@@ -165,28 +139,19 @@ BEGIN
       AND lower(trim(m.name)) = lower(trim(coalesce(nullif(trim(v.model), ''), '—')))
       AND v.vehicle_model_id IS NULL;
   END IF;
-END $$;
 
-UPDATE vehicles
-SET vehicle_model_id = (SELECT id FROM vehicle_models ORDER BY id LIMIT 1)
-WHERE vehicle_model_id IS NULL;
+  UPDATE vehicles
+  SET vehicle_model_id = (SELECT id FROM vehicle_models ORDER BY id LIMIT 1)
+  WHERE vehicle_model_id IS NULL;
 
-ALTER TABLE vehicles ALTER COLUMN vehicle_model_id SET NOT NULL;
+  ALTER TABLE vehicles ALTER COLUMN vehicle_model_id SET NOT NULL;
 
-DO $$
-BEGIN
-  IF NOT EXISTS (
-    SELECT 1
-    FROM information_schema.table_constraints
-    WHERE table_schema = 'public'
-      AND table_name = 'vehicles'
-      AND constraint_name = 'fk_vehicles_vehicle_model'
-  ) THEN
+  IF NOT EXISTS (SELECT 1 FROM pg_constraint WHERE conname = 'fk_vehicles_vehicle_model') THEN
     ALTER TABLE vehicles
       ADD CONSTRAINT fk_vehicles_vehicle_model
       FOREIGN KEY (vehicle_model_id) REFERENCES vehicle_models (id);
   END IF;
-END $$;
 
-ALTER TABLE vehicles DROP COLUMN IF EXISTS brand;
-ALTER TABLE vehicles DROP COLUMN IF EXISTS model;
+  ALTER TABLE vehicles DROP COLUMN IF EXISTS brand;
+  ALTER TABLE vehicles DROP COLUMN IF EXISTS model;
+END $migration$;
