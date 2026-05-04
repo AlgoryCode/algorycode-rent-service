@@ -1,5 +1,7 @@
 package com.algorycode.rent.domain.vehicle;
 
+import java.util.Locale;
+
 public enum VehicleStatus {
   available,
   maintenance,
@@ -9,6 +11,11 @@ public enum VehicleStatus {
     if (code == null || code.isBlank()) {
       return available;
     }
-    return valueOf(code.trim().toLowerCase());
+    String normalized = code.trim().toLowerCase(Locale.ROOT);
+    try {
+      return valueOf(normalized);
+    } catch (IllegalArgumentException ex) {
+      return available;
+    }
   }
 }
