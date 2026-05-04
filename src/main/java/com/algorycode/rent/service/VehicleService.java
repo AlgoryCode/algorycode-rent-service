@@ -29,15 +29,11 @@ import com.algorycode.rent.repository.VehicleBodyStyleRepository;
 import com.algorycode.rent.repository.VehicleFuelTypeRepository;
 import com.algorycode.rent.repository.VehicleModelRepository;
 import com.algorycode.rent.repository.VehicleRepository;
-import com.algorycode.rent.repository.VehicleSnapshotRow;
 import com.algorycode.rent.repository.VehicleStatusDefinitionRepository;
 import com.algorycode.rent.repository.VehicleTransmissionTypeRepository;
 import com.algorycode.rent.service.readmodel.FeFleetSnapshotBuilder;
 import com.algorycode.rent.service.support.Text;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.JsonNodeFactory;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
@@ -47,6 +43,7 @@ import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
@@ -71,7 +68,6 @@ public class VehicleService {
   private final AuditLog auditLog;
   private final FeFleetSnapshotBuilder feFleetSnapshotBuilder;
   private final MessageSource messageSource;
-  private final ObjectMapper objectMapper;
 
   private String message(String code) {
     return messageSource.getMessage(code, null, LocaleContextHolder.getLocale());
@@ -84,7 +80,10 @@ public class VehicleService {
 
   @Transactional(readOnly = true)
   public List<JsonNode> listAllSnapshots() {
-    return vehicleRepository.findAllSnapshotsByDeletedFalse().stream().map(this::toSnapshotNode).toList();
+    return vehicleRepository.findAllFeFleetSnapshotsByDeletedFalse().stream()
+        .filter(Objects::nonNull)
+        .filter(n -> !n.isNull())
+        .toList();
   }
 
   @Transactional(readOnly = true)
@@ -591,38 +590,5 @@ public class VehicleService {
             .toList(),
         Map.copyOf(images),
         fleetSnapshotForResponse(v));
-  }
-
-  private JsonNode toSnapshotNode(VehicleSnapshotRow row) {
-    ObjectNode node = JsonNodeFactory.instance.objectNode();
-    String snapshotText = row.getSnapshotText();
-    if (snapshotText != null && !snapshotText.isBlank() && !"null".equalsIgnoreCase(snapshotText.trim())) {
-      try {
-        JsonNode parsed = objectMapper.readTree(snapshotText);
-        if (parsed != null && parsed.isObject()) {
-          node = (ObjectNode) parsed.deepCopy();
-        }
-      } catch (Exception ignored) {
-      }
-    }
-    node.put("id", String.valueOf(row.getId()));
-    if (row.getPlate() != null) {
-      node.put("plate", row.getPlate());
-    }
-    if (row.getYear() != null) {
-      node.put("year", row.getYear());
-    }
-    if (row.getStatusCode() != null) {
-      node.put("statusCode", row.getStatusCode());
-      node.put("maintenance", "maintenance".equalsIgnoreCase(row.getStatusCode()));
-    }
-    node.put("external", Boolean.TRUE.equals(row.getExternal()));
-    if (row.getRentalDailyPrice() != null) {
-      node.put("rentalDailyPrice", row.getRentalDailyPrice().doubleValue());
-    }
-    if (row.getCountryCode() != null) {
-      node.put("countryCode", row.getCountryCode());
-    }
-    return node;
   }
 }

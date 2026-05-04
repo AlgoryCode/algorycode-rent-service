@@ -1,6 +1,7 @@
 package com.algorycode.rent.repository;
 
 import com.algorycode.rent.domain.vehicle.Vehicle;
+import com.fasterxml.jackson.databind.JsonNode;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.EntityGraph;
@@ -47,23 +48,6 @@ public interface VehicleRepository extends JpaRepository<Vehicle, Long> {
 
   long countByStatusDefinition_IdAndDeletedFalse(Long statusDefinitionId);
 
-  @Query(
-      value =
-          """
-          select
-            v.id as id,
-            v.plate as plate,
-            v.year as year,
-            lower(coalesce(vs.code, 'available')) as statusCode,
-            v.external_vehicle as external,
-            v.rental_daily_price as rentalDailyPrice,
-            v.country_code as countryCode,
-            cast(v.fe_fleet_snapshot as text) as snapshotText
-          from vehicles v
-          left join vehicle_statuses vs on vs.id = v.vehicle_status_id
-          where v.is_deleted = false
-          order by v.id desc
-          """,
-      nativeQuery = true)
-  List<VehicleSnapshotRow> findAllSnapshotsByDeletedFalse();
+  @Query("select v.feFleetSnapshot from Vehicle v where v.deleted = false order by v.id desc")
+  List<JsonNode> findAllFeFleetSnapshotsByDeletedFalse();
 }
