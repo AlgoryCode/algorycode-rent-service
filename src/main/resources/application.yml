@@ -8,11 +8,6 @@ spring:
     multipart:
       max-file-size: 55MB
       max-request-size: 120MB
-  flyway:
-    enabled: true
-    baseline-on-migrate: true
-    baseline-version: "20260432"
-    locations: classpath:db/migration
   thymeleaf:
     encoding: UTF-8
   application:
@@ -27,7 +22,7 @@ spring:
   jpa:
     show-sql: false
     hibernate:
-      ddl-auto: create
+      ddl-auto: none
     open-in-view: false
     properties:
       hibernate:

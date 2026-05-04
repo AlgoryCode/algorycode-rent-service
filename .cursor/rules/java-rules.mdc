@@ -310,9 +310,9 @@ Controller  →  Service (Interface)  →  Repository (Interface)  →  Database
 - Dış servis çağrılarında (API, Ödeme Geçitleri vb.) `CircuitBreaker` ve `Retry` mekanizmaları zorunludur.
 - Tüm dış çağrılarda katı `ConnectTimeout` ve `ReadTimeout` değerleri tanımlanmalıdır.
 
-### 14.2 Veritabanı Migration
-- Veritabanı şema değişiklikleri için **Flyway** veya **Liquibase** kullanımı zorunludur.
-- `hibernate.ddl-auto=update` ayarı production ortamında asla kullanılmaz.
+### 14.2 Veritabanı şeması
+- Bu projede şema değişiklikleri **Hibernate** (`ddl-auto`) ile yönetilir; Flyway/Liquibase kullanılmaz.
+- Production’da `hibernate.ddl-auto=none` veya `validate` tercih edilir; `create`/`update` yalnızca kontrollü ortamlarda.
 
 ---
 
