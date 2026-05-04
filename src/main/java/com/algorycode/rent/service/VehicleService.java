@@ -16,7 +16,6 @@ import com.algorycode.rent.domain.vehicle.Vehicle;
 import com.algorycode.rent.domain.vehicle.VehicleAllowedReturnHandover;
 import com.algorycode.rent.domain.vehicle.VehicleBodyStyle;
 import com.algorycode.rent.domain.vehicle.VehicleFuelType;
-import com.algorycode.rent.domain.vehicle.VehicleTransmissionType;
 import com.algorycode.rent.domain.vehicle.VehicleHighlight;
 import com.algorycode.rent.domain.vehicle.VehicleImage;
 import com.algorycode.rent.domain.vehicle.VehicleImageSlot;
@@ -24,6 +23,7 @@ import com.algorycode.rent.domain.vehicle.VehicleModel;
 import com.algorycode.rent.domain.vehicle.VehicleOptionDefinition;
 import com.algorycode.rent.domain.vehicle.VehicleOptionTemplate;
 import com.algorycode.rent.domain.vehicle.VehicleStatusDefinition;
+import com.algorycode.rent.domain.vehicle.VehicleTransmissionType;
 import com.algorycode.rent.logging.AuditLog;
 import com.algorycode.rent.repository.VehicleBodyStyleRepository;
 import com.algorycode.rent.repository.VehicleFuelTypeRepository;
@@ -34,12 +34,6 @@ import com.algorycode.rent.repository.VehicleTransmissionTypeRepository;
 import com.algorycode.rent.service.readmodel.FeFleetSnapshotBuilder;
 import com.algorycode.rent.service.support.Text;
 import com.fasterxml.jackson.databind.JsonNode;
-import lombok.RequiredArgsConstructor;
-import org.springframework.context.MessageSource;
-import org.springframework.context.i18n.LocaleContextHolder;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
@@ -49,6 +43,11 @@ import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import lombok.RequiredArgsConstructor;
+import org.springframework.context.MessageSource;
+import org.springframework.context.i18n.LocaleContextHolder;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
@@ -78,7 +77,6 @@ public class VehicleService {
     return vehicleRepository.findAllByDeletedFalse().stream().map(this::toDto).toList();
   }
 
-
   @Transactional(readOnly = true)
   public List<VehicleDto> listWithAvailabilityFilter(
       LocalDate availableFrom,
@@ -98,7 +96,6 @@ public class VehicleService {
         .toList();
   }
 
-
   @Transactional(readOnly = true)
   public VehicleDto getById(Long id) {
     var v =
@@ -107,7 +104,6 @@ public class VehicleService {
             .orElseThrow(() -> new ResourceNotFoundException("Vehicle not found: " + id));
     return toDto(v);
   }
-
 
   @Transactional
   public Long create(CreateVehicleRequest req) {
@@ -140,7 +136,8 @@ public class VehicleService {
     v.setExternalCompany(req.externalCompany());
     v.setRentalDailyPrice(req.rentalDailyPrice());
 
-    applyCommissionRules(v, req.external(), req.commissionRatePercent(), req.commissionBrokerPhone());
+    applyCommissionRules(
+        v, req.external(), req.commissionRatePercent(), req.commissionBrokerPhone());
 
     v.setCountryCode(req.countryCode());
 
@@ -190,7 +187,6 @@ public class VehicleService {
         .orElseThrow(() -> new BadRequestException(message("vehicle.error.modelNotFound")));
   }
 
-
   @Transactional
   public VehicleDto update(Long id, UpdateVehicleRequest req) {
     Vehicle v =
@@ -226,7 +222,8 @@ public class VehicleService {
     boolean nextExternal = req.external() != null ? req.external() : v.isExternal();
     v.setExternal(nextExternal);
 
-    String nextExternalCompany = req.externalCompany() != null ? req.externalCompany() : v.getExternalCompany();
+    String nextExternalCompany =
+        req.externalCompany() != null ? req.externalCompany() : v.getExternalCompany();
     if (nextExternal) {
       v.setExternalCompany(
           nextExternalCompany != null && !nextExternalCompany.isBlank()
@@ -244,8 +241,14 @@ public class VehicleService {
       v.setCountryCode(req.countryCode().isBlank() ? null : req.countryCode().trim());
     }
 
-    BigDecimal nextRate = req.commissionRatePercent() != null ? req.commissionRatePercent() : v.getCommissionRatePercent();
-    String nextPhone = req.commissionBrokerPhone() != null ? req.commissionBrokerPhone() : v.getCommissionBrokerPhone();
+    BigDecimal nextRate =
+        req.commissionRatePercent() != null
+            ? req.commissionRatePercent()
+            : v.getCommissionRatePercent();
+    String nextPhone =
+        req.commissionBrokerPhone() != null
+            ? req.commissionBrokerPhone()
+            : v.getCommissionBrokerPhone();
     applyCommissionRules(v, nextExternal, nextRate, nextPhone);
 
     if (req.engine() != null) {
@@ -275,10 +278,9 @@ public class VehicleService {
           handoverLocationService.requireForAssignment(
               req.defaultPickupHandoverLocationId(), HandoverLocationKind.PICKUP));
     }
-    if (req.returnHandoverLocationIds() != null) {
-      replaceVehicleReturnHandovers(v, req.returnHandoverLocationIds());
-    } else if (req.defaultReturnHandoverLocationId() != null) {
-      replaceVehicleReturnHandovers(v, List.of(req.defaultReturnHandoverLocationId()));
+    List<Long> returnIds = resolveUpdateReturnHandoverIds(req);
+    if (returnIds != null) {
+      replaceVehicleReturnHandovers(v, returnIds);
     }
     if (req.optionTemplateIds() != null || req.optionDefinitions() != null) {
       List<VehicleOptionDefinitionRequest> merged =
@@ -301,7 +303,6 @@ public class VehicleService {
     return toDto(vehicleRepository.save(saved));
   }
 
-
   @Transactional
   public VehicleDto replaceImageSlot(Long vehicleId, VehicleImageSlot slot, String imageValue) {
     Vehicle v = vehicleImageService.replaceImageSlot(vehicleId, slot, imageValue);
@@ -309,14 +310,12 @@ public class VehicleService {
     return toDto(vehicleRepository.save(v));
   }
 
-
   @Transactional
   public VehicleDto deleteImageSlot(Long vehicleId, VehicleImageSlot slot) {
     Vehicle v = vehicleImageService.deleteImageSlot(vehicleId, slot);
     persistFleetSnapshot(v);
     return toDto(vehicleRepository.save(v));
   }
-
 
   @Transactional
   public void delete(Long id) {
@@ -326,6 +325,16 @@ public class VehicleService {
             .orElseThrow(() -> new ResourceNotFoundException("Vehicle not found: " + id));
     v.setDeleted(true);
     vehicleRepository.save(v);
+  }
+
+  private List<Long> resolveUpdateReturnHandoverIds(UpdateVehicleRequest req) {
+    if (req.returnHandoverLocationIds() != null) {
+      return req.returnHandoverLocationIds();
+    }
+    if (req.defaultReturnHandoverLocationId() != null) {
+      return List.of(req.defaultReturnHandoverLocationId());
+    }
+    return null;
   }
 
   private List<VehicleOptionDefinitionRequest> mergeOptionDefinitions(
@@ -376,7 +385,8 @@ public class VehicleService {
     }
   }
 
-  private void replaceVehicleOptionDefinitions(Vehicle v, List<VehicleOptionDefinitionRequest> defs) {
+  private void replaceVehicleOptionDefinitions(
+      Vehicle v, List<VehicleOptionDefinitionRequest> defs) {
     v.getOptionDefinitions().clear();
     for (VehicleOptionDefinitionRequest r : defs) {
       VehicleOptionDefinition e = new VehicleOptionDefinition();
@@ -488,7 +498,8 @@ public class VehicleService {
     }
     v.setCommissionRatePercent(commissionRatePercent);
     v.setCommissionBrokerFullName(null);
-    v.setCommissionBrokerPhone(brokerPhone == null || brokerPhone.isBlank() ? null : brokerPhone.trim());
+    v.setCommissionBrokerPhone(
+        brokerPhone == null || brokerPhone.isBlank() ? null : brokerPhone.trim());
   }
 
   private void persistFleetSnapshot(Vehicle v) {
@@ -515,7 +526,8 @@ public class VehicleService {
             .sorted(
                 Comparator.comparingInt(VehicleAllowedReturnHandover::getLineOrder)
                     .thenComparing(
-                        VehicleAllowedReturnHandover::getId, Comparator.nullsLast(Comparator.naturalOrder())))
+                        VehicleAllowedReturnHandover::getId,
+                        Comparator.nullsLast(Comparator.naturalOrder())))
             .map(l -> HandoverLocationMapper.toRef(l.getHandoverLocation()))
             .toList();
     HandoverLocationRefDto firstReturn = returnRefs.isEmpty() ? null : returnRefs.get(0);

@@ -2,7 +2,6 @@ package com.algorycode.rent.api.dto;
 
 import com.algorycode.rent.domain.vehicle.VehicleStatus;
 import com.fasterxml.jackson.databind.JsonNode;
-
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;

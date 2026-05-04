@@ -6,8 +6,8 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 
 /**
- * Yalnızca topic exchange tanımlanır; kuyruk ve binding {@code mail-service} tarafında
- * ({@code algorycode.mail.work-queue} + {@code mail.#}) oluşturulur. Rent yayıncıdır.
+ * Yalnızca topic exchange tanımlanır; kuyruk ve binding {@code mail-service} tarafında ({@code
+ * algorycode.mail.work-queue} + {@code mail.#}) oluşturulur. Rent yayıncıdır.
  */
 @Configuration
 public class RabbitMqConfig {

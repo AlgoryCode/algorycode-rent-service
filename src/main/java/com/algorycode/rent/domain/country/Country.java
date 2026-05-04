@@ -6,11 +6,10 @@ import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.Table;
-import lombok.Getter;
-import lombok.Setter;
-
 import java.util.ArrayList;
 import java.util.List;
+import lombok.Getter;
+import lombok.Setter;
 
 /** Ülke kodu (benzersiz; en fazla 64 karakter) ve arayüz için renk (örn. {@code #E30A17}). */
 @Getter

@@ -1,16 +1,15 @@
 package com.algorycode.rent.service.support;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import com.algorycode.rent.domain.rental.Rental;
 import com.algorycode.rent.domain.rental.RentalOption;
 import com.algorycode.rent.domain.vehicle.Vehicle;
-import org.junit.jupiter.api.Test;
-
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
-
-import static org.assertj.core.api.Assertions.assertThat;
+import org.junit.jupiter.api.Test;
 
 class RentalRevenueEurTest {
 

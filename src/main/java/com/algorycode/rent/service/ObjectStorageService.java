@@ -11,10 +11,6 @@ import io.minio.PutObjectArgs;
 import io.minio.RemoveObjectArgs;
 import io.minio.errors.ErrorResponseException;
 import io.minio.http.Method;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.stereotype.Service;
-
 import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.net.URI;
@@ -28,6 +24,9 @@ import java.util.Locale;
 import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.stereotype.Service;
 
 @Service
 public class ObjectStorageService {
@@ -42,7 +41,9 @@ public class ObjectStorageService {
 
   public ObjectStorageService(AppObjectStorageProperties props) {
     this.props = props;
-    if (!props.endpoint().isBlank() && !props.accessKey().isBlank() && !props.secretKey().isBlank()) {
+    if (!props.endpoint().isBlank()
+        && !props.accessKey().isBlank()
+        && !props.secretKey().isBlank()) {
       this.minioClient =
           MinioClient.builder()
               .endpoint(props.endpoint())
@@ -80,7 +81,8 @@ public class ObjectStorageService {
     }
   }
 
-  public String uploadBytes(String folderPrefix, String baseName, String extension, String contentType, byte[] bytes) {
+  public String uploadBytes(
+      String folderPrefix, String baseName, String extension, String contentType, byte[] bytes) {
     if (!isActiveStorage()) {
       throw new BadRequestException("Object storage yapılandırılamadı.");
     }
@@ -91,8 +93,8 @@ public class ObjectStorageService {
   }
 
   /**
-   * Veritabanında saklanan referans için bucket’taki nesneyi silmeyi dener (data URL veya presigned URL
-   * ise atlar). Hata durumunda log yazar, uygulama akışını bloklamaz.
+   * Veritabanında saklanan referans için bucket’taki nesneyi silmeyi dener (data URL veya presigned
+   * URL ise atlar). Hata durumunda log yazar, uygulama akışını bloklamaz.
    */
   public void deleteObjectIfStored(String storedReference) {
     if (!isActiveStorage() || storedReference == null || storedReference.isBlank()) {
@@ -122,7 +124,9 @@ public class ObjectStorageService {
     if (!isActiveStorage()) {
       throw new BadRequestException("Object storage yapılandırılamadı.");
     }
-    try (InputStream in = minioClient.getObject(GetObjectArgs.builder().bucket(props.bucket()).object(objectKey).build())) {
+    try (InputStream in =
+        minioClient.getObject(
+            GetObjectArgs.builder().bucket(props.bucket()).object(objectKey).build())) {
       return in.readAllBytes();
     } catch (ErrorResponseException e) {
       throw new BadRequestException("Object storage dosyası bulunamadı: " + objectKey);
@@ -159,10 +163,8 @@ public class ObjectStorageService {
     try {
       ensureBucketExists();
       minioClient.putObject(
-          PutObjectArgs.builder()
-              .bucket(props.bucket())
-              .object(objectKey)
-              .stream(new ByteArrayInputStream(bytes), (long) bytes.length, -1L)
+          PutObjectArgs.builder().bucket(props.bucket()).object(objectKey).stream(
+                  new ByteArrayInputStream(bytes), (long) bytes.length, -1L)
               .contentType(contentType)
               .build());
     } catch (Exception e) {
@@ -171,7 +173,8 @@ public class ObjectStorageService {
   }
 
   private void ensureBucketExists() throws Exception {
-    boolean exists = minioClient.bucketExists(BucketExistsArgs.builder().bucket(props.bucket()).build());
+    boolean exists =
+        minioClient.bucketExists(BucketExistsArgs.builder().bucket(props.bucket()).build());
     if (!exists) {
       minioClient.makeBucket(MakeBucketArgs.builder().bucket(props.bucket()).build());
     }
@@ -201,7 +204,8 @@ public class ObjectStorageService {
 
   private String normalizeFolder(String folderPrefix) {
     String scoped = props.keyPrefix().trim().replaceAll("^/+", "").replaceAll("/+$", "");
-    String extra = folderPrefix == null ? "" : folderPrefix.trim().replaceAll("^/+", "").replaceAll("/+$", "");
+    String extra =
+        folderPrefix == null ? "" : folderPrefix.trim().replaceAll("^/+", "").replaceAll("/+$", "");
     return extra.isBlank() ? scoped : scoped + "/" + extra;
   }
 

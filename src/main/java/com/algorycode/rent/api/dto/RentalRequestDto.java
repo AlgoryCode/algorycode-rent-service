@@ -1,7 +1,6 @@
 package com.algorycode.rent.api.dto;
 
 import com.algorycode.rent.domain.request.RentalRequestStatus;
-
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -32,8 +31,9 @@ public record RentalRequestDto(
     Instant whatsappContractSentAt,
     String whatsappContractError,
     /**
-     * {@code true} when status is approved and no contract PDF exists yet — show “generate contract” and then
-     * {@code POST /rental-requests/{id}/contract} (triggers PDF + admin WhatsApp if configured).
+     * {@code true} when status is approved and no contract PDF exists yet — show “generate
+     * contract” and then {@code POST /rental-requests/{id}/contract} (triggers PDF + admin WhatsApp
+     * if configured).
      */
     boolean contractGenerationAvailable,
     BigDecimal handoverPickupLegEur,
@@ -66,11 +66,7 @@ public record RentalRequestDto(
       String driverLicenseImageDataUrl) {}
 
   public record RentalRequestOptionDto(
-      Long id,
-      String title,
-      String description,
-      BigDecimal price,
-      String icon) {}
+      Long id, String title, String description, BigDecimal price, String icon) {}
 
   /** Faturalandırma kalemi (TRY tutarlar; handover için metadata’da EUR). */
   public record RentalRequestPricedLineDto(

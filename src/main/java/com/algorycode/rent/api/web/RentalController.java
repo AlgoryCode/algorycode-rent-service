@@ -7,6 +7,9 @@ import com.algorycode.rent.api.dto.UpdateRentalStatusRequest;
 import com.algorycode.rent.domain.rental.RentalStatus;
 import com.algorycode.rent.service.RentalService;
 import jakarta.validation.Valid;
+import java.time.LocalDate;
+import java.util.List;
+import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -16,18 +19,12 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.time.LocalDate;
-import java.util.List;
-
 @RestController
 @RequestMapping("/rentals")
+@RequiredArgsConstructor
 public class RentalController {
 
   private final RentalService rentalService;
-
-  public RentalController(RentalService rentalService) {
-    this.rentalService = rentalService;
-  }
 
   @GetMapping
   public List<RentalDto> list(

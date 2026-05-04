@@ -1,23 +1,5 @@
 package com.algorycode.rent.api.web;
 
-import com.algorycode.rent.api.dto.RentalDto;
-import com.algorycode.rent.domain.rental.RentalCommissionFlow;
-import com.algorycode.rent.domain.rental.RentalStatus;
-import com.algorycode.rent.logging.AuditLog;
-import com.algorycode.rent.service.RentalService;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.http.MediaType;
-import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-
-import java.time.Instant;
-import java.time.LocalDate;
-import java.util.List;
-
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.ArgumentMatchers.nullable;
@@ -27,6 +9,23 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+import com.algorycode.rent.api.dto.RentalDto;
+import com.algorycode.rent.domain.rental.RentalCommissionFlow;
+import com.algorycode.rent.domain.rental.RentalStatus;
+import com.algorycode.rent.logging.AuditLog;
+import com.algorycode.rent.service.RentalService;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.util.List;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.MediaType;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
 @ExtendWith(MockitoExtension.class)
 class RentalControllerTest {
@@ -74,10 +73,7 @@ class RentalControllerTest {
         .thenReturn(List.of(dto));
 
     mockMvc
-        .perform(
-            get("/rentals")
-                .param("status", "pending")
-                .accept(MediaType.APPLICATION_JSON))
+        .perform(get("/rentals").param("status", "pending").accept(MediaType.APPLICATION_JSON))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$[0].status").value("pending"));
   }

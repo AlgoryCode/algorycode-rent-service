@@ -3,27 +3,26 @@ package com.algorycode.rent.service.mail;
 import com.algorycode.rent.domain.request.RentalRequest;
 import com.algorycode.rent.domain.vehicle.Vehicle;
 import com.algorycode.rent.messaging.QueuedMailMessage;
+import java.time.format.DateTimeFormatter;
+import java.util.Locale;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.thymeleaf.context.Context;
 
-import java.time.format.DateTimeFormatter;
-import java.util.Locale;
-
-/** Thymeleaf şablonlarından “talebiniz alındı” e-postası üretir, Rabbit için {@link QueuedMailMessage} döner. */
+/**
+ * Thymeleaf şablonlarından “talebiniz alındı” e-postası üretir, Rabbit için {@link
+ * QueuedMailMessage} döner.
+ */
 @Service
+@RequiredArgsConstructor
 public class RentalRequestReceivedMailComposer {
 
   public static final String TEMPLATE_CODE = "rent.request.received";
 
   private static final Locale TR = Locale.forLanguageTag("tr-TR");
-  private static final DateTimeFormatter DATE_TR =
-      DateTimeFormatter.ofPattern("d MMMM yyyy", TR);
+  private static final DateTimeFormatter DATE_TR = DateTimeFormatter.ofPattern("d MMMM yyyy", TR);
 
   private final ThymeleafMailRenderer thymeleafMailRenderer;
-
-  public RentalRequestReceivedMailComposer(ThymeleafMailRenderer thymeleafMailRenderer) {
-    this.thymeleafMailRenderer = thymeleafMailRenderer;
-  }
 
   public QueuedMailMessage compose(RentalRequest request) {
     String mailSubject = "Rezervasyon talebiniz alınmıştır";
@@ -39,11 +38,7 @@ public class RentalRequestReceivedMailComposer {
     String plain = thymeleafMailRenderer.process("mail/rental-request-received-plain", ctx);
 
     return QueuedMailMessage.multipart(
-        request.getCustomer().getEmail().trim(),
-        mailSubject,
-        plain,
-        html,
-        TEMPLATE_CODE);
+        request.getCustomer().getEmail().trim(), mailSubject, plain, html, TEMPLATE_CODE);
   }
 
   private static String safe(String s) {

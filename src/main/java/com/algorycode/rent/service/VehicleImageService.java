@@ -49,9 +49,7 @@ public class VehicleImageService {
       }
       String storedKey =
           objectStorageService.uploadDataUrl(
-              "vehicles/" + vehicle.getId() + "/" + slot.name(),
-              slot.name(),
-              imageValue.trim());
+              "vehicles/" + vehicle.getId() + "/" + slot.name(), slot.name(), imageValue.trim());
       VehicleImage img = new VehicleImage();
       img.setVehicle(vehicle);
       img.setSlot(slot);
@@ -72,8 +70,7 @@ public class VehicleImageService {
           continue;
         }
         try {
-          resolved.add(
-              new ResolvedSlot(VehicleImageSlot.valueOf(e.getKey()), e.getValue().trim()));
+          resolved.add(new ResolvedSlot(VehicleImageSlot.valueOf(e.getKey()), e.getValue().trim()));
         } catch (IllegalArgumentException ex) {
           log.error(
               "Async vehicle images failed at stage=S3 vehicleId={} invalidSlot={}",
@@ -85,8 +82,7 @@ public class VehicleImageService {
       }
       if (resolved.isEmpty()) {
         try {
-          transactionTemplate.executeWithoutResult(
-              status -> persistFleetSnapshotOnly(vehicleId));
+          transactionTemplate.executeWithoutResult(status -> persistFleetSnapshotOnly(vehicleId));
         } catch (Exception ex) {
           log.error(
               "Async vehicle images failed at stage=SNAPSHOT vehicleId={} message={}",
@@ -143,8 +139,8 @@ public class VehicleImageService {
 
   private SlotKey uploadOne(Long vehicleId, VehicleImageSlot slot, String imageValue) {
     String storedKey =
-            objectStorageService.uploadDataUrl(
-                    "vehicles/" + vehicleId + "/" + slot.name(), slot.name(), imageValue);
+        objectStorageService.uploadDataUrl(
+            "vehicles/" + vehicleId + "/" + slot.name(), slot.name(), imageValue);
     if (storedKey == null || storedKey.isBlank()) {
       throw new IllegalStateException("S3 upload returned empty key for slot " + slot.name());
     }

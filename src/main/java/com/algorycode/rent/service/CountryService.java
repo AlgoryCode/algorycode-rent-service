@@ -5,23 +5,20 @@ import com.algorycode.rent.api.dto.CreateCountryRequest;
 import com.algorycode.rent.api.dto.UpdateCountryColorRequest;
 import com.algorycode.rent.api.error.ConflictException;
 import com.algorycode.rent.api.error.ResourceNotFoundException;
-import com.algorycode.rent.domain.country.Country;
 import com.algorycode.rent.api.mapper.CountryMapper;
+import com.algorycode.rent.domain.country.Country;
 import com.algorycode.rent.repository.CountryRepository;
+import java.util.List;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
-
 @Service
+@RequiredArgsConstructor
 public class CountryService {
 
   private final CountryRepository countryRepository;
-
-  public CountryService(CountryRepository countryRepository) {
-    this.countryRepository = countryRepository;
-  }
 
   @Transactional(readOnly = true)
   public List<CountryDto> listAll() {

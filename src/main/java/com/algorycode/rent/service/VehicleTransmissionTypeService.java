@@ -7,29 +7,24 @@ import com.algorycode.rent.api.error.BadRequestException;
 import com.algorycode.rent.api.error.ConflictException;
 import com.algorycode.rent.api.error.ResourceNotFoundException;
 import com.algorycode.rent.domain.vehicle.VehicleTransmissionType;
-import com.algorycode.rent.repository.VehicleTransmissionTypeRepository;
 import com.algorycode.rent.repository.VehicleRepository;
+import com.algorycode.rent.repository.VehicleTransmissionTypeRepository;
 import com.algorycode.rent.service.support.Text;
 import com.algorycode.rent.service.support.VehicleCatalogSupport;
 import com.algorycode.rent.service.vehiclecatalog.VehicleCatalogCrudPort;
 import com.algorycode.rent.service.vehiclecatalog.VehicleCatalogEntityFactory;
 import java.util.List;
 import java.util.Optional;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@RequiredArgsConstructor
 public class VehicleTransmissionTypeService implements VehicleCatalogCrudPort {
 
   private final VehicleTransmissionTypeRepository vehicleTransmissionTypeRepository;
   private final VehicleRepository vehicleRepository;
-
-  public VehicleTransmissionTypeService(
-      VehicleTransmissionTypeRepository vehicleTransmissionTypeRepository,
-      VehicleRepository vehicleRepository) {
-    this.vehicleTransmissionTypeRepository = vehicleTransmissionTypeRepository;
-    this.vehicleRepository = vehicleRepository;
-  }
 
   @Transactional(readOnly = true)
   public List<VehicleCatalogEntryDto> listAll() {
@@ -53,7 +48,8 @@ public class VehicleTransmissionTypeService implements VehicleCatalogCrudPort {
             c -> vehicleTransmissionTypeRepository.findByCodeIgnoreCase(c).isPresent());
     return toDto(
         vehicleTransmissionTypeRepository.save(
-            VehicleCatalogEntityFactory.newTransmissionType(code, req.labelTr().trim(), req.sortOrder())));
+            VehicleCatalogEntityFactory.newTransmissionType(
+                code, req.labelTr().trim(), req.sortOrder())));
   }
 
   @Transactional

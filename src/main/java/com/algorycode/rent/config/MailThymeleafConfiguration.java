@@ -1,19 +1,18 @@
 package com.algorycode.rent.config;
 
 import java.nio.charset.StandardCharsets;
-
+import org.springframework.boot.thymeleaf.autoconfigure.ThymeleafProperties;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.Ordered;
-import org.springframework.boot.thymeleaf.autoconfigure.ThymeleafProperties;
 import org.thymeleaf.spring6.templateresolver.SpringResourceTemplateResolver;
 import org.thymeleaf.templatemode.TemplateMode;
 import org.thymeleaf.templateresolver.ITemplateResolver;
 
 /**
- * Düz metin e-postaları için {@code *.txt} (TEXT modu) çözücü. HTML, Boot varsayılanı
- * ({@code spring.thymeleaf.prefix} + {@code .html}).
+ * Düz metin e-postaları için {@code *.txt} (TEXT modu) çözücü. HTML, Boot varsayılanı ({@code
+ * spring.thymeleaf.prefix} + {@code .html}).
  */
 @Configuration
 public class MailThymeleafConfiguration {

@@ -7,20 +7,17 @@ import com.algorycode.rent.api.error.BadRequestException;
 import com.algorycode.rent.api.error.ResourceNotFoundException;
 import com.algorycode.rent.domain.vehicle.VehicleOptionTemplate;
 import com.algorycode.rent.repository.VehicleOptionTemplateRepository;
+import java.math.RoundingMode;
+import java.util.List;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.RoundingMode;
-import java.util.List;
-
 @Service
+@RequiredArgsConstructor
 public class VehicleOptionTemplateService {
 
   private final VehicleOptionTemplateRepository vehicleOptionTemplateRepository;
-
-  public VehicleOptionTemplateService(VehicleOptionTemplateRepository vehicleOptionTemplateRepository) {
-    this.vehicleOptionTemplateRepository = vehicleOptionTemplateRepository;
-  }
 
   @Transactional(readOnly = true)
   public List<VehicleOptionTemplateDto> list(boolean includeInactive) {
@@ -46,7 +43,9 @@ public class VehicleOptionTemplateService {
     VehicleOptionTemplate e = new VehicleOptionTemplate();
     e.setTitle(req.title().trim());
     e.setDescription(
-        req.description() != null && !req.description().isBlank() ? req.description().trim() : null);
+        req.description() != null && !req.description().isBlank()
+            ? req.description().trim()
+            : null);
     e.setPrice(req.price().setScale(2, RoundingMode.HALF_UP));
     e.setIcon(req.icon() != null && !req.icon().isBlank() ? req.icon().trim() : null);
     e.setLineOrder(req.lineOrder());

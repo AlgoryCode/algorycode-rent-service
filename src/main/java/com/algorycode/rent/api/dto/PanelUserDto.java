@@ -1,7 +1,6 @@
 package com.algorycode.rent.api.dto;
 
 import com.algorycode.rent.domain.user.PanelUserRole;
-
 import java.time.Instant;
 
 public record PanelUserDto(

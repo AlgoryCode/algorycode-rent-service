@@ -1,17 +1,17 @@
 package com.algorycode.rent.service.support;
 
-import com.algorycode.rent.domain.request.RentalRequest;
+import static org.assertj.core.api.Assertions.assertThat;
+
 import com.algorycode.rent.domain.rental.CustomerSnapshot;
 import com.algorycode.rent.domain.rental.Rental;
 import com.algorycode.rent.domain.rental.RentalStatus;
+import com.algorycode.rent.domain.request.RentalRequest;
 import com.algorycode.rent.domain.request.RentalRequestStatus;
 import com.algorycode.rent.domain.vehicle.Vehicle;
 import java.time.LocalDate;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-
-import static org.assertj.core.api.Assertions.assertThat;
 
 class VehicleAvailabilitySlotAnalyzerTest {
 
@@ -27,7 +27,9 @@ class VehicleAvailabilitySlotAnalyzerTest {
     var a = new InclusiveLocalDateRange(LocalDate.of(2026, 6, 1), LocalDate.of(2026, 6, 2));
     var b = new InclusiveLocalDateRange(LocalDate.of(2026, 6, 3), LocalDate.of(2026, 6, 5));
     List<InclusiveLocalDateRange> merged = analyzer.mergeSorted(List.of(b, a));
-    assertThat(merged).containsExactly(new InclusiveLocalDateRange(LocalDate.of(2026, 6, 1), LocalDate.of(2026, 6, 5)));
+    assertThat(merged)
+        .containsExactly(
+            new InclusiveLocalDateRange(LocalDate.of(2026, 6, 1), LocalDate.of(2026, 6, 5)));
   }
 
   @Test
@@ -35,8 +37,7 @@ class VehicleAvailabilitySlotAnalyzerTest {
     var merged =
         List.of(new InclusiveLocalDateRange(LocalDate.of(2026, 6, 10), LocalDate.of(2026, 6, 12)));
     List<InclusiveLocalDateRange> free =
-        analyzer.freeSlotsInWindow(
-            LocalDate.of(2026, 6, 8), LocalDate.of(2026, 6, 15), merged);
+        analyzer.freeSlotsInWindow(LocalDate.of(2026, 6, 8), LocalDate.of(2026, 6, 15), merged);
     assertThat(free)
         .containsExactly(
             new InclusiveLocalDateRange(LocalDate.of(2026, 6, 8), LocalDate.of(2026, 6, 9)),

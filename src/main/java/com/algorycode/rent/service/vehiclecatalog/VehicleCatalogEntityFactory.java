@@ -25,7 +25,8 @@ public final class VehicleCatalogEntityFactory {
     return e;
   }
 
-  public static VehicleTransmissionType newTransmissionType(String code, String labelTr, int sortOrder) {
+  public static VehicleTransmissionType newTransmissionType(
+      String code, String labelTr, int sortOrder) {
     VehicleTransmissionType e = new VehicleTransmissionType();
     e.setCode(code);
     e.setLabelTr(labelTr);
@@ -33,7 +34,8 @@ public final class VehicleCatalogEntityFactory {
     return e;
   }
 
-  public static VehicleStatusDefinition newVehicleStatusDefinition(String code, String labelTr, int sortOrder) {
+  public static VehicleStatusDefinition newVehicleStatusDefinition(
+      String code, String labelTr, int sortOrder) {
     VehicleStatusDefinition e = new VehicleStatusDefinition();
     e.setCode(code);
     e.setLabelTr(labelTr);

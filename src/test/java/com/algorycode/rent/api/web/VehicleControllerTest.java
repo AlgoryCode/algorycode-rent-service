@@ -1,15 +1,29 @@
 package com.algorycode.rent.api.web;
 
+import static org.hamcrest.Matchers.containsString;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
 import com.algorycode.rent.api.dto.VehicleCalendarOccupancyDto;
 import com.algorycode.rent.api.dto.VehicleDto;
-import com.algorycode.rent.domain.vehicle.VehicleStatus;
 import com.algorycode.rent.api.dto.VehicleOccupancyRangeDto;
 import com.algorycode.rent.api.dto.VehicleOccupancySource;
 import com.algorycode.rent.api.error.ResourceNotFoundException;
+import com.algorycode.rent.domain.vehicle.VehicleStatus;
 import com.algorycode.rent.logging.AuditLog;
 import com.algorycode.rent.service.VehicleFormCatalogService;
 import com.algorycode.rent.service.VehicleOccupancyService;
 import com.algorycode.rent.service.VehicleService;
+import java.time.LocalDate;
+import java.util.Collections;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -19,21 +33,6 @@ import org.springframework.context.support.StaticMessageSource;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-
-import java.time.LocalDate;
-import java.util.Collections;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-
-import static org.hamcrest.Matchers.containsString;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @ExtendWith(MockitoExtension.class)
 class VehicleControllerTest {
@@ -52,7 +51,10 @@ class VehicleControllerTest {
     mockMvc =
         MockMvcBuilders.standaloneSetup(
                 new VehicleController(
-                    vehicleService, vehicleOccupancyService, vehicleFormCatalogService, messageSource))
+                    vehicleService,
+                    vehicleOccupancyService,
+                    vehicleFormCatalogService,
+                    messageSource))
             .setControllerAdvice(new GlobalExceptionHandler(auditLog))
             .build();
   }
@@ -108,7 +110,8 @@ class VehicleControllerTest {
   void calendarOccupancy_returnsMergedRanges() throws Exception {
     var vid = 1L;
     var rid = 1L;
-    when(vehicleOccupancyService.occupancy(vid, LocalDate.of(2026, 4, 1), LocalDate.of(2026, 4, 30)))
+    when(vehicleOccupancyService.occupancy(
+            vid, LocalDate.of(2026, 4, 1), LocalDate.of(2026, 4, 30)))
         .thenReturn(
             new VehicleCalendarOccupancyDto(
                 LocalDate.of(2026, 4, 1),
@@ -171,7 +174,8 @@ class VehicleControllerTest {
   @Test
   void getById_notFound_returnsProblemDetail() throws Exception {
     var id = 1L;
-    when(vehicleService.getById(id)).thenThrow(new ResourceNotFoundException("Vehicle not found: " + id));
+    when(vehicleService.getById(id))
+        .thenThrow(new ResourceNotFoundException("Vehicle not found: " + id));
 
     mockMvc
         .perform(get("/vehicles/{id}", id))

@@ -1,22 +1,21 @@
 package com.algorycode.rent.domain.location;
 
 import com.algorycode.rent.domain.AbstractAuditableLongEntity;
+import com.fasterxml.jackson.databind.JsonNode;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.Table;
+import java.math.BigDecimal;
 import lombok.Getter;
 import lombok.Setter;
-
-import com.fasterxml.jackson.databind.JsonNode;
-import java.math.BigDecimal;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
 /**
- * Alış veya teslim noktası; şehir / ülke tablolarına FK yoktur. İsteğe bağlı {@code countryCode} yalnızca
- * ücretlendirme ve vitrin amaçlıdır.
+ * Alış veya teslim noktası; şehir / ülke tablolarına FK yoktur. İsteğe bağlı {@code countryCode}
+ * yalnızca ücretlendirme ve vitrin amaçlıdır.
  */
 @Getter
 @Setter

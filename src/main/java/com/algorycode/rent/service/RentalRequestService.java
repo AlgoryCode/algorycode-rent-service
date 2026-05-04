@@ -32,10 +32,6 @@ import com.algorycode.rent.service.support.DateRangeValidator;
 import com.algorycode.rent.service.support.RentalOptionLineResolution;
 import com.algorycode.rent.service.support.RentalRequestPricedLineAssembler;
 import com.algorycode.rent.service.support.Text;
-import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -50,8 +46,13 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
+import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@RequiredArgsConstructor
 public class RentalRequestService {
 
   /** PDF bytes + safe filename for {@code Content-Disposition} (sözleşme indirme). */
@@ -78,41 +79,6 @@ public class RentalRequestService {
   private final RentalRequestPricedLineAssembler rentalRequestPricedLineAssembler;
   private final DiscountCouponService discountCouponService;
 
-  public RentalRequestService(
-      RentalRequestRepository rentalRequestRepository,
-      VehicleRepository vehicleRepository,
-      AppRentalRequestProperties rentalRequestProperties,
-      RentalContractPdfService rentalContractPdfService,
-      RentalRequestWhatsappContractService rentalRequestWhatsappContractService,
-      ObjectStorageService objectStorageService,
-      CustomerRecordService customerRecordService,
-      HandoverLocationService handoverLocationService,
-      HandoverPricingService handoverPricingService,
-      VehicleOptionDefinitionRepository vehicleOptionDefinitionRepository,
-      ReservationExtraOptionTemplateRepository reservationExtraOptionTemplateRepository,
-      ApplicationEventPublisher applicationEventPublisher,
-      RentalRequestNotificationService rentalRequestNotificationService,
-      AuditLog auditLog,
-      RentalRequestPricedLineAssembler rentalRequestPricedLineAssembler,
-      DiscountCouponService discountCouponService) {
-    this.rentalRequestRepository = rentalRequestRepository;
-    this.vehicleRepository = vehicleRepository;
-    this.rentalRequestProperties = rentalRequestProperties;
-    this.rentalContractPdfService = rentalContractPdfService;
-    this.rentalRequestWhatsappContractService = rentalRequestWhatsappContractService;
-    this.objectStorageService = objectStorageService;
-    this.customerRecordService = customerRecordService;
-    this.handoverLocationService = handoverLocationService;
-    this.handoverPricingService = handoverPricingService;
-    this.vehicleOptionDefinitionRepository = vehicleOptionDefinitionRepository;
-    this.reservationExtraOptionTemplateRepository = reservationExtraOptionTemplateRepository;
-    this.applicationEventPublisher = applicationEventPublisher;
-    this.rentalRequestNotificationService = rentalRequestNotificationService;
-    this.auditLog = auditLog;
-    this.rentalRequestPricedLineAssembler = rentalRequestPricedLineAssembler;
-    this.discountCouponService = discountCouponService;
-  }
-
   @Transactional
   public RentalRequestDto create(CreateRentalRequestFormRequest req) {
     DateRangeValidator.requireEndNotBeforeStart(req.startDate(), req.endDate());
@@ -121,7 +87,8 @@ public class RentalRequestService {
       vehicle =
           vehicleRepository
               .findByIdAndDeletedFalse(req.vehicleId())
-              .orElseThrow(() -> new ResourceNotFoundException("Vehicle not found: " + req.vehicleId()));
+              .orElseThrow(
+                  () -> new ResourceNotFoundException("Vehicle not found: " + req.vehicleId()));
       if (vehicle.getStatus() == VehicleStatus.maintenance) {
         throw new ConflictException("Bakımdaki araç için talep oluşturulamaz.");
       }
@@ -137,11 +104,14 @@ public class RentalRequestService {
     entity.setUserId(req.userId());
     entity.setStartDate(req.startDate());
     entity.setEndDate(req.endDate());
-    entity.setRentalNights(RentalRequestPricedLineAssembler.rentalNightsBetween(req.startDate(), req.endDate()));
+    entity.setRentalNights(
+        RentalRequestPricedLineAssembler.rentalNightsBetween(req.startDate(), req.endDate()));
     entity.setStartTime(req.startTime() != null ? req.startTime() : LocalTime.of(8, 0));
     entity.setReturnTime(req.returnTime() != null ? req.returnTime() : LocalTime.of(8, 0));
-    entity.setPickupHandoverLocation(resolvePickupForRequest(vehicle, req.pickupHandoverLocationId()));
-    entity.setReturnHandoverLocation(resolveReturnForRequest(vehicle, req.returnHandoverLocationId()));
+    entity.setPickupHandoverLocation(
+        resolvePickupForRequest(vehicle, req.pickupHandoverLocationId()));
+    entity.setReturnHandoverLocation(
+        resolveReturnForRequest(vehicle, req.returnHandoverLocationId()));
     var handoverQuote =
         handoverPricingService.quoteForPersistedPair(
             entity.getPickupHandoverLocation(), entity.getReturnHandoverLocation());
@@ -159,7 +129,8 @@ public class RentalRequestService {
     c.setPhone(req.customer().phone().trim());
     c.setEmail(req.customer().email().trim().toLowerCase(Locale.ROOT));
     c.setBirthDate(req.customer().birthDate());
-    c.setNationalId(req.customer().nationalId() != null ? req.customer().nationalId().trim() : null);
+    c.setNationalId(
+        req.customer().nationalId() != null ? req.customer().nationalId().trim() : null);
     c.setPassportNo(Text.blankToEmpty(req.customer().passportNo()));
     c.setDriverLicenseNo(Text.blankToEmpty(req.customer().driverLicenseNo()));
     c.setPassportImageDataUrl(req.customer().passportImageDataUrl().trim());
@@ -206,17 +177,21 @@ public class RentalRequestService {
     auditLog.infoEvent(
         "rental_request_created",
         Map.of(
-            "rentalRequestId", refreshed.getId().toString(),
-            "referenceNo", refreshed.getReferenceNo(),
+            "rentalRequestId",
+            refreshed.getId().toString(),
+            "referenceNo",
+            refreshed.getReferenceNo(),
             "vehicleId",
-                refreshed.getVehicle() != null ? refreshed.getVehicle().getId().toString() : "none",
-            "userId", refreshed.getUserId() != null ? refreshed.getUserId().toString() : "none"));
+            refreshed.getVehicle() != null ? refreshed.getVehicle().getId().toString() : "none",
+            "userId",
+            refreshed.getUserId() != null ? refreshed.getUserId().toString() : "none"));
     return RentalRequestMapper.toDto(refreshed, objectStorageService::resolvePublicUrl);
   }
 
   /**
-   * Onaylanmış talep için sözleşme PDF'i üretir, object storage'a yükler ve (yapılandırmadaysa) WhatsApp
-   * bildirimini tetikler. Başvuru oluşturma sırasında PDF üretilmez; görseller önce depoda saklanır.
+   * Onaylanmış talep için sözleşme PDF'i üretir, object storage'a yükler ve (yapılandırmadaysa)
+   * WhatsApp bildirimini tetikler. Başvuru oluşturma sırasında PDF üretilmez; görseller önce depoda
+   * saklanır.
    */
   @Transactional
   public RentalRequestDto generateContract(Long id) {
@@ -249,10 +224,12 @@ public class RentalRequestService {
   }
 
   /**
-   * Sözleşme PDF baytları (object key veya yerel dosya yolu). Sadece sözleşme oluşturulmuş taleplerde.
+   * Sözleşme PDF baytları (object key veya yerel dosya yolu). Sadece sözleşme oluşturulmuş
+   * taleplerde.
    */
   /**
-   * Müşteri e-postasına Thymeleaf şablonlu sözleşme bildirimi (PDF herkese açık URL ise mail içinde link).
+   * Müşteri e-postasına Thymeleaf şablonlu sözleşme bildirimi (PDF herkese açık URL ise mail içinde
+   * link).
    */
   @Transactional(readOnly = true)
   public void queueContractPdfEmailToCustomer(Long id) {
@@ -276,9 +253,7 @@ public class RentalRequestService {
       throw new BadRequestException("Bu kayıt için doğrudan indirme desteklenmiyor.");
     }
     String filename =
-        "sozlesme-"
-            + request.getReferenceNo().replaceAll("[^A-Za-z0-9_.-]", "_")
-            + ".pdf";
+        "sozlesme-" + request.getReferenceNo().replaceAll("[^A-Za-z0-9_.-]", "_") + ".pdf";
     try {
       Path local = Path.of(path);
       if (Files.isRegularFile(local)) {
@@ -317,7 +292,8 @@ public class RentalRequestService {
 
   private static void assertApprovedForContractEmail(RentalRequest request) {
     if (request.getStatus() != RentalRequestStatus.approved) {
-      throw new BadRequestException("Sözleşme e-postası yalnızca onaylanmış talepler için gönderilebilir.");
+      throw new BadRequestException(
+          "Sözleşme e-postası yalnızca onaylanmış talepler için gönderilebilir.");
     }
   }
 
@@ -397,7 +373,10 @@ public class RentalRequestService {
         return ref;
       }
     }
-    return "RG-" + date + "-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase(Locale.ROOT);
+    return "RG-"
+        + date
+        + "-"
+        + UUID.randomUUID().toString().substring(0, 8).toUpperCase(Locale.ROOT);
   }
 
   private static String randomToken(int len) {
@@ -429,7 +408,8 @@ public class RentalRequestService {
     }
   }
 
-  private RentalOptionLineResolution.Resolved resolveRequestOptionLine(Vehicle vehicle, RentalOptionRequest o) {
+  private RentalOptionLineResolution.Resolved resolveRequestOptionLine(
+      Vehicle vehicle, RentalOptionRequest o) {
     return RentalOptionLineResolution.resolve(
         vehicle, o, vehicleOptionDefinitionRepository, reservationExtraOptionTemplateRepository);
   }
@@ -439,11 +419,14 @@ public class RentalRequestService {
     if (!validation.valid()) {
       return;
     }
-    BigDecimal total = entity.getPricingTotalTry() != null ? entity.getPricingTotalTry() : BigDecimal.ZERO;
+    BigDecimal total =
+        entity.getPricingTotalTry() != null ? entity.getPricingTotalTry() : BigDecimal.ZERO;
     BigDecimal discountAmt;
     if ("PERCENT".equalsIgnoreCase(validation.discountType())) {
-      discountAmt = total.multiply(validation.discountValue())
-          .divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
+      discountAmt =
+          total
+              .multiply(validation.discountValue())
+              .divide(BigDecimal.valueOf(100), 2, RoundingMode.HALF_UP);
     } else {
       discountAmt = validation.discountValue().setScale(2, RoundingMode.HALF_UP);
     }
@@ -478,8 +461,7 @@ public class RentalRequestService {
   }
 
   private HandoverLocation resolveReturnForRequest(Vehicle vehicle, Long requestReturnId) {
-    List<Long> allowed =
-        vehicle != null ? vehicle.orderedReturnHandoverLocationIds() : List.of();
+    List<Long> allowed = vehicle != null ? vehicle.orderedReturnHandoverLocationIds() : List.of();
     boolean inferred = requestReturnId == null;
     Long returnId = requestReturnId;
     if (returnId == null && vehicle != null && !allowed.isEmpty()) {

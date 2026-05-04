@@ -3,7 +3,6 @@ package com.algorycode.rent.api.dto;
 import com.algorycode.rent.domain.payment.PaymentLogStatus;
 import com.algorycode.rent.domain.payment.PaymentMoneyFlow;
 import com.algorycode.rent.domain.rental.RentalStatus;
-
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;

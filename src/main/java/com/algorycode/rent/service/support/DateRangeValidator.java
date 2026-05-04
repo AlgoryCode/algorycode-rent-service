@@ -18,7 +18,8 @@ public final class DateRangeValidator {
   }
 
   /**
-   * İkisi de doluysa sıra kontrolü; biri {@code null} ise işlem yok (liste filtreleri gibi opsiyonel aralıklar).
+   * İkisi de doluysa sıra kontrolü; biri {@code null} ise işlem yok (liste filtreleri gibi
+   * opsiyonel aralıklar).
    */
   public static void requireEndNotBeforeStartIfBothPresent(LocalDate start, LocalDate end) {
     if (start != null && end != null) {

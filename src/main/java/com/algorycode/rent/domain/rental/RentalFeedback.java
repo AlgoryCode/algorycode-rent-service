@@ -11,12 +11,14 @@ import jakarta.persistence.OneToOne;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
+import java.time.Instant;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.time.Instant;
-
-/** Kiralama başına en fazla bir yorum (FE ile uyumlu). PK: otomatik artan {@code id}; {@code rental_id} benzersiz FK. */
+/**
+ * Kiralama başına en fazla bir yorum (FE ile uyumlu). PK: otomatik artan {@code id}; {@code
+ * rental_id} benzersiz FK.
+ */
 @Getter
 @Setter
 @Entity

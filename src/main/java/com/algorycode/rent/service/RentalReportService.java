@@ -8,11 +8,8 @@ import com.algorycode.rent.api.error.BadRequestException;
 import com.algorycode.rent.domain.rental.Rental;
 import com.algorycode.rent.domain.rental.RentalStatus;
 import com.algorycode.rent.domain.vehicle.Vehicle;
-import com.algorycode.rent.service.support.RentalRevenueEur;
 import com.algorycode.rent.repository.RentalRepository;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
+import com.algorycode.rent.service.support.RentalRevenueEur;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
@@ -24,18 +21,18 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@RequiredArgsConstructor
 public class RentalReportService {
 
   private static final int DAILY_TIMELINE_MAX_DAYS = 93;
   private static final DateTimeFormatter MONTH_LABEL = DateTimeFormatter.ofPattern("MMM yyyy");
 
   private final RentalRepository rentalRepository;
-
-  public RentalReportService(RentalRepository rentalRepository) {
-    this.rentalRepository = rentalRepository;
-  }
 
   @Transactional(readOnly = true)
   public RentalDashboardReportDto rentalDashboard(LocalDate from, LocalDate to, Long vehicleId) {
@@ -72,7 +69,9 @@ public class RentalReportService {
       base = base.setScale(2, RoundingMode.HALF_UP);
       opts = opts.setScale(2, RoundingMode.HALF_UP);
       BigDecimal comm =
-          r.getCommissionAmount() != null ? r.getCommissionAmount().setScale(2, RoundingMode.HALF_UP) : BigDecimal.ZERO;
+          r.getCommissionAmount() != null
+              ? r.getCommissionAmount().setScale(2, RoundingMode.HALF_UP)
+              : BigDecimal.ZERO;
       long incDays = RentalRevenueEur.inclusiveRentalDays(r.getStartDate(), r.getEndDate());
 
       totalRev = totalRev.add(rev);
@@ -125,7 +124,8 @@ public class RentalReportService {
             activePending,
             completed);
 
-    return new RentalDashboardReportDto(fromEff, toEff, granularity, summary, vehicleRows, timelineRows);
+    return new RentalDashboardReportDto(
+        fromEff, toEff, granularity, summary, vehicleRows, timelineRows);
   }
 
   private static String bucketKeyFor(LocalDate rentalStart, boolean useDaily) {
@@ -137,10 +137,7 @@ public class RentalReportService {
   }
 
   private static List<TimelineBucket> buildTimelineBuckets(
-      LocalDate from,
-      LocalDate to,
-      boolean useDaily,
-      Map<String, TimelineAgg> data) {
+      LocalDate from, LocalDate to, boolean useDaily, Map<String, TimelineAgg> data) {
     List<TimelineBucket> out = new ArrayList<>();
     if (useDaily) {
       for (LocalDate d = from; !d.isAfter(to); d = d.plusDays(1)) {

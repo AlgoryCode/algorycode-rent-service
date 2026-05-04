@@ -15,7 +15,8 @@ public final class RentalCommissionValidator {
   /**
    * @param commissionCompany ham veya trimlenmiş; {@code pay} + pozitif tutarda boş olamaz
    */
-  public static void validate(BigDecimal amount, RentalCommissionFlow flow, String commissionCompany) {
+  public static void validate(
+      BigDecimal amount, RentalCommissionFlow flow, String commissionCompany) {
     if (amount.compareTo(BigDecimal.ZERO) < 0) {
       throw new BadRequestException(MSG_NEGATIVE);
     }

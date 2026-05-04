@@ -320,3 +320,19 @@ Controller  →  Service (Interface)  →  Repository (Interface)  →  Database
 
 - Doğrudan cache implementasyonu (Redis, Ehcache) yerine Spring Cache Abstraction (`@Cacheable`, `@CacheEvict`) tercih edilmelidir.
 - Önbelleğe alınan her verinin mutlaka bir **TTL (Time To Live)** süresi tanımlanmalıdır; belleğin kontrolsüz büyümesi engellenmelidir.
+
+---
+
+## 16. NULL KONTROLÜ VE GEREKSİZ DALLANMA
+
+- Gereksiz `null` kontrolleri ve tekrarlayan `if` blokları yazılmaz; domain sözleşmesi net olan yerlerde `Optional`, guard clause, `switch`/ifadesi, `Map`/strateji ile dallanma azaltılır.
+- Aynı `null` veya varlık kontrolü üst üste tekrarlanmaz; repository `Optional` sonucu service içinde tek yerde ele alınır (`orElseThrow`, `map`, `flatMap`).
+- Mümkün olduğunda imkansız durumları tiple daralt: `record` ile zorunlu alanlar, `sealed` hiyerarşi, anlamlı alt türler.
+
+---
+
+## 17. KATMAN STEREOTYPE VE GİRİŞ DOĞRULAMA ZORUNLULUĞU
+
+- Uygulama servisi sınıfları `@Service`; Spring Data repository arayüzleri `@Repository` ile işaretlenir veya `JpaRepository` extend eden arayüzler Spring tarafından repository olarak tanınır; HTTP katmanı `@RestController` veya `@Controller`; yapılandırma `@Configuration`.
+- İş kurallı **zorunlu** istek alanları Jakarta Bean Validation ile kodda tanımlanır: `@NotNull`, `@NotBlank`, `@NotEmpty`, `@Size`, `@Email`, `@Positive`, `@DecimalMin`/`@DecimalMax` vb.; isteğe bağlı alanlar için `@Nullable` veya paket kontratı açıkça belirtilir.
+- Controller’da `@RequestBody` ve uygun yerlerde `@Valid`; iç içe DTO’larda `@Valid` zinciri; zorunluluk yalnızca yorum satırında bırakılmaz, annotation ile zorunlu kılınır.

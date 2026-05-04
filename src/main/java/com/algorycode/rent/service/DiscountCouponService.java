@@ -8,21 +8,18 @@ import com.algorycode.rent.api.error.BadRequestException;
 import com.algorycode.rent.api.error.ResourceNotFoundException;
 import com.algorycode.rent.domain.coupon.DiscountCoupon;
 import com.algorycode.rent.repository.DiscountCouponRepository;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import java.math.RoundingMode;
 import java.time.Instant;
 import java.util.List;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@RequiredArgsConstructor
 public class DiscountCouponService {
 
   private final DiscountCouponRepository discountCouponRepository;
-
-  public DiscountCouponService(DiscountCouponRepository discountCouponRepository) {
-    this.discountCouponRepository = discountCouponRepository;
-  }
 
   @Transactional(readOnly = true)
   public List<DiscountCouponDto> list() {
@@ -31,8 +28,12 @@ public class DiscountCouponService {
 
   @Transactional
   public DiscountCouponDto create(CreateCouponRequest req) {
-    discountCouponRepository.findByCodeIgnoreCase(req.code().trim())
-        .ifPresent(c -> { throw new BadRequestException("Bu kupon kodu zaten kullanımda: " + req.code()); });
+    discountCouponRepository
+        .findByCodeIgnoreCase(req.code().trim())
+        .ifPresent(
+            c -> {
+              throw new BadRequestException("Bu kupon kodu zaten kullanımda: " + req.code());
+            });
     DiscountCoupon coupon = new DiscountCoupon();
     coupon.setCode(req.code().trim().toUpperCase());
     coupon.setDiscountType(req.discountType().trim().toUpperCase());
@@ -49,13 +50,18 @@ public class DiscountCouponService {
     DiscountCoupon coupon = findOrThrow(id);
     if (req.code() != null) {
       String newCode = req.code().trim().toUpperCase();
-      discountCouponRepository.findByCodeIgnoreCase(newCode)
+      discountCouponRepository
+          .findByCodeIgnoreCase(newCode)
           .filter(c -> !c.getId().equals(id))
-          .ifPresent(c -> { throw new BadRequestException("Bu kupon kodu zaten kullanımda: " + newCode); });
+          .ifPresent(
+              c -> {
+                throw new BadRequestException("Bu kupon kodu zaten kullanımda: " + newCode);
+              });
       coupon.setCode(newCode);
     }
     if (req.discountType() != null) coupon.setDiscountType(req.discountType().trim().toUpperCase());
-    if (req.discountValue() != null) coupon.setDiscountValue(req.discountValue().setScale(2, RoundingMode.HALF_UP));
+    if (req.discountValue() != null)
+      coupon.setDiscountValue(req.discountValue().setScale(2, RoundingMode.HALF_UP));
     if (req.description() != null) coupon.setDescription(req.description());
     if (req.active() != null) coupon.setActive(req.active());
     if (req.usageLimit() != null) coupon.setUsageLimit(req.usageLimit());
@@ -71,33 +77,40 @@ public class DiscountCouponService {
 
   @Transactional(readOnly = true)
   public ValidateCouponResponse validate(String code) {
-    return discountCouponRepository.findByCodeIgnoreCase(code.trim())
-        .map(c -> {
-          if (!c.isActive()) {
-            return new ValidateCouponResponse(false, null, null, "Kupon aktif değil.");
-          }
-          if (c.getExpiresAt() != null && c.getExpiresAt().isBefore(Instant.now())) {
-            return new ValidateCouponResponse(false, null, null, "Kuponun süresi dolmuş.");
-          }
-          if (c.getUsageLimit() != null && c.getUsageCount() >= c.getUsageLimit()) {
-            return new ValidateCouponResponse(false, null, null, "Kupon kullanım limiti doldu.");
-          }
-          return new ValidateCouponResponse(true, c.getDiscountType(), c.getDiscountValue(), null);
-        })
+    return discountCouponRepository
+        .findByCodeIgnoreCase(code.trim())
+        .map(
+            c -> {
+              if (!c.isActive()) {
+                return new ValidateCouponResponse(false, null, null, "Kupon aktif değil.");
+              }
+              if (c.getExpiresAt() != null && c.getExpiresAt().isBefore(Instant.now())) {
+                return new ValidateCouponResponse(false, null, null, "Kuponun süresi dolmuş.");
+              }
+              if (c.getUsageLimit() != null && c.getUsageCount() >= c.getUsageLimit()) {
+                return new ValidateCouponResponse(
+                    false, null, null, "Kupon kullanım limiti doldu.");
+              }
+              return new ValidateCouponResponse(
+                  true, c.getDiscountType(), c.getDiscountValue(), null);
+            })
         .orElse(new ValidateCouponResponse(false, null, null, "Kupon bulunamadı."));
   }
 
   @Transactional
   public void incrementUsage(String code) {
-    discountCouponRepository.findByCodeIgnoreCase(code.trim())
-        .ifPresent(c -> {
-          c.setUsageCount(c.getUsageCount() + 1);
-          discountCouponRepository.save(c);
-        });
+    discountCouponRepository
+        .findByCodeIgnoreCase(code.trim())
+        .ifPresent(
+            c -> {
+              c.setUsageCount(c.getUsageCount() + 1);
+              discountCouponRepository.save(c);
+            });
   }
 
   private DiscountCoupon findOrThrow(Long id) {
-    return discountCouponRepository.findById(id)
+    return discountCouponRepository
+        .findById(id)
         .orElseThrow(() -> new ResourceNotFoundException("Coupon not found: " + id));
   }
 

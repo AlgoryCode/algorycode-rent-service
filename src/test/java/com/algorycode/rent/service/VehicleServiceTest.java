@@ -1,5 +1,15 @@
 package com.algorycode.rent.service;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import com.algorycode.rent.api.dto.CreateVehicleRequest;
 import com.algorycode.rent.api.error.BadRequestException;
 import com.algorycode.rent.api.error.ResourceNotFoundException;
@@ -9,8 +19,8 @@ import com.algorycode.rent.domain.rental.Rental;
 import com.algorycode.rent.domain.rental.RentalStatus;
 import com.algorycode.rent.domain.request.RentalRequest;
 import com.algorycode.rent.domain.request.RentalRequestStatus;
-import com.algorycode.rent.domain.vehicle.VehicleBrand;
 import com.algorycode.rent.domain.vehicle.Vehicle;
+import com.algorycode.rent.domain.vehicle.VehicleBrand;
 import com.algorycode.rent.domain.vehicle.VehicleModel;
 import com.algorycode.rent.domain.vehicle.VehicleStatus;
 import com.algorycode.rent.domain.vehicle.VehicleStatusDefinition;
@@ -23,32 +33,21 @@ import com.algorycode.rent.repository.VehicleModelRepository;
 import com.algorycode.rent.repository.VehicleRepository;
 import com.algorycode.rent.repository.VehicleStatusDefinitionRepository;
 import com.algorycode.rent.repository.VehicleTransmissionTypeRepository;
-import com.algorycode.rent.service.support.RentalTestFixtures;
-import com.algorycode.rent.service.support.VehicleTestFixtures;
 import com.algorycode.rent.service.readmodel.FeFleetSnapshotBuilder;
+import com.algorycode.rent.service.support.RentalTestFixtures;
 import com.algorycode.rent.service.support.VehicleAvailabilitySlotAnalyzer;
+import com.algorycode.rent.service.support.VehicleTestFixtures;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.MessageSource;
-
-import java.time.Instant;
-import java.time.LocalDate;
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyList;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.lenient;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class VehicleServiceTest {
@@ -72,7 +71,9 @@ class VehicleServiceTest {
   @BeforeEach
   void setUp() {
     lenient()
-        .when(rentalRequestRepository.findPotentiallyBlockingRequestsForAvailability(any(), any(), anyList()))
+        .when(
+            rentalRequestRepository.findPotentiallyBlockingRequestsForAvailability(
+                any(), any(), anyList()))
         .thenReturn(Collections.emptyList());
     lenient()
         .when(messageSource.getMessage(any(), any(), any()))
@@ -204,8 +205,8 @@ class VehicleServiceTest {
   }
 
   /**
-   * Uzun aralıkta ortada kiralama varken, alış + ertesi gün boşsa kısmi modda listede kalır; sıkı modda
-   * elenir.
+   * Uzun aralıkta ortada kiralama varken, alış + ertesi gün boşsa kısmi modda listede kalır; sıkı
+   * modda elenir.
    */
   @Test
   void listWithAvailabilityFilter_partialIncludesWhenStartWindowFree() {

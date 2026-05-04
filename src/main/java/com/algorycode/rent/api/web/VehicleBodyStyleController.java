@@ -6,6 +6,7 @@ import com.algorycode.rent.api.dto.VehicleLookupUpdateRequest;
 import com.algorycode.rent.service.VehicleBodyStyleService;
 import jakarta.validation.Valid;
 import java.util.List;
+import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -17,13 +18,10 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/vehicle-body-styles")
+@RequiredArgsConstructor
 public class VehicleBodyStyleController {
 
   private final VehicleBodyStyleService vehicleBodyStyleService;
-
-  public VehicleBodyStyleController(VehicleBodyStyleService vehicleBodyStyleService) {
-    this.vehicleBodyStyleService = vehicleBodyStyleService;
-  }
 
   @GetMapping
   public List<VehicleCatalogEntryDto> list() {

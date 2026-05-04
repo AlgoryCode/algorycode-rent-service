@@ -9,8 +9,8 @@ import lombok.Getter;
 import lombok.Setter;
 
 /**
- * Araç katalog satırları (gövde / yakıt / vites) için ortak alanlar — tekrarlayan entity tanımı ve servis
- * kalıplarını tek tip altında toplar.
+ * Araç katalog satırları (gövde / yakıt / vites) için ortak alanlar — tekrarlayan entity tanımı ve
+ * servis kalıplarını tek tip altında toplar.
  */
 @Getter
 @Setter

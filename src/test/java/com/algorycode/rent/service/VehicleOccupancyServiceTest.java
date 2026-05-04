@@ -1,11 +1,17 @@
 package com.algorycode.rent.service;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.when;
+
 import com.algorycode.rent.api.dto.VehicleOccupancySource;
 import com.algorycode.rent.api.error.ResourceNotFoundException;
-import com.algorycode.rent.domain.request.RentalRequest;
-import com.algorycode.rent.domain.request.RentalRequestStatus;
 import com.algorycode.rent.domain.rental.Rental;
 import com.algorycode.rent.domain.rental.RentalStatus;
+import com.algorycode.rent.domain.request.RentalRequest;
+import com.algorycode.rent.domain.request.RentalRequestStatus;
 import com.algorycode.rent.domain.vehicle.Vehicle;
 import com.algorycode.rent.repository.RentalRepository;
 import com.algorycode.rent.repository.RentalRequestRepository;
@@ -19,12 +25,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class VehicleOccupancyServiceTest {
@@ -48,7 +48,8 @@ class VehicleOccupancyServiceTest {
     rental.setStartDate(LocalDate.of(2026, 4, 19));
     rental.setEndDate(LocalDate.of(2026, 4, 21));
     RentalTestFixtures.attachRentalStatus(rental, RentalStatus.active);
-    when(rentalRepository.findCalendarBlockingRentals(eq(vid), any(), any())).thenReturn(List.of(rental));
+    when(rentalRepository.findCalendarBlockingRentals(eq(vid), any(), any()))
+        .thenReturn(List.of(rental));
 
     Long qid = 1L;
     RentalRequest req = new RentalRequest();
@@ -60,8 +61,7 @@ class VehicleOccupancyServiceTest {
         .thenReturn(List.of(req));
 
     var dto =
-        vehicleOccupancyService.occupancy(
-            vid, LocalDate.of(2026, 4, 1), LocalDate.of(2026, 5, 31));
+        vehicleOccupancyService.occupancy(vid, LocalDate.of(2026, 4, 1), LocalDate.of(2026, 5, 31));
 
     assertThat(dto.ranges()).hasSize(2);
     assertThat(dto.ranges().getFirst().source()).isEqualTo(VehicleOccupancySource.rental);

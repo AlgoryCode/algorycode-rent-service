@@ -13,19 +13,18 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
-import jakarta.persistence.OrderBy;
 import jakarta.persistence.OneToOne;
+import jakarta.persistence.OrderBy;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
-import lombok.Getter;
-import lombok.Setter;
-
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import lombok.Getter;
+import lombok.Setter;
 
 @Getter
 @Setter
@@ -64,8 +63,7 @@ public class Rental extends AbstractAuditableLongEntity {
   @JoinColumn(name = "rental_status_id", nullable = false)
   private RentalStatusDefinition statusDefinition;
 
-  @Embedded
-  private CustomerSnapshot customer;
+  @Embedded private CustomerSnapshot customer;
 
   @Column(name = "user_id")
   private UUID userId;
@@ -92,7 +90,11 @@ public class Rental extends AbstractAuditableLongEntity {
   @OneToMany(mappedBy = "rental", cascade = CascadeType.ALL, orphanRemoval = true)
   private List<RentalAdditionalDriver> additionalDrivers = new ArrayList<>();
 
-  @OneToOne(mappedBy = "rental", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+  @OneToOne(
+      mappedBy = "rental",
+      cascade = CascadeType.ALL,
+      orphanRemoval = true,
+      fetch = FetchType.LAZY)
   private RentalFeedback feedback;
 
   @OneToMany(mappedBy = "rental", cascade = CascadeType.ALL, orphanRemoval = true)

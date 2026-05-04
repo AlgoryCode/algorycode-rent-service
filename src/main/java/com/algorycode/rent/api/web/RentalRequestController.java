@@ -5,6 +5,8 @@ import com.algorycode.rent.api.dto.RentalRequestDto;
 import com.algorycode.rent.api.dto.UpdateRentalRequestStatusRequest;
 import com.algorycode.rent.service.RentalRequestService;
 import jakarta.validation.Valid;
+import java.util.List;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -18,17 +20,12 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.List;
-
 @RestController
 @RequestMapping("/rental-requests")
+@RequiredArgsConstructor
 public class RentalRequestController {
 
   private final RentalRequestService rentalRequestService;
-
-  public RentalRequestController(RentalRequestService rentalRequestService) {
-    this.rentalRequestService = rentalRequestService;
-  }
 
   @GetMapping
   public List<RentalRequestDto> list(@RequestParam(required = false) Long vehicleId) {
@@ -49,7 +46,9 @@ public class RentalRequestController {
   public ResponseEntity<byte[]> downloadContractPdf(@PathVariable Long id) {
     var attachment = rentalRequestService.getContractPdfAttachment(id);
     return ResponseEntity.ok()
-        .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"" + attachment.filename() + "\"")
+        .header(
+            HttpHeaders.CONTENT_DISPOSITION,
+            "attachment; filename=\"" + attachment.filename() + "\"")
         .contentType(MediaType.APPLICATION_PDF)
         .contentLength(attachment.content().length)
         .body(attachment.content());
@@ -74,8 +73,7 @@ public class RentalRequestController {
 
   @PatchMapping("/{id}/status")
   public RentalRequestDto updateStatus(
-      @PathVariable Long id,
-      @Valid @RequestBody UpdateRentalRequestStatusRequest body) {
+      @PathVariable Long id, @Valid @RequestBody UpdateRentalRequestStatusRequest body) {
     return rentalRequestService.updateStatus(id, body);
   }
 }

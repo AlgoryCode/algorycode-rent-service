@@ -12,14 +12,13 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.OrderBy;
 import jakarta.persistence.Table;
-import lombok.*;
-import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.type.SqlTypes;
-
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import lombok.*;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 
 @Getter
 @Setter
@@ -30,7 +29,10 @@ import java.util.List;
 @NoArgsConstructor
 public class Vehicle extends AbstractAuditableLongEntity {
 
-  /** Silinmemiş kayıtlar arasında plaka benzersizliği serviste doğrulanır (yumuşak silinen plaka yeniden kullanılabilir). */
+  /**
+   * Silinmemiş kayıtlar arasında plaka benzersizliği serviste doğrulanır (yumuşak silinen plaka
+   * yeniden kullanılabilir).
+   */
   @Column(nullable = false, length = 32)
   private String plate;
 
@@ -126,7 +128,10 @@ public class Vehicle extends AbstractAuditableLongEntity {
   @OrderBy("lineOrder ASC")
   private List<VehicleHighlight> highlights = new ArrayList<>();
 
-  /** user-fe vitrin paketi ({@code feFleetSnapshot}); {@link com.algorycode.rent.service.readmodel.FeFleetSnapshotBuilder}. */
+  /**
+   * user-fe vitrin paketi ({@code feFleetSnapshot}); {@link
+   * com.algorycode.rent.service.readmodel.FeFleetSnapshotBuilder}.
+   */
   @JdbcTypeCode(SqlTypes.JSON)
   @Column(name = "fe_fleet_snapshot", columnDefinition = "json")
   private JsonNode feFleetSnapshot;
@@ -150,7 +155,9 @@ public class Vehicle extends AbstractAuditableLongEntity {
     return allowedReturnHandovers.stream()
         .sorted(
             Comparator.comparingInt(VehicleAllowedReturnHandover::getLineOrder)
-                .thenComparing(VehicleAllowedReturnHandover::getId, Comparator.nullsLast(Comparator.naturalOrder())))
+                .thenComparing(
+                    VehicleAllowedReturnHandover::getId,
+                    Comparator.nullsLast(Comparator.naturalOrder())))
         .map(VehicleAllowedReturnHandover::getHandoverLocationId)
         .toList();
   }

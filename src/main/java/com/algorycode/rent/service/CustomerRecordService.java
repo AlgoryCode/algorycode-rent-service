@@ -10,12 +10,13 @@ import com.algorycode.rent.domain.request.RentalRequestCustomerSnapshot;
 import com.algorycode.rent.repository.CustomerRecordStateRepository;
 import com.algorycode.rent.repository.RentalRepository;
 import com.algorycode.rent.repository.RentalRequestRepository;
+import java.util.List;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
-
 @Service
+@RequiredArgsConstructor
 public class CustomerRecordService {
 
   private static final int MAX_KEY_LEN = 255;
@@ -23,15 +24,6 @@ public class CustomerRecordService {
   private final CustomerRecordStateRepository stateRepository;
   private final RentalRepository rentalRepository;
   private final RentalRequestRepository rentalRequestRepository;
-
-  public CustomerRecordService(
-      CustomerRecordStateRepository stateRepository,
-      RentalRepository rentalRepository,
-      RentalRequestRepository rentalRequestRepository) {
-    this.stateRepository = stateRepository;
-    this.rentalRepository = rentalRepository;
-    this.rentalRequestRepository = rentalRequestRepository;
-  }
 
   @Transactional(readOnly = true)
   public List<CustomerRecordStateDto> listAll() {
@@ -43,7 +35,8 @@ public class CustomerRecordService {
   @Transactional
   public CustomerRecordStateDto setActive(String recordKey, boolean active) {
     validateRecordKey(recordKey);
-    CustomerRecordState row = stateRepository.findById(recordKey).orElseGet(CustomerRecordState::new);
+    CustomerRecordState row =
+        stateRepository.findById(recordKey).orElseGet(CustomerRecordState::new);
     if (row.getRecordKey() != null && row.isDeleted()) {
       throw new BadRequestException("Silinmiş müşteri kaydı güncellenemez.");
     }
@@ -54,9 +47,7 @@ public class CustomerRecordService {
     return new CustomerRecordStateDto(row.getRecordKey(), row.isActive());
   }
 
-  /**
-   * Pasif müşteri için yeni kiralama / talep veya müşteri bilgisinin güncellenmesini engeller.
-   */
+  /** Pasif müşteri için yeni kiralama / talep veya müşteri bilgisinin güncellenmesini engeller. */
   public void assertCustomerActive(String recordKey) {
     if (recordKey == null || recordKey.isBlank()) {
       return;
@@ -83,8 +74,9 @@ public class CustomerRecordService {
   }
 
   /**
-   * {@code tc:} / {@code ph:} anahtarlarına uyan tüm kiralama ve talep kayıtlarını siler; {@code manual:}
-   * için yalnızca sunucudaki durum satırı silinir (tarayıcıdaki manuel liste FE tarafında temizlenir).
+   * {@code tc:} / {@code ph:} anahtarlarına uyan tüm kiralama ve talep kayıtlarını siler; {@code
+   * manual:} için yalnızca sunucudaki durum satırı silinir (tarayıcıdaki manuel liste FE tarafında
+   * temizlenir).
    */
   @Transactional
   public CustomerRecordDeletionDto deleteCustomerData(String recordKey) {

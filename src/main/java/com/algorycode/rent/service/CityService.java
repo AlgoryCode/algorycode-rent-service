@@ -8,22 +8,18 @@ import com.algorycode.rent.api.mapper.CityMapper;
 import com.algorycode.rent.domain.location.City;
 import com.algorycode.rent.repository.CityRepository;
 import com.algorycode.rent.repository.CountryRepository;
+import java.util.List;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
-
 @Service
+@RequiredArgsConstructor
 public class CityService {
 
   private final CityRepository cityRepository;
   private final CountryRepository countryRepository;
-
-  public CityService(CityRepository cityRepository, CountryRepository countryRepository) {
-    this.cityRepository = cityRepository;
-    this.countryRepository = countryRepository;
-  }
 
   @Transactional(readOnly = true)
   public List<CityDto> listAll(Long countryId) {
@@ -39,7 +35,8 @@ public class CityService {
     var country =
         countryRepository
             .findById(req.countryId())
-            .orElseThrow(() -> new ResourceNotFoundException("Ülke bulunamadı: " + req.countryId()));
+            .orElseThrow(
+                () -> new ResourceNotFoundException("Ülke bulunamadı: " + req.countryId()));
 
     String name = req.name().trim();
     if (cityRepository.findByNameIgnoreCaseAndCountry_Id(name, req.countryId()).isPresent()) {

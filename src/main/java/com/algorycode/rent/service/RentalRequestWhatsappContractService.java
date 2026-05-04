@@ -13,6 +13,7 @@ import java.time.Instant;
 import java.util.Base64;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpHeaders;
@@ -22,26 +23,20 @@ import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
 
 @Service
+@RequiredArgsConstructor
 public class RentalRequestWhatsappContractService {
 
-  private static final Logger log = LoggerFactory.getLogger(RentalRequestWhatsappContractService.class);
+  private static final Logger log =
+      LoggerFactory.getLogger(RentalRequestWhatsappContractService.class);
 
   private final AppWhatsappProperties props;
   private final RentalRequestRepository rentalRequestRepository;
   private final ObjectStorageService objectStorageService;
 
-  public RentalRequestWhatsappContractService(
-      AppWhatsappProperties props,
-      RentalRequestRepository rentalRequestRepository,
-      ObjectStorageService objectStorageService) {
-    this.props = props;
-    this.rentalRequestRepository = rentalRequestRepository;
-    this.objectStorageService = objectStorageService;
-  }
-
   /**
-   * Sözleşme PDF'ini yönetici numarasına iletmek için: önce {@code webhookUrl} (JSON + base64 PDF), yoksa
-   * CallMeBot ile kısa metin bildirimi. Webhook ile n8n / Evolution API / Twilio vb. bağlanabilir.
+   * Sözleşme PDF'ini yönetici numarasına iletmek için: önce {@code webhookUrl} (JSON + base64 PDF),
+   * yoksa CallMeBot ile kısa metin bildirimi. Webhook ile n8n / Evolution API / Twilio vb.
+   * bağlanabilir.
    */
   public void notifyAdminWithContractPdf(RentalRequest request) {
     if (!props.enabled()) {
@@ -96,8 +91,7 @@ public class RentalRequestWhatsappContractService {
         return;
       }
       markError(
-          request,
-          "WhatsApp: webhook-url veya callmebot-api-key tanımlı değil; PDF gönderilemedi");
+          request, "WhatsApp: webhook-url veya callmebot-api-key tanımlı değil; PDF gönderilemedi");
     } catch (RestClientException | IllegalArgumentException e) {
       log.warn("WhatsApp bildirimi başarısız: {}", e.toString());
       markError(request, truncate(e.getMessage(), 500));
@@ -117,11 +111,19 @@ public class RentalRequestWhatsappContractService {
     body.put("caption", caption);
     body.put("documentBase64", b64);
 
-    RestClient.Builder builder = RestClient.builder().defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE);
+    RestClient.Builder builder =
+        RestClient.builder()
+            .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE);
     if (!props.webhookAuthBearer().isEmpty()) {
       builder.defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + props.webhookAuthBearer());
     }
-    builder.build().post().uri(URI.create(props.webhookUrl())).body(body).retrieve().toBodilessEntity();
+    builder
+        .build()
+        .post()
+        .uri(URI.create(props.webhookUrl()))
+        .body(body)
+        .retrieve()
+        .toBodilessEntity();
   }
 
   private void sendCallMeBotText(String phoneDigits, String text) {

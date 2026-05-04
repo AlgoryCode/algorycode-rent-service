@@ -7,7 +7,6 @@ import com.algorycode.rent.domain.request.RentalRequestAdditionalDriver;
 import com.algorycode.rent.domain.request.RentalRequestOption;
 import com.algorycode.rent.domain.request.RentalRequestPricedLine;
 import com.algorycode.rent.domain.request.RentalRequestStatus;
-
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.function.Function;
@@ -31,7 +30,9 @@ public final class RentalRequestMapper {
             assetResolver.apply(c.getDriverLicenseImageDataUrl()));
 
     List<RentalRequestDto.AdditionalDriverDto> additional =
-        r.getAdditionalDrivers().stream().map(d -> toAdditionalDriverDto(d, assetResolver)).toList();
+        r.getAdditionalDrivers().stream()
+            .map(d -> toAdditionalDriverDto(d, assetResolver))
+            .toList();
 
     List<RentalRequestOptionDto> options =
         r.getOptions().stream().map(RentalRequestMapper::requestOptionDto).toList();
@@ -89,7 +90,8 @@ public final class RentalRequestMapper {
         o.getId(), o.getTitle(), o.getDescription(), o.getPrice(), o.getIcon());
   }
 
-  private static RentalRequestDto.RentalRequestPricedLineDto pricedLineDto(RentalRequestPricedLine o) {
+  private static RentalRequestDto.RentalRequestPricedLineDto pricedLineDto(
+      RentalRequestPricedLine o) {
     return new RentalRequestDto.RentalRequestPricedLineDto(
         o.getId(),
         o.getLineType().name(),

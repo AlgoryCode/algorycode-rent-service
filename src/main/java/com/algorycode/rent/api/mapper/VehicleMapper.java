@@ -7,7 +7,6 @@ import com.algorycode.rent.domain.vehicle.Vehicle;
 import com.algorycode.rent.domain.vehicle.VehicleAllowedReturnHandover;
 import com.algorycode.rent.domain.vehicle.VehicleHighlight;
 import com.algorycode.rent.domain.vehicle.VehicleImage;
-
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
@@ -24,13 +23,13 @@ public final class VehicleMapper {
       images.put(img.getSlot().name(), img.getImageUrl());
     }
 
-
     List<HandoverLocationRefDto> returnRefs =
         v.getAllowedReturnHandovers().stream()
             .sorted(
                 Comparator.comparingInt(VehicleAllowedReturnHandover::getLineOrder)
                     .thenComparing(
-                        VehicleAllowedReturnHandover::getId, Comparator.nullsLast(Comparator.naturalOrder())))
+                        VehicleAllowedReturnHandover::getId,
+                        Comparator.nullsLast(Comparator.naturalOrder())))
             .map(l -> HandoverLocationMapper.toRef(l.getHandoverLocation()))
             .toList();
     HandoverLocationRefDto firstReturn = returnRefs.isEmpty() ? null : returnRefs.get(0);

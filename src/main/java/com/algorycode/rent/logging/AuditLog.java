@@ -65,7 +65,10 @@ public class AuditLog {
       }
     }
     try {
-      String line = safe.entrySet().stream().map(en -> en.getKey() + "=" + en.getValue()).collect(Collectors.joining(" "));
+      String line =
+          safe.entrySet().stream()
+              .map(en -> en.getKey() + "=" + en.getValue())
+              .collect(Collectors.joining(" "));
       switch (level) {
         case "WARN" -> AUDIT.warn("{}", line);
         case "ERROR" -> AUDIT.error("{}", line);

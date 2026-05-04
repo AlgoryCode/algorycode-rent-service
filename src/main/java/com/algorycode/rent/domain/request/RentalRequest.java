@@ -17,9 +17,6 @@ import jakarta.persistence.OrderBy;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
-import lombok.Getter;
-import lombok.Setter;
-
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -27,6 +24,8 @@ import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+import lombok.Getter;
+import lombok.Setter;
 
 @Getter
 @Setter
@@ -105,8 +104,7 @@ public class RentalRequest extends AbstractAuditableLongEntity {
   @Column(name = "whatsapp_contract_error", length = 500)
   private String whatsappContractError;
 
-  @Embedded
-  private RentalRequestCustomerSnapshot customer;
+  @Embedded private RentalRequestCustomerSnapshot customer;
 
   @Column(name = "user_id")
   private UUID userId;

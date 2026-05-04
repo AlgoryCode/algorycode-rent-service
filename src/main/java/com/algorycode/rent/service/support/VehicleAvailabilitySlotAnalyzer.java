@@ -1,7 +1,7 @@
 package com.algorycode.rent.service.support;
 
-import com.algorycode.rent.domain.request.RentalRequest;
 import com.algorycode.rent.domain.rental.Rental;
+import com.algorycode.rent.domain.request.RentalRequest;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -80,25 +80,19 @@ public class VehicleAvailabilitySlotAnalyzer {
     return free;
   }
 
-  /**
-   * Araç için ham doluluk aralıklarını döndürür (henüz birleştirilmemiş).
-   */
+  /** Araç için ham doluluk aralıklarını döndürür (henüz birleştirilmemiş). */
   public List<InclusiveLocalDateRange> collectRawIntervals(
       Long vehicleId, List<Rental> rentals, List<RentalRequest> requests) {
     return rawIntervals(vehicleId, rentals, requests);
   }
 
-  /**
-   * Aralıkları sıralayıp bitişik/çakışan olanları birleştirir.
-   */
+  /** Aralıkları sıralayıp bitişik/çakışan olanları birleştirir. */
   public List<InclusiveLocalDateRange> mergeSorted(List<InclusiveLocalDateRange> intervals) {
     if (intervals.isEmpty()) {
       return List.of();
     }
     List<InclusiveLocalDateRange> sorted =
-        intervals.stream()
-            .sorted(Comparator.comparing(InclusiveLocalDateRange::start))
-            .toList();
+        intervals.stream().sorted(Comparator.comparing(InclusiveLocalDateRange::start)).toList();
     List<InclusiveLocalDateRange> merged = new ArrayList<>();
     LocalDate curStart = sorted.getFirst().start();
     LocalDate curEnd = sorted.getFirst().end();
@@ -119,9 +113,7 @@ public class VehicleAvailabilitySlotAnalyzer {
     return merged;
   }
 
-  /**
-   * [tripStart, tripEnd] tamamen tek bir boş pencereye sığıyor mu (pencere içi complement ile).
-   */
+  /** [tripStart, tripEnd] tamamen tek bir boş pencereye sığıyor mu (pencere içi complement ile). */
   public boolean inclusiveTripFitsInAFreeSlot(
       LocalDate tripStart,
       LocalDate tripEnd,

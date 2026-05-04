@@ -17,10 +17,9 @@ public final class RentalAvailabilityRules {
   }
 
   /**
-   * Mevcut bir kiralama kaydı, talep edilen [reqStart, reqEnd] aralığını engelliyor mu?
-   * - Doğrudan tarih çakışması
-   * - Talep bitişinin ertesi günü (reqEnd+1) başka bir kiralama tarafından işgal ediliyorsa
-   *   (teslim sonrası tampon gün)
+   * Mevcut bir kiralama kaydı, talep edilen [reqStart, reqEnd] aralığını engelliyor mu? - Doğrudan
+   * tarih çakışması - Talep bitişinin ertesi günü (reqEnd+1) başka bir kiralama tarafından işgal
+   * ediliyorsa (teslim sonrası tampon gün)
    */
   public static boolean rentalBlocksRequestedRange(
       LocalDate reqStart, LocalDate reqEnd, LocalDate rentalStart, LocalDate rentalEnd) {

@@ -14,26 +14,23 @@ import com.algorycode.rent.service.support.VehicleCatalogSupport;
 import com.algorycode.rent.service.vehiclecatalog.VehicleCatalogEntityFactory;
 import java.util.List;
 import java.util.Optional;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@RequiredArgsConstructor
 public class VehicleStatusDefinitionService {
 
   private final VehicleStatusDefinitionRepository vehicleStatusDefinitionRepository;
   private final VehicleRepository vehicleRepository;
 
-  public VehicleStatusDefinitionService(
-      VehicleStatusDefinitionRepository vehicleStatusDefinitionRepository,
-      VehicleRepository vehicleRepository) {
-    this.vehicleStatusDefinitionRepository = vehicleStatusDefinitionRepository;
-    this.vehicleRepository = vehicleRepository;
-  }
-
   @Transactional(readOnly = true)
   public List<VehicleCatalogEntryDto> listAll() {
-    return vehicleStatusDefinitionRepository.findAll(Sort.by(Sort.Direction.ASC, "sortOrder")).stream()
+    return vehicleStatusDefinitionRepository
+        .findAll(Sort.by(Sort.Direction.ASC, "sortOrder"))
+        .stream()
         .map(VehicleStatusDefinitionService::toDto)
         .toList();
   }

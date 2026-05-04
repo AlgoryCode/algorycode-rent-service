@@ -2,29 +2,29 @@ package com.algorycode.rent.service.mail;
 
 import com.algorycode.rent.domain.request.RentalRequest;
 import com.algorycode.rent.messaging.QueuedMailMessage;
+import java.util.Locale;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.thymeleaf.context.Context;
 
-import java.util.Locale;
-
 /** Onaylı talep + PDF sonrası müşteriye sözleşme bildirimi (Thymeleaf → mail kuyruğu). */
 @Service
+@RequiredArgsConstructor
 public class RentalRequestContractCustomerMailComposer {
 
   public static final String TEMPLATE_CODE = "rent.request.contract.pdf";
 
   private final ThymeleafMailRenderer thymeleafMailRenderer;
 
-  public RentalRequestContractCustomerMailComposer(ThymeleafMailRenderer thymeleafMailRenderer) {
-    this.thymeleafMailRenderer = thymeleafMailRenderer;
-  }
-
   public QueuedMailMessage compose(RentalRequest request, String contractPdfPublicUrl) {
     String mailSubject = "Kiralama sözleşmeniz hazır — " + request.getReferenceNo();
     String name =
-        request.getCustomer().getFullName() != null ? request.getCustomer().getFullName().trim() : "";
+        request.getCustomer().getFullName() != null
+            ? request.getCustomer().getFullName().trim()
+            : "";
     String url = contractPdfPublicUrl != null ? contractPdfPublicUrl.trim() : "";
-    boolean hasPublicPdf = !url.isEmpty() && (url.startsWith("http://") || url.startsWith("https://"));
+    boolean hasPublicPdf =
+        !url.isEmpty() && (url.startsWith("http://") || url.startsWith("https://"));
 
     Context ctx = new Context(Locale.forLanguageTag("tr-TR"));
     ctx.setVariable("mailSubject", mailSubject);

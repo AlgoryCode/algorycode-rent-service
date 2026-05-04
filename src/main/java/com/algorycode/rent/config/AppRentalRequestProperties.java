@@ -1,8 +1,7 @@
 package com.algorycode.rent.config;
 
-import org.springframework.boot.context.properties.ConfigurationProperties;
-
 import java.math.BigDecimal;
+import org.springframework.boot.context.properties.ConfigurationProperties;
 
 @ConfigurationProperties(prefix = "app.rental-request")
 public record AppRentalRequestProperties(BigDecimal greenInsuranceFee, BigDecimal tryPerEur) {

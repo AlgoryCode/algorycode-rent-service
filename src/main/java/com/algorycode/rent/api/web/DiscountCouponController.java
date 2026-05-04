@@ -6,6 +6,8 @@ import com.algorycode.rent.api.dto.UpdateCouponRequest;
 import com.algorycode.rent.api.dto.ValidateCouponResponse;
 import com.algorycode.rent.service.DiscountCouponService;
 import jakarta.validation.Valid;
+import java.util.List;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -18,17 +20,12 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.List;
-
 @RestController
 @RequestMapping("/coupons")
+@RequiredArgsConstructor
 public class DiscountCouponController {
 
   private final DiscountCouponService discountCouponService;
-
-  public DiscountCouponController(DiscountCouponService discountCouponService) {
-    this.discountCouponService = discountCouponService;
-  }
 
   @GetMapping
   public List<DiscountCouponDto> list() {
@@ -42,7 +39,8 @@ public class DiscountCouponController {
   }
 
   @PutMapping("/{id}")
-  public DiscountCouponDto update(@PathVariable Long id, @Valid @RequestBody UpdateCouponRequest req) {
+  public DiscountCouponDto update(
+      @PathVariable Long id, @Valid @RequestBody UpdateCouponRequest req) {
     return discountCouponService.update(id, req);
   }
 

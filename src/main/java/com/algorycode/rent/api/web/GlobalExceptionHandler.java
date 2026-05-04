@@ -9,6 +9,7 @@ import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
@@ -23,19 +24,19 @@ import org.springframework.web.context.request.WebRequest;
 import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
 
 /**
- * HTTP hata eşlemesi yalnızca {@code api.web} katmanında; iş kuralları istisnaları ProblemDetail olarak döner.
- * KVKK: ham exception metni audit loga yazılmaz.
+ * HTTP hata eşlemesi yalnızca {@code api.web} katmanında; iş kuralları istisnaları ProblemDetail
+ * olarak döner. KVKK: ham exception metni audit loga yazılmaz.
  */
 @RestControllerAdvice
+@RequiredArgsConstructor
 public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
   private final AuditLog auditLog;
 
-  public GlobalExceptionHandler(AuditLog auditLog) {
-    this.auditLog = auditLog;
-  }
-
-  /** Bean Validation (@Valid) — alan hataları FE’de {@code fieldErrors} ile gösterilir; tekrarlayan null guard’a gerek yok. */
+  /**
+   * Bean Validation (@Valid) — alan hataları FE’de {@code fieldErrors} ile gösterilir; tekrarlayan
+   * null guard’a gerek yok.
+   */
   @Override
   protected ResponseEntity<Object> handleMethodArgumentNotValid(
       @NonNull MethodArgumentNotValidException ex,
@@ -48,7 +49,8 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
             "httpStatus", String.valueOf(HttpStatus.BAD_REQUEST.value()),
             "exceptionType", ex.getClass().getSimpleName(),
             "fieldErrorCount", String.valueOf(ex.getBindingResult().getFieldErrorCount())));
-    ProblemDetail pd = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, "İstek doğrulanamadı.");
+    ProblemDetail pd =
+        ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, "İstek doğrulanamadı.");
     pd.setTitle("Validation Failed");
     Map<String, String> fieldErrors = new LinkedHashMap<>();
     for (FieldError fe : ex.getBindingResult().getFieldErrors()) {
@@ -68,7 +70,8 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
             "httpStatus", String.valueOf(HttpStatus.BAD_REQUEST.value()),
             "exceptionType", ex.getClass().getSimpleName(),
             "fieldErrorCount", String.valueOf(ex.getConstraintViolations().size())));
-    ProblemDetail pd = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, "İstek doğrulanamadı.");
+    ProblemDetail pd =
+        ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, "İstek doğrulanamadı.");
     pd.setTitle("Validation Failed");
     Map<String, String> fieldErrors = new LinkedHashMap<>();
     for (ConstraintViolation<?> cv : ex.getConstraintViolations()) {
@@ -78,14 +81,20 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     return pd;
   }
 
-  /** Beklenmeyen program tutarsızlığı (ör. doğrulama atlanmış servis çağrısı); ayrıntı istemciye sızdırılmaz. */
+  /**
+   * Beklenmeyen program tutarsızlığı (ör. doğrulama atlanmış servis çağrısı); ayrıntı istemciye
+   * sızdırılmaz.
+   */
   @ExceptionHandler(IllegalStateException.class)
   ProblemDetail illegalState(IllegalStateException ex) {
     auditLog.errorTechnical(
-        SafeReasonCodes.INVARIANT_VIOLATION, ex, Map.of("httpStatus", String.valueOf(HttpStatus.INTERNAL_SERVER_ERROR.value())));
+        SafeReasonCodes.INVARIANT_VIOLATION,
+        ex,
+        Map.of("httpStatus", String.valueOf(HttpStatus.INTERNAL_SERVER_ERROR.value())));
     ProblemDetail pd =
         ProblemDetail.forStatusAndDetail(
-            HttpStatus.INTERNAL_SERVER_ERROR, "Sunucu tutarlılık hatası. Lütfen destek ile iletişime geçin.");
+            HttpStatus.INTERNAL_SERVER_ERROR,
+            "Sunucu tutarlılık hatası. Lütfen destek ile iletişime geçin.");
     pd.setTitle("Internal Server Error");
     return pd;
   }

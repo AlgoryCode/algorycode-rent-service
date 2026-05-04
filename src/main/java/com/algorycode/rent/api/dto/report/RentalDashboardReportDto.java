@@ -36,5 +36,6 @@ public record RentalDashboardReportDto(
       BigDecimal optionsEur) {}
 
   /** Gelir, kiralama baslangic tarihine (veya aya) yazilir. */
-  public record TimelineBucket(String period, String label, int rentalStarts, BigDecimal revenueEur) {}
+  public record TimelineBucket(
+      String period, String label, int rentalStarts, BigDecimal revenueEur) {}
 }

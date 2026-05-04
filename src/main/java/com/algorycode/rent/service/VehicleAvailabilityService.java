@@ -1,9 +1,9 @@
 package com.algorycode.rent.service;
 
 import com.algorycode.rent.api.error.BadRequestException;
+import com.algorycode.rent.domain.rental.Rental;
 import com.algorycode.rent.domain.request.RentalRequest;
 import com.algorycode.rent.domain.request.RentalRequestStatus;
-import com.algorycode.rent.domain.rental.Rental;
 import com.algorycode.rent.domain.vehicle.Vehicle;
 import com.algorycode.rent.domain.vehicle.VehicleStatus;
 import com.algorycode.rent.repository.RentalRepository;
@@ -13,15 +13,18 @@ import com.algorycode.rent.service.support.DateRangeValidator;
 import com.algorycode.rent.service.support.VehicleAvailabilitySlotAnalyzer;
 import java.time.LocalDate;
 import java.util.List;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Filo listesinde tarih + handover uygunluk süzmesi (VehicleService orchestration dışı). İptal olmayan
- * {@link Rental} ile birlikte pending/approved {@link com.algorycode.rent.domain.request.RentalRequest}
- * kayıtları aynı çakışma + tampon günü kurallarıyla değerlendirilir.
+ * Filo listesinde tarih + handover uygunluk süzmesi (VehicleService orchestration dışı). İptal
+ * olmayan {@link Rental} ile birlikte pending/approved {@link
+ * com.algorycode.rent.domain.request.RentalRequest} kayıtları aynı çakışma + tampon günü
+ * kurallarıyla değerlendirilir.
  */
 @Service
+@RequiredArgsConstructor
 public class VehicleAvailabilityService {
 
   private static final List<RentalRequestStatus> BLOCKING_REQUEST_STATUSES =
@@ -31,17 +34,6 @@ public class VehicleAvailabilityService {
   private final RentalRepository rentalRepository;
   private final RentalRequestRepository rentalRequestRepository;
   private final VehicleAvailabilitySlotAnalyzer availabilitySlotAnalyzer;
-
-  public VehicleAvailabilityService(
-      VehicleRepository vehicleRepository,
-      RentalRepository rentalRepository,
-      RentalRequestRepository rentalRequestRepository,
-      VehicleAvailabilitySlotAnalyzer availabilitySlotAnalyzer) {
-    this.vehicleRepository = vehicleRepository;
-    this.rentalRepository = rentalRepository;
-    this.rentalRequestRepository = rentalRequestRepository;
-    this.availabilitySlotAnalyzer = availabilitySlotAnalyzer;
-  }
 
   @Transactional(readOnly = true)
   public List<Vehicle> listVehiclesMatchingAvailability(
@@ -55,8 +47,7 @@ public class VehicleAvailabilityService {
           "Uygunluk için availableFrom ve availableTo birlikte gönderilmelidir.");
     }
     DateRangeValidator.requireEndNotBeforeStart(availableFrom, availableTo);
-    LocalDate windowEnd =
-        availableTo.equals(LocalDate.MAX) ? availableTo : availableTo.plusDays(1);
+    LocalDate windowEnd = availableTo.equals(LocalDate.MAX) ? availableTo : availableTo.plusDays(1);
     List<Rental> rentalCandidates =
         rentalRepository.findPotentiallyBlockingForAvailability(availableFrom, windowEnd);
     List<RentalRequest> requestCandidates =

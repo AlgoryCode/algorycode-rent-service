@@ -36,7 +36,11 @@ public class VehicleAllowedReturnHandover extends AbstractAuditableLongEntity {
   private Long handoverLocationId;
 
   @ManyToOne(fetch = FetchType.LAZY, optional = false)
-  @JoinColumn(name = "handover_location_id", nullable = false, insertable = false, updatable = false)
+  @JoinColumn(
+      name = "handover_location_id",
+      nullable = false,
+      insertable = false,
+      updatable = false)
   private HandoverLocation handoverLocation;
 
   @Column(name = "line_order", nullable = false)

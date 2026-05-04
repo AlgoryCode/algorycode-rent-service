@@ -11,21 +11,18 @@ import com.algorycode.rent.domain.location.HandoverLocationKind;
 import com.algorycode.rent.repository.HandoverLocationRepository;
 import com.algorycode.rent.service.readmodel.FeHandoverSnapshotJson;
 import com.algorycode.rent.service.support.Text;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.List;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@RequiredArgsConstructor
 public class HandoverLocationService {
 
   private final HandoverLocationRepository handoverLocationRepository;
-
-  public HandoverLocationService(HandoverLocationRepository handoverLocationRepository) {
-    this.handoverLocationRepository = handoverLocationRepository;
-  }
 
   @Transactional(readOnly = true)
   public List<HandoverLocationDto> list(HandoverLocationKind kind, boolean includeInactive) {
@@ -48,7 +45,10 @@ public class HandoverLocationService {
     return requireLoaded(id, expectedKind);
   }
 
-  /** Tür kontrolü olmadan yalnızca aktif kayıt (araç varsayılanı / kiralama sonrası güncelleme için). */
+  /**
+   * Tür kontrolü olmadan yalnızca aktif kayıt (araç varsayılanı / kiralama sonrası güncelleme
+   * için).
+   */
   @Transactional(readOnly = true)
   public HandoverLocation requireActive(Long id) {
     return requireLoaded(id, null);
@@ -61,13 +61,18 @@ public class HandoverLocationService {
     HandoverLocation loc =
         handoverLocationRepository
             .findById(id)
-            .orElseThrow(() -> new ResourceNotFoundException("Alış/teslim noktası bulunamadı: " + id));
+            .orElseThrow(
+                () -> new ResourceNotFoundException("Alış/teslim noktası bulunamadı: " + id));
     if (!loc.isActive()) {
       throw new BadRequestException("Seçilen alış/teslim noktası artık kullanılamaz.");
     }
     if (expectedKind != null && loc.getKind() != expectedKind) {
       throw new BadRequestException(
-          "Seçilen nokta türü uyuşmuyor (beklenen: " + expectedKind + ", kayıt: " + loc.getKind() + ").");
+          "Seçilen nokta türü uyuşmuyor (beklenen: "
+              + expectedKind
+              + ", kayıt: "
+              + loc.getKind()
+              + ").");
     }
     return loc;
   }
@@ -97,7 +102,8 @@ public class HandoverLocationService {
     HandoverLocation e =
         handoverLocationRepository
             .findById(id)
-            .orElseThrow(() -> new ResourceNotFoundException("Alış/teslim noktası bulunamadı: " + id));
+            .orElseThrow(
+                () -> new ResourceNotFoundException("Alış/teslim noktası bulunamadı: " + id));
     if (req.kind() != null) {
       e.setKind(req.kind());
     }
@@ -132,7 +138,8 @@ public class HandoverLocationService {
     HandoverLocation e =
         handoverLocationRepository
             .findById(id)
-            .orElseThrow(() -> new ResourceNotFoundException("Alış/teslim noktası bulunamadı: " + id));
+            .orElseThrow(
+                () -> new ResourceNotFoundException("Alış/teslim noktası bulunamadı: " + id));
     e.setActive(false);
     handoverLocationRepository.save(e);
   }

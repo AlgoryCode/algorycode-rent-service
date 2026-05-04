@@ -8,8 +8,8 @@ import lombok.Getter;
 import lombok.Setter;
 
 /**
- * Müşteri kaydı durumu. Birincil anahtar sayısal IDENTITY değil; tablo doğal anahtar {@code record_key}
- * (tc:/ph: önekli dize) ile tanımlanır.
+ * Müşteri kaydı durumu. Birincil anahtar sayısal IDENTITY değil; tablo doğal anahtar {@code
+ * record_key} (tc:/ph: önekli dize) ile tanımlanır.
  */
 @Getter
 @Setter

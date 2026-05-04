@@ -5,6 +5,8 @@ import com.algorycode.rent.api.dto.UpdateVehicleOptionTemplateRequest;
 import com.algorycode.rent.api.dto.VehicleOptionTemplateDto;
 import com.algorycode.rent.service.VehicleOptionTemplateService;
 import jakarta.validation.Valid;
+import java.util.List;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -17,17 +19,12 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.List;
-
 @RestController
 @RequestMapping("/vehicle-option-templates")
+@RequiredArgsConstructor
 public class VehicleOptionTemplateController {
 
   private final VehicleOptionTemplateService vehicleOptionTemplateService;
-
-  public VehicleOptionTemplateController(VehicleOptionTemplateService vehicleOptionTemplateService) {
-    this.vehicleOptionTemplateService = vehicleOptionTemplateService;
-  }
 
   @GetMapping
   public List<VehicleOptionTemplateDto> list(
@@ -36,7 +33,8 @@ public class VehicleOptionTemplateController {
   }
 
   @PostMapping
-  public VehicleOptionTemplateDto create(@Valid @RequestBody CreateVehicleOptionTemplateRequest body) {
+  public VehicleOptionTemplateDto create(
+      @Valid @RequestBody CreateVehicleOptionTemplateRequest body) {
     return vehicleOptionTemplateService.create(body);
   }
 

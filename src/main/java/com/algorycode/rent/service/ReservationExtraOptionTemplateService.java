@@ -7,20 +7,17 @@ import com.algorycode.rent.api.error.BadRequestException;
 import com.algorycode.rent.api.error.ResourceNotFoundException;
 import com.algorycode.rent.domain.catalog.ReservationExtraOptionTemplate;
 import com.algorycode.rent.repository.ReservationExtraOptionTemplateRepository;
+import java.math.RoundingMode;
+import java.util.List;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.RoundingMode;
-import java.util.List;
-
 @Service
+@RequiredArgsConstructor
 public class ReservationExtraOptionTemplateService {
 
   private final ReservationExtraOptionTemplateRepository repository;
-
-  public ReservationExtraOptionTemplateService(ReservationExtraOptionTemplateRepository repository) {
-    this.repository = repository;
-  }
 
   @Transactional(readOnly = true)
   public List<ReservationExtraOptionTemplateDto> list(boolean includeInactive) {
@@ -56,7 +53,9 @@ public class ReservationExtraOptionTemplateService {
     e.setCode(code);
     e.setTitle(req.title().trim());
     e.setDescription(
-        req.description() != null && !req.description().isBlank() ? req.description().trim() : null);
+        req.description() != null && !req.description().isBlank()
+            ? req.description().trim()
+            : null);
     e.setPrice(req.price().setScale(2, RoundingMode.HALF_UP));
     e.setIcon(req.icon() != null && !req.icon().isBlank() ? req.icon().trim() : null);
     e.setLineOrder(req.lineOrder());
@@ -66,15 +65,20 @@ public class ReservationExtraOptionTemplateService {
   }
 
   @Transactional
-  public ReservationExtraOptionTemplateDto update(Long id, UpdateReservationExtraOptionTemplateRequest req) {
+  public ReservationExtraOptionTemplateDto update(
+      Long id, UpdateReservationExtraOptionTemplateRequest req) {
     ReservationExtraOptionTemplate e =
-        repository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Rezervasyon ek seçeneği bulunamadı."));
+        repository
+            .findById(id)
+            .orElseThrow(
+                () -> new ResourceNotFoundException("Rezervasyon ek seçeneği bulunamadı."));
     if (req.code() != null) {
       String code = req.code().trim().toUpperCase();
       if (code.isBlank()) {
         throw new BadRequestException("Kod boş olamaz.");
       }
-      if (!code.equalsIgnoreCase(e.getCode()) && repository.existsByCodeIgnoreCaseAndIdNot(code, id)) {
+      if (!code.equalsIgnoreCase(e.getCode())
+          && repository.existsByCodeIgnoreCaseAndIdNot(code, id)) {
         throw new BadRequestException("Bu kod zaten kullanılıyor: " + code);
       }
       e.setCode(code);
@@ -106,7 +110,10 @@ public class ReservationExtraOptionTemplateService {
   @Transactional
   public void deactivate(Long id) {
     ReservationExtraOptionTemplate e =
-        repository.findById(id).orElseThrow(() -> new ResourceNotFoundException("Rezervasyon ek seçeneği bulunamadı."));
+        repository
+            .findById(id)
+            .orElseThrow(
+                () -> new ResourceNotFoundException("Rezervasyon ek seçeneği bulunamadı."));
     e.setActive(false);
     repository.save(e);
   }

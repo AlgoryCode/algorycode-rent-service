@@ -3,22 +3,19 @@ package com.algorycode.rent.repository;
 import com.algorycode.rent.domain.request.RentalRequest;
 import com.algorycode.rent.domain.request.RentalRequestStatus;
 import java.time.LocalDate;
+import java.util.List;
+import java.util.Optional;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
-
-import java.util.List;
-import java.util.Optional;
 
 public interface RentalRequestRepository extends JpaRepository<RentalRequest, Long> {
 
   @EntityGraph(attributePaths = {"vehicle"})
   List<RentalRequest> findByVehicle_IdOrderByCreatedAtDesc(Long vehicleId);
 
-  /**
-   * Takvim doluluğu: reddedilmemiş talepler, [from, to] ile kesişen (uçlar dahil) kayıtlar.
-   */
+  /** Takvim doluluğu: reddedilmemiş talepler, [from, to] ile kesişen (uçlar dahil) kayıtlar. */
   @Query(
       """
       select rr from RentalRequest rr join rr.vehicle v

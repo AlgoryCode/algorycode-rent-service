@@ -89,18 +89,21 @@ public class VehicleController {
   }
 
   @PostMapping
-  public ResponseEntity<SimpleMessageResponse> create(@Valid @RequestBody CreateVehicleRequest body) {
+  public ResponseEntity<SimpleMessageResponse> create(
+      @Valid @RequestBody CreateVehicleRequest body) {
     Long id = vehicleService.create(body);
-    URI location = ServletUriComponentsBuilder.fromCurrentRequest().path("/{id}").buildAndExpand(id).toUri();
+    URI location =
+        ServletUriComponentsBuilder.fromCurrentRequest().path("/{id}").buildAndExpand(id).toUri();
     String message =
         messageSource.getMessage("vehicle.created", null, LocaleContextHolder.getLocale());
-    return ResponseEntity.status(HttpStatus.CREATED).location(location).body(new SimpleMessageResponse(message));
+    return ResponseEntity.status(HttpStatus.CREATED)
+        .location(location)
+        .body(new SimpleMessageResponse(message));
   }
 
   @PatchMapping("/{id:\\d+}")
   public VehicleDto update(@PathVariable Long id, @Valid @RequestBody UpdateVehicleRequest body) {
     return vehicleService.update(id, body);
-
   }
 
   @DeleteMapping("/{id:\\d+}")

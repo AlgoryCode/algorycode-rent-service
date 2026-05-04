@@ -6,6 +6,7 @@ import com.algorycode.rent.api.dto.VehicleLookupUpdateRequest;
 import com.algorycode.rent.service.VehicleFuelTypeService;
 import jakarta.validation.Valid;
 import java.util.List;
+import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -17,13 +18,10 @@ import org.springframework.web.bind.annotation.RestController;
 
 @RestController
 @RequestMapping("/vehicle-fuel-types")
+@RequiredArgsConstructor
 public class VehicleFuelTypeController {
 
   private final VehicleFuelTypeService vehicleFuelTypeService;
-
-  public VehicleFuelTypeController(VehicleFuelTypeService vehicleFuelTypeService) {
-    this.vehicleFuelTypeService = vehicleFuelTypeService;
-  }
 
   @GetMapping
   public List<VehicleCatalogEntryDto> list() {

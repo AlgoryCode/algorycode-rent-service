@@ -1,17 +1,16 @@
 package com.algorycode.rent.api.mapper;
 
+import static org.assertj.core.api.Assertions.assertThat;
+
 import com.algorycode.rent.domain.vehicle.Vehicle;
 import com.algorycode.rent.domain.vehicle.VehicleBrand;
+import com.algorycode.rent.domain.vehicle.VehicleImage;
+import com.algorycode.rent.domain.vehicle.VehicleImageSlot;
 import com.algorycode.rent.domain.vehicle.VehicleModel;
 import com.algorycode.rent.domain.vehicle.VehicleStatus;
 import com.algorycode.rent.domain.vehicle.VehicleStatusDefinition;
-import com.algorycode.rent.domain.vehicle.VehicleImage;
-import com.algorycode.rent.domain.vehicle.VehicleImageSlot;
-import org.junit.jupiter.api.Test;
-
 import java.time.Instant;
-
-import static org.assertj.core.api.Assertions.assertThat;
+import org.junit.jupiter.api.Test;
 
 class VehicleMapperTest {
 

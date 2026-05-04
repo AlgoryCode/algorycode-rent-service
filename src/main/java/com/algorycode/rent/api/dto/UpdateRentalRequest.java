@@ -4,7 +4,6 @@ import com.algorycode.rent.domain.rental.RentalStatus;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Size;
-
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
@@ -28,7 +27,9 @@ public record UpdateRentalRequest(
       @Size(max = 255) String email,
       LocalDate birthDate,
       @Size(max = 64) String driverLicenseNo,
-      /** data URL veya mevcut object URL — dolu gelirse object storage’a yüklenir / normalize edilir */
+      /**
+       * data URL veya mevcut object URL — dolu gelirse object storage’a yüklenir / normalize edilir
+       */
       String passportImageDataUrl,
       String driverLicenseImageDataUrl) {}
 }

@@ -6,7 +6,6 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
-
 import java.time.LocalDate;
 import java.util.List;
 import java.util.UUID;
@@ -19,8 +18,7 @@ public record CreateRentalRequest(
     Long pickupHandoverLocationId,
     Long returnHandoverLocationId,
     @NotNull @Valid CustomerBody customer,
-    @Size(max = 1)
-    List<@Valid AdditionalDriverBody> additionalDrivers,
+    @Size(max = 1) List<@Valid AdditionalDriverBody> additionalDrivers,
     RentalStatus status,
     @Size(max = 100) List<@Valid RentalOptionRequest> options) {
 

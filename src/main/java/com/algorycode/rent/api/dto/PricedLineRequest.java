@@ -1,12 +1,11 @@
 package com.algorycode.rent.api.dto;
 
 import jakarta.validation.constraints.Size;
-
 import java.math.BigDecimal;
 
 /**
- * İstemci tarafından gönderilen fiyat kalemi özeti (şimdilik yalnızca denetim / log; asıl tutarlar sunucuda
- * yeniden hesaplanır).
+ * İstemci tarafından gönderilen fiyat kalemi özeti (şimdilik yalnızca denetim / log; asıl tutarlar
+ * sunucuda yeniden hesaplanır).
  */
 public record PricedLineRequest(
     @Size(max = 40) String lineType,

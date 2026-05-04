@@ -1,11 +1,11 @@
 package com.algorycode.rent.service.support;
 
+import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+
 import com.algorycode.rent.api.error.BadRequestException;
 import java.time.LocalDate;
 import org.junit.jupiter.api.Test;
-
-import static org.assertj.core.api.Assertions.assertThatCode;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class DateRangeValidatorTest {
 
@@ -30,9 +30,11 @@ class DateRangeValidatorTest {
 
   @Test
   void requireEndNotBeforeStartIfBothPresent_skipsWhenEitherNull() {
-    assertThatCode(() -> DateRangeValidator.requireEndNotBeforeStartIfBothPresent(null, LocalDate.now()))
+    assertThatCode(
+            () -> DateRangeValidator.requireEndNotBeforeStartIfBothPresent(null, LocalDate.now()))
         .doesNotThrowAnyException();
-    assertThatCode(() -> DateRangeValidator.requireEndNotBeforeStartIfBothPresent(LocalDate.now(), null))
+    assertThatCode(
+            () -> DateRangeValidator.requireEndNotBeforeStartIfBothPresent(LocalDate.now(), null))
         .doesNotThrowAnyException();
   }
 }

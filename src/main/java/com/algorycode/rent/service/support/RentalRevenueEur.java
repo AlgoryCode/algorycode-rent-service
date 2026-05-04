@@ -3,7 +3,6 @@ package com.algorycode.rent.service.support;
 import com.algorycode.rent.domain.rental.Rental;
 import com.algorycode.rent.domain.rental.RentalOption;
 import com.algorycode.rent.domain.vehicle.Vehicle;
-
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;

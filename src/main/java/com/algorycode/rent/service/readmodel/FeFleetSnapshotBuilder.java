@@ -5,27 +5,28 @@ import com.algorycode.rent.config.AppRentalRequestProperties;
 import com.algorycode.rent.domain.location.HandoverLocation;
 import com.algorycode.rent.domain.vehicle.Vehicle;
 import com.algorycode.rent.domain.vehicle.VehicleAllowedReturnHandover;
-import com.algorycode.rent.domain.vehicle.VehicleImage;
 import com.algorycode.rent.domain.vehicle.VehicleHighlight;
+import com.algorycode.rent.domain.vehicle.VehicleImage;
 import com.algorycode.rent.domain.vehicle.VehicleOptionDefinition;
 import com.algorycode.rent.service.ObjectStorageService;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import org.springframework.stereotype.Component;
-
 import java.math.BigDecimal;
-import java.math.RoundingMode;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Component;
 
 /**
- * user-fe {@code parseFeFleetSnapshot} ile uyumlu vitrin paketi (TRY günlük fiyat, handover UUID string).
+ * user-fe {@code parseFeFleetSnapshot} ile uyumlu vitrin paketi (TRY günlük fiyat, handover UUID
+ * string).
  */
 @Component
+@RequiredArgsConstructor
 public class FeFleetSnapshotBuilder {
 
   private static final String FALLBACK_IMAGE =
@@ -33,12 +34,6 @@ public class FeFleetSnapshotBuilder {
 
   private final ObjectStorageService objectStorageService;
   private final AppRentalRequestProperties rentalRequestProperties;
-
-  public FeFleetSnapshotBuilder(
-      ObjectStorageService objectStorageService, AppRentalRequestProperties rentalRequestProperties) {
-    this.objectStorageService = objectStorageService;
-    this.rentalRequestProperties = rentalRequestProperties;
-  }
 
   public JsonNode build(Vehicle v) {
     JsonNodeFactory f = JsonNodeFactory.instance;
@@ -53,7 +48,8 @@ public class FeFleetSnapshotBuilder {
     root.put("seats", v.getSeats() != null && v.getSeats() > 0 ? v.getSeats() : 5);
     root.put("fuel", feFuel(v.getFuelType()));
     root.put("year", v.getYear() != null ? v.getYear() : 2024);
-    root.put("engine", v.getEngine() != null && !v.getEngine().isBlank() ? v.getEngine().trim() : "—");
+    root.put(
+        "engine", v.getEngine() != null && !v.getEngine().isBlank() ? v.getEngine().trim() : "—");
     root.put("powerKw", 0);
     root.put("luggage", v.getLuggage() != null && v.getLuggage() >= 0 ? v.getLuggage() : 450);
     root.put("co2", "—");
@@ -135,7 +131,6 @@ public class FeFleetSnapshotBuilder {
     return s == null ? "" : s;
   }
 
-
   private ArrayNode specsArray(Vehicle v, JsonNodeFactory f) {
     ArrayNode a = f.arrayNode();
     a.add("Otomatik");
@@ -214,7 +209,8 @@ public class FeFleetSnapshotBuilder {
         .sorted(
             Comparator.comparingInt(VehicleAllowedReturnHandover::getLineOrder)
                 .thenComparing(
-                    VehicleAllowedReturnHandover::getId, Comparator.nullsLast(Comparator.naturalOrder())))
+                    VehicleAllowedReturnHandover::getId,
+                    Comparator.nullsLast(Comparator.naturalOrder())))
         .map(VehicleAllowedReturnHandover::getHandoverLocation)
         .forEach(
             loc -> {
@@ -234,7 +230,8 @@ public class FeFleetSnapshotBuilder {
         .min(
             Comparator.comparingInt(VehicleAllowedReturnHandover::getLineOrder)
                 .thenComparing(
-                    VehicleAllowedReturnHandover::getId, Comparator.nullsLast(Comparator.naturalOrder())))
+                    VehicleAllowedReturnHandover::getId,
+                    Comparator.nullsLast(Comparator.naturalOrder())))
         .map(VehicleAllowedReturnHandover::getHandoverLocation)
         .orElse(null);
   }

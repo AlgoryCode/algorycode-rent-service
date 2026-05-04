@@ -2,7 +2,6 @@ package com.algorycode.rent.api.dto;
 
 import com.algorycode.rent.domain.location.HandoverLocationKind;
 import jakarta.validation.constraints.Size;
-
 import java.math.BigDecimal;
 
 public record UpdateHandoverLocationRequest(

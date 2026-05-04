@@ -1,22 +1,21 @@
 package com.algorycode.rent.service;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.when;
+
 import com.algorycode.rent.domain.payment.PaymentLog;
 import com.algorycode.rent.domain.payment.PaymentLogStatus;
 import com.algorycode.rent.domain.payment.PaymentMoneyFlow;
 import com.algorycode.rent.repository.PaymentLogRepository;
 import com.algorycode.rent.repository.RentalRepository;
+import java.math.BigDecimal;
+import java.time.Instant;
+import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.math.BigDecimal;
-import java.time.Instant;
-import java.util.List;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class PaymentLogServiceTest {

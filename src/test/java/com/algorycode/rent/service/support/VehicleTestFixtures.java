@@ -10,7 +10,8 @@ public final class VehicleTestFixtures {
 
   private VehicleTestFixtures() {}
 
-  public static void attachBrandModelStatus(Vehicle v, String brand, String model, VehicleStatus status) {
+  public static void attachBrandModelStatus(
+      Vehicle v, String brand, String model, VehicleStatus status) {
     VehicleBrand b = new VehicleBrand();
     b.setName(brand);
     VehicleModel m = new VehicleModel();

@@ -31,20 +31,21 @@ public final class VehicleCatalogSupport {
     return raw.trim().toLowerCase(Locale.ROOT);
   }
 
-  /**
-   * Özellik adından veritabanı kodu türetir (harf/rakam ve alt çizgi). Boş kalırsa hata.
-   */
+  /** Özellik adından veritabanı kodu türetir (harf/rakam ve alt çizgi). Boş kalırsa hata. */
   public static String slugCodeFromLabel(String labelTr) {
     if (labelTr == null || labelTr.isBlank()) {
       throw new BadRequestException("Özellik adı boş olamaz.");
     }
     String lower = labelTr.trim().toLowerCase(Locale.forLanguageTag("tr-TR"));
     String ascii =
-        Normalizer.normalize(lower, Normalizer.Form.NFD).replaceAll("\\p{M}+", "").toLowerCase(Locale.ROOT);
+        Normalizer.normalize(lower, Normalizer.Form.NFD)
+            .replaceAll("\\p{M}+", "")
+            .toLowerCase(Locale.ROOT);
     String s = ascii.replaceAll("[^a-z0-9]+", "_");
     s = s.replaceAll("_+", "_").replaceAll("^_|_$", "");
     if (s.isEmpty()) {
-      throw new BadRequestException("Özellik adından geçerli bir kod türetilemedi; harf veya rakam içeren bir ad girin.");
+      throw new BadRequestException(
+          "Özellik adından geçerli bir kod türetilemedi; harf veya rakam içeren bir ad girin.");
     }
     return s.length() > 32 ? s.substring(0, 32) : s;
   }
@@ -52,7 +53,8 @@ public final class VehicleCatalogSupport {
   /**
    * İsteğe bağlı kullanıcı kodu veya etiketten türetilen taban + sayısal sonek ile benzersiz kod.
    *
-   * @param upperCaseConvention {@code true} araç türü (büyük harf), {@code false} yakıt/vites (küçük harf)
+   * @param upperCaseConvention {@code true} araç türü (büyük harf), {@code false} yakıt/vites
+   *     (küçük harf)
    */
   public static String resolveNewCatalogCode(
       String optionalUserCode,
@@ -83,7 +85,10 @@ public final class VehicleCatalogSupport {
       String suffix = "_" + n;
       int keep = Math.max(1, 32 - suffix.length());
       String shortened = base.length() > keep ? base.substring(0, keep) : base;
-      candidate = (shortened + suffix).length() > 32 ? (shortened + suffix).substring(0, 32) : shortened + suffix;
+      candidate =
+          (shortened + suffix).length() > 32
+              ? (shortened + suffix).substring(0, 32)
+              : shortened + suffix;
       if (!existsIgnoreCase.test(candidate)) {
         return candidate;
       }

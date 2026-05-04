@@ -10,16 +10,20 @@ import com.algorycode.rent.domain.request.RentalRequestPricedLineType;
 import com.algorycode.rent.domain.vehicle.Vehicle;
 import com.algorycode.rent.repository.ReservationExtraOptionTemplateRepository;
 import com.algorycode.rent.repository.VehicleOptionDefinitionRepository;
-import org.springframework.stereotype.Component;
-
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Component;
 
-/** Talep oluşturulurken faturalandırma satırlarını sunucu tarafında üretir (TRY; handover EUR metadata). */
+/**
+ * Talep oluşturulurken faturalandırma satırlarını sunucu tarafında üretir (TRY; handover EUR
+ * metadata).
+ */
 @Component
+@RequiredArgsConstructor
 public class RentalRequestPricedLineAssembler {
 
   private static final BigDecimal ZERO = BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
@@ -27,15 +31,6 @@ public class RentalRequestPricedLineAssembler {
   private final VehicleOptionDefinitionRepository vehicleOptionDefinitionRepository;
   private final ReservationExtraOptionTemplateRepository reservationExtraOptionTemplateRepository;
   private final AppRentalRequestProperties rentalRequestProperties;
-
-  public RentalRequestPricedLineAssembler(
-      VehicleOptionDefinitionRepository vehicleOptionDefinitionRepository,
-      ReservationExtraOptionTemplateRepository reservationExtraOptionTemplateRepository,
-      AppRentalRequestProperties rentalRequestProperties) {
-    this.vehicleOptionDefinitionRepository = vehicleOptionDefinitionRepository;
-    this.reservationExtraOptionTemplateRepository = reservationExtraOptionTemplateRepository;
-    this.rentalRequestProperties = rentalRequestProperties;
-  }
 
   /** FE {@code rentalNights} ile uyumlu: tam gün farkı, en az 1. */
   public static int rentalNightsBetween(LocalDate start, LocalDate end) {
@@ -63,27 +58,30 @@ public class RentalRequestPricedLineAssembler {
         && rentalNights > 0
         && vehicle.getRentalDailyPrice().compareTo(ZERO) > 0) {
       BigDecimal unit = vehicle.getRentalDailyPrice().setScale(2, RoundingMode.HALF_UP);
-      BigDecimal lineAmt = unit.multiply(BigDecimal.valueOf(rentalNights)).setScale(2, RoundingMode.HALF_UP);
-      RentalRequestPricedLine row = line(entity, RentalRequestPricedLineType.BASE_RENTAL, "Günlük kiralama", null, order++);
+      BigDecimal lineAmt =
+          unit.multiply(BigDecimal.valueOf(rentalNights)).setScale(2, RoundingMode.HALF_UP);
+      RentalRequestPricedLine row =
+          line(entity, RentalRequestPricedLineType.BASE_RENTAL, "Günlük kiralama", null, order++);
       row.setQuantity(rentalNights);
       row.setUnitAmount(unit);
       row.setLineAmount(lineAmt);
       row.setCurrency("TRY");
       row.setPricedAt(pricedAt);
       row.setMetadata(
-          "{\"nights\":"
-              + rentalNights
-              + ",\"dailyTry\":\""
-              + unit.toPlainString()
-              + "\"}");
+          "{\"nights\":" + rentalNights + ",\"dailyTry\":\"" + unit.toPlainString() + "\"}");
       entity.getPricedLines().add(row);
     }
 
     if (handoverQuote != null && handoverQuote.totalEur().compareTo(ZERO) > 0) {
       BigDecimal totalEur = handoverQuote.totalEur().setScale(2, RoundingMode.HALF_UP);
-      BigDecimal lineTry =
-          totalEur.multiply(tryPerEur).setScale(2, RoundingMode.HALF_UP);
-      RentalRequestPricedLine row = line(entity, RentalRequestPricedLineType.HANDOVER_SURCHARGE, "Teslim / nokta ek ücreti", null, order++);
+      BigDecimal lineTry = totalEur.multiply(tryPerEur).setScale(2, RoundingMode.HALF_UP);
+      RentalRequestPricedLine row =
+          line(
+              entity,
+              RentalRequestPricedLineType.HANDOVER_SURCHARGE,
+              "Teslim / nokta ek ücreti",
+              null,
+              order++);
       row.setQuantity(1);
       row.setUnitAmount(lineTry);
       row.setLineAmount(lineTry);
@@ -109,7 +107,13 @@ public class RentalRequestPricedLineAssembler {
 
     if (greenInsuranceFee != null && greenInsuranceFee.compareTo(ZERO) > 0) {
       BigDecimal g = greenInsuranceFee.setScale(2, RoundingMode.HALF_UP);
-      RentalRequestPricedLine row = line(entity, RentalRequestPricedLineType.ABROAD_USAGE, "Yurt dışı kullanım (yeşil sigorta)", null, order++);
+      RentalRequestPricedLine row =
+          line(
+              entity,
+              RentalRequestPricedLineType.ABROAD_USAGE,
+              "Yurt dışı kullanım (yeşil sigorta)",
+              null,
+              order++);
       row.setQuantity(1);
       row.setUnitAmount(g);
       row.setLineAmount(g);
@@ -123,7 +127,10 @@ public class RentalRequestPricedLineAssembler {
       for (RentalOptionRequest o : req.options()) {
         RentalOptionLineResolution.Resolved resolved =
             RentalOptionLineResolution.resolve(
-                vehicle, o, vehicleOptionDefinitionRepository, reservationExtraOptionTemplateRepository);
+                vehicle,
+                o,
+                vehicleOptionDefinitionRepository,
+                reservationExtraOptionTemplateRepository);
         RentalRequestPricedLineType type;
         Long srcVeh = null;
         Long srcTpl = null;
@@ -137,7 +144,8 @@ public class RentalRequestPricedLineAssembler {
           type = RentalRequestPricedLineType.CUSTOM_LINE;
         }
         BigDecimal price = resolved.price().setScale(2, RoundingMode.HALF_UP);
-        RentalRequestPricedLine row = line(entity, type, resolved.title(), resolved.description(), order++);
+        RentalRequestPricedLine row =
+            line(entity, type, resolved.title(), resolved.description(), order++);
         row.setQuantity(1);
         row.setUnitAmount(price);
         row.setLineAmount(price);
@@ -177,7 +185,11 @@ public class RentalRequestPricedLineAssembler {
   }
 
   private static RentalRequestPricedLine line(
-      RentalRequest entity, RentalRequestPricedLineType type, String title, String description, int lineOrder) {
+      RentalRequest entity,
+      RentalRequestPricedLineType type,
+      String title,
+      String description,
+      int lineOrder) {
     RentalRequestPricedLine row = new RentalRequestPricedLine();
     row.setRentalRequest(entity);
     row.setLineType(type);

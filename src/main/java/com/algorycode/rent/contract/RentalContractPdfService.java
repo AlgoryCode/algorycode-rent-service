@@ -9,15 +9,6 @@ import com.algorycode.rent.domain.request.RentalRequestCustomerSnapshot;
 import com.algorycode.rent.domain.request.RentalRequestOption;
 import com.algorycode.rent.domain.vehicle.Vehicle;
 import com.algorycode.rent.service.ObjectStorageService;
-import org.apache.pdfbox.pdmodel.PDDocument;
-import org.apache.pdfbox.pdmodel.PDPage;
-import org.apache.pdfbox.pdmodel.PDPageContentStream;
-import org.apache.pdfbox.pdmodel.common.PDRectangle;
-import org.apache.pdfbox.pdmodel.font.PDFont;
-import org.apache.pdfbox.pdmodel.font.PDType1Font;
-import org.apache.pdfbox.pdmodel.graphics.image.PDImageXObject;
-import org.springframework.stereotype.Service;
-
 import java.io.IOException;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -31,8 +22,18 @@ import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Comparator;
 import java.util.List;
+import lombok.RequiredArgsConstructor;
+import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.pdfbox.pdmodel.PDPage;
+import org.apache.pdfbox.pdmodel.PDPageContentStream;
+import org.apache.pdfbox.pdmodel.common.PDRectangle;
+import org.apache.pdfbox.pdmodel.font.PDFont;
+import org.apache.pdfbox.pdmodel.font.PDType1Font;
+import org.apache.pdfbox.pdmodel.graphics.image.PDImageXObject;
+import org.springframework.stereotype.Service;
 
 @Service
+@RequiredArgsConstructor
 public class RentalContractPdfService {
 
   private static final float PAGE_MARGIN = 40f;
@@ -51,12 +52,6 @@ public class RentalContractPdfService {
 
   private final AppContractProperties contractProperties;
   private final ObjectStorageService objectStorageService;
-
-  public RentalContractPdfService(
-      AppContractProperties contractProperties, ObjectStorageService objectStorageService) {
-    this.contractProperties = contractProperties;
-    this.objectStorageService = objectStorageService;
-  }
 
   public String generateFor(RentalRequest request) {
     Path outDir = resolveOutputDir();
@@ -79,7 +74,8 @@ public class RentalContractPdfService {
       float reservedBottom = reservedBottomForDocumentStack(media, docBlockCount, page1DocImgH);
 
       try (PDPageContentStream cs =
-          new PDPageContentStream(output, page, PDPageContentStream.AppendMode.APPEND, true, true)) {
+          new PDPageContentStream(
+              output, page, PDPageContentStream.AppendMode.APPEND, true, true)) {
         float y = media.getHeight() - PAGE_MARGIN;
         y = drawTitle(cs, y, media.getWidth());
         y -= 6f;
@@ -89,14 +85,15 @@ public class RentalContractPdfService {
         y -= 10f;
         y = drawLineItemsVatTable(cs, request, y, reservedBottom, media.getWidth());
         y -= 8f;
-        y = drawWrappedBlock(
-            cs,
-            "The lessee is obligated to return the vehicle on the designated day and at the designated time. "
-                + "Any costs for damages that may occur due to misuse will be covered by the user. Additionally, "
-                + "they must make all necessary payments in cases of rule violations.",
-            y,
-            reservedBottom,
-            media.getWidth());
+        y =
+            drawWrappedBlock(
+                cs,
+                "The lessee is obligated to return the vehicle on the designated day and at the designated time. "
+                    + "Any costs for damages that may occur due to misuse will be covered by the user. Additionally, "
+                    + "they must make all necessary payments in cases of rule violations.",
+                y,
+                reservedBottom,
+                media.getWidth());
         y -= 8f;
         y = drawSignOff(cs, y, media.getWidth());
         y -= 6f;
@@ -168,9 +165,7 @@ public class RentalContractPdfService {
     return Math.max(38f, 128f / blockCount);
   }
 
-  /**
-   * Ehliyet + pasaport satirini 1. sayfada cizer; bir sonraki blok icin y (asagi) dondurur.
-   */
+  /** Ehliyet + pasaport satirini 1. sayfada cizer; bir sonraki blok icin y (asagi) dondurur. */
   private float drawDriverIdSectionOnFirstPage(
       PDPageContentStream cs,
       PDDocument doc,
@@ -211,8 +206,10 @@ public class RentalContractPdfService {
     float rightX = PAGE_MARGIN + singleMaxWidth + 12f;
     PDImageXObject license = resolveIdentityImage(doc, licenseDataUrl, imageNamePrefix + "lic");
     PDImageXObject passport = resolveIdentityImage(doc, passportDataUrl, imageNamePrefix + "ppt");
-    drawImageOrPlaceholder(cs, license, leftX, imgBottom, singleMaxWidth, maxImageHeight, "Driver's license");
-    drawImageOrPlaceholder(cs, passport, rightX, imgBottom, singleMaxWidth, maxImageHeight, "Passport");
+    drawImageOrPlaceholder(
+        cs, license, leftX, imgBottom, singleMaxWidth, maxImageHeight, "Driver's license");
+    drawImageOrPlaceholder(
+        cs, passport, rightX, imgBottom, singleMaxWidth, maxImageHeight, "Passport");
     return imgBottom - 8f;
   }
 
@@ -250,7 +247,8 @@ public class RentalContractPdfService {
     return drawWrappedBlock(cs, intro, y, minY, pageWidth);
   }
 
-  private float drawInfoTable(PDPageContentStream cs, RentalRequest req, float y, float minY, float pageW)
+  private float drawInfoTable(
+      PDPageContentStream cs, RentalRequest req, float y, float minY, float pageW)
       throws IOException {
     RentalRequestCustomerSnapshot c = req.getCustomer();
     Vehicle v = req.getVehicle();
@@ -261,8 +259,7 @@ public class RentalContractPdfService {
     String color = v != null ? nz(v.getBodyColor(), "-") : "-";
     String fuel = resolveFuelTypeDisplay(v);
 
-    String birth =
-        c.getBirthDate() != null ? c.getBirthDate().format(DATE_SLASH) : "-";
+    String birth = c.getBirthDate() != null ? c.getBirthDate().format(DATE_SLASH) : "-";
 
     String issueDate = req.getStartDate() != null ? req.getStartDate().format(DATE_SLASH) : "-";
     String retDate = req.getEndDate() != null ? req.getEndDate().format(DATE_SLASH) : "-";
@@ -345,10 +342,13 @@ public class RentalContractPdfService {
       rows.add(new PdfInvoiceRow("Cross-border / travel outside Albania (requested)", null, false));
     }
     if (positiveAmount(req.getGreenInsuranceFee())) {
-      rows.add(new PdfInvoiceRow("Green card / border insurance", req.getGreenInsuranceFee(), true));
+      rows.add(
+          new PdfInvoiceRow("Green card / border insurance", req.getGreenInsuranceFee(), true));
     }
     if (positiveAmount(req.getHandoverTotalEur())) {
-      rows.add(new PdfInvoiceRow("Pickup / return location surcharges", req.getHandoverTotalEur(), true));
+      rows.add(
+          new PdfInvoiceRow(
+              "Pickup / return location surcharges", req.getHandoverTotalEur(), true));
     }
     List<RentalRequestAdditionalDriver> drivers =
         req.getAdditionalDrivers() != null ? req.getAdditionalDrivers() : List.of();
@@ -376,7 +376,10 @@ public class RentalContractPdfService {
 
   private VatParts splitVatInclusive(BigDecimal grossInclVat) {
     if (grossInclVat == null || grossInclVat.compareTo(BigDecimal.ZERO) <= 0) {
-      return new VatParts(BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP), BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP), BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP));
+      return new VatParts(
+          BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP),
+          BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP),
+          BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP));
     }
     BigDecimal rate = contractProperties.pdfLineVatPercent();
     if (rate == null || rate.compareTo(BigDecimal.ZERO) <= 0) {
@@ -393,7 +396,8 @@ public class RentalContractPdfService {
 
   /** Ek hizmet ve ucretler: hizmet adi, net, KDV, brut (EUR). */
   private float drawLineItemsVatTable(
-      PDPageContentStream cs, RentalRequest req, float y, float minY, float pageW) throws IOException {
+      PDPageContentStream cs, RentalRequest req, float y, float minY, float pageW)
+      throws IOException {
     List<PdfInvoiceRow> rows = buildInvoiceRows(req);
     if (rows.isEmpty()) {
       return y;
@@ -437,7 +441,8 @@ public class RentalContractPdfService {
     BigDecimal sumGross = BigDecimal.ZERO;
 
     for (PdfInvoiceRow row : rows) {
-      List<String> svcLines = wrapWords(row.service(), PDType1Font.HELVETICA, INV_FONT, c1 - c0 - 4f);
+      List<String> svcLines =
+          wrapWords(row.service(), PDType1Font.HELVETICA, INV_FONT, c1 - c0 - 4f);
       if (svcLines.isEmpty()) {
         svcLines = new ArrayList<>();
         svcLines.add(" ");
@@ -464,7 +469,8 @@ public class RentalContractPdfService {
         sumGross = sumGross.add(p.gross());
         drawRightText(cs, formatMoneyPlain(p.net()), c1 + wNum - 2f, valBaseline, INV_FONT, false);
         drawRightText(cs, formatMoneyPlain(p.vat()), c2 + wNum - 2f, valBaseline, INV_FONT, false);
-        drawRightText(cs, formatMoneyPlain(p.gross()), c3 + wNum - 2f, valBaseline, INV_FONT, false);
+        drawRightText(
+            cs, formatMoneyPlain(p.gross()), c3 + wNum - 2f, valBaseline, INV_FONT, false);
       } else {
         drawRightText(cs, "-", c1 + wNum - 2f, valBaseline, INV_FONT, false);
         drawRightText(cs, "-", c2 + wNum - 2f, valBaseline, INV_FONT, false);
@@ -499,7 +505,12 @@ public class RentalContractPdfService {
   }
 
   private void drawRightText(
-      PDPageContentStream cs, String text, float rightX, float baselineY, float fontSize, boolean bold)
+      PDPageContentStream cs,
+      String text,
+      float rightX,
+      float baselineY,
+      float fontSize,
+      boolean bold)
       throws IOException {
     String s = safeAscii(text);
     PDFont font = bold ? PDType1Font.HELVETICA_BOLD : PDType1Font.HELVETICA;
@@ -519,7 +530,8 @@ public class RentalContractPdfService {
     return amount != null && amount.compareTo(BigDecimal.ZERO) > 0;
   }
 
-  private void drawLabelValue(PDPageContentStream cs, float x, float y, float maxW, String label, String value)
+  private void drawLabelValue(
+      PDPageContentStream cs, float x, float y, float maxW, String label, String value)
       throws IOException {
     String lab = safeAscii(label);
     String val = safeAscii(value);
@@ -595,7 +607,8 @@ public class RentalContractPdfService {
     return y;
   }
 
-  private float drawPlainLine(PDPageContentStream cs, String text, float y, float pageW) throws IOException {
+  private float drawPlainLine(PDPageContentStream cs, String text, float y, float pageW)
+      throws IOException {
     cs.beginText();
     cs.setFont(PDType1Font.HELVETICA, BODY_SIZE);
     cs.newLineAtOffset(PAGE_MARGIN, y - BODY_SIZE);
@@ -604,8 +617,8 @@ public class RentalContractPdfService {
     return y - LEADING_BODY;
   }
 
-  private float drawWrappedBlock(PDPageContentStream cs, String text, float y, float minY, float pageW)
-      throws IOException {
+  private float drawWrappedBlock(
+      PDPageContentStream cs, String text, float y, float minY, float pageW) throws IOException {
     float maxW = pageW - 2 * PAGE_MARGIN;
     List<String> lines = wrapWords(text, PDType1Font.HELVETICA, BODY_SIZE, maxW);
     for (String line : lines) {
@@ -719,7 +732,8 @@ public class RentalContractPdfService {
     cs.stroke();
   }
 
-  private PDImageXObject resolveIdentityImage(PDDocument doc, String stored, String name) throws IOException {
+  private PDImageXObject resolveIdentityImage(PDDocument doc, String stored, String name)
+      throws IOException {
     if (stored == null || stored.isBlank()) {
       return null;
     }
@@ -741,7 +755,8 @@ public class RentalContractPdfService {
     return null;
   }
 
-  private static PDImageXObject loadImageFromDataUrl(PDDocument doc, String dataUrl, String name) throws IOException {
+  private static PDImageXObject loadImageFromDataUrl(PDDocument doc, String dataUrl, String name)
+      throws IOException {
     String raw = dataUrl.trim();
     int idx = raw.indexOf("base64,");
     if (idx >= 0) {

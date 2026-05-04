@@ -7,7 +7,6 @@ import com.algorycode.rent.domain.vehicle.Vehicle;
 import com.algorycode.rent.domain.vehicle.VehicleOptionDefinition;
 import com.algorycode.rent.repository.ReservationExtraOptionTemplateRepository;
 import com.algorycode.rent.repository.VehicleOptionDefinitionRepository;
-
 import java.math.BigDecimal;
 
 public final class RentalOptionLineResolution {
@@ -24,7 +23,8 @@ public final class RentalOptionLineResolution {
     boolean hasVehicleDef = o.vehicleOptionDefinitionId() != null;
     boolean hasReservationTemplate = o.reservationExtraTemplateId() != null;
     if (hasVehicleDef && hasReservationTemplate) {
-      throw new BadRequestException("Aynı satırda hem araç seçeneği hem rezervasyon şablonu verilemez.");
+      throw new BadRequestException(
+          "Aynı satırda hem araç seçeneği hem rezervasyon şablonu verilemez.");
     }
     if (hasVehicleDef) {
       if (vehicle == null) {
@@ -39,7 +39,9 @@ public final class RentalOptionLineResolution {
       }
       return new Resolved(
           def.getTitle(),
-          def.getDescription() != null && !def.getDescription().isBlank() ? def.getDescription().trim() : null,
+          def.getDescription() != null && !def.getDescription().isBlank()
+              ? def.getDescription().trim()
+              : null,
           def.getPrice(),
           def.getIcon() != null && !def.getIcon().isBlank() ? def.getIcon().trim() : null);
     }
@@ -53,7 +55,9 @@ public final class RentalOptionLineResolution {
       }
       return new Resolved(
           t.getTitle(),
-          t.getDescription() != null && !t.getDescription().isBlank() ? t.getDescription().trim() : null,
+          t.getDescription() != null && !t.getDescription().isBlank()
+              ? t.getDescription().trim()
+              : null,
           t.getPrice(),
           t.getIcon() != null && !t.getIcon().isBlank() ? t.getIcon().trim() : null);
     }

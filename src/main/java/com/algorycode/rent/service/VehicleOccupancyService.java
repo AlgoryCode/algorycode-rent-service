@@ -13,14 +13,16 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Takvim UI için birleşik doluluk: yalnızca aktif statülü kiralamalar ile onaylı/bekleyen
- * {@code RentalRequest} aralıkları. Tarihler gün bazlı ve uçlar dahildir.
+ * Takvim UI için birleşik doluluk: yalnızca aktif statülü kiralamalar ile onaylı/bekleyen {@code
+ * RentalRequest} aralıkları. Tarihler gün bazlı ve uçlar dahildir.
  */
 @Service
+@RequiredArgsConstructor
 public class VehicleOccupancyService {
 
   private static final List<RentalRequestStatus> BLOCKING_REQUEST_STATUSES =
@@ -29,15 +31,6 @@ public class VehicleOccupancyService {
   private final VehicleRepository vehicleRepository;
   private final RentalRepository rentalRepository;
   private final RentalRequestRepository rentalRequestRepository;
-
-  public VehicleOccupancyService(
-      VehicleRepository vehicleRepository,
-      RentalRepository rentalRepository,
-      RentalRequestRepository rentalRequestRepository) {
-    this.vehicleRepository = vehicleRepository;
-    this.rentalRepository = rentalRepository;
-    this.rentalRequestRepository = rentalRequestRepository;
-  }
 
   @Transactional(readOnly = true)
   public VehicleCalendarOccupancyDto occupancy(Long vehicleId, LocalDate from, LocalDate to) {

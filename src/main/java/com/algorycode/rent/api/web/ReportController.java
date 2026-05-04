@@ -2,23 +2,20 @@ package com.algorycode.rent.api.web;
 
 import com.algorycode.rent.api.dto.report.RentalDashboardReportDto;
 import com.algorycode.rent.service.RentalReportService;
+import java.time.LocalDate;
+import lombok.RequiredArgsConstructor;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.time.LocalDate;
-
 @RestController
 @RequestMapping("/reports")
+@RequiredArgsConstructor
 public class ReportController {
 
   private final RentalReportService rentalReportService;
-
-  public ReportController(RentalReportService rentalReportService) {
-    this.rentalReportService = rentalReportService;
-  }
 
   /**
    * Panel raporlari: toplam / arac bazli / zamansal (gun veya ay) kiralama ve gelir (EUR).

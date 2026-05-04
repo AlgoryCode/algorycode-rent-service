@@ -1,18 +1,18 @@
 package com.algorycode.rent.repository;
 
 import com.algorycode.rent.domain.rental.Rental;
+import java.time.LocalDate;
+import java.util.Collection;
+import java.util.List;
+import java.util.Optional;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import java.time.LocalDate;
-import java.util.Collection;
-import java.util.List;
-import java.util.Optional;
-
-public interface RentalRepository extends JpaRepository<Rental, Long>, JpaSpecificationExecutor<Rental> {
+public interface RentalRepository
+    extends JpaRepository<Rental, Long>, JpaSpecificationExecutor<Rental> {
 
   @EntityGraph(attributePaths = {"vehicle", "statusDefinition"})
   List<Rental> findAllByOrderByCreatedAtDesc();
@@ -24,7 +24,8 @@ public interface RentalRepository extends JpaRepository<Rental, Long>, JpaSpecif
   List<Rental> findByVehicle_IdOrderByCreatedAtDesc(Long vehicleId);
 
   @EntityGraph(attributePaths = {"vehicle", "statusDefinition"})
-  List<Rental> findByVehicle_IdAndStatusDefinition_CodeOrderByCreatedAtDesc(Long vehicleId, String code);
+  List<Rental> findByVehicle_IdAndStatusDefinition_CodeOrderByCreatedAtDesc(
+      Long vehicleId, String code);
 
   boolean existsByVehicle_Id(Long vehicleId);
 

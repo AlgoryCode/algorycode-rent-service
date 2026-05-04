@@ -1,11 +1,11 @@
 package com.algorycode.rent.repository;
 
 import com.algorycode.rent.domain.payment.PaymentLog;
+import java.util.List;
 import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 
-import java.util.List;
 public interface PaymentLogRepository extends JpaRepository<PaymentLog, Long> {
 
   @EntityGraph(attributePaths = {"vehicle", "rental", "rental.vehicle", "rental.options"})

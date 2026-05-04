@@ -4,40 +4,45 @@ import com.algorycode.rent.api.dto.HandoverPricingQuoteDto;
 import com.algorycode.rent.api.error.ResourceNotFoundException;
 import com.algorycode.rent.domain.location.HandoverLocation;
 import com.algorycode.rent.repository.HandoverLocationRepository;
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
-import java.math.RoundingMode;
-
 @Service
+@RequiredArgsConstructor
 public class HandoverPricingService {
 
   private static final BigDecimal ZERO = BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
 
   private final HandoverLocationRepository handoverLocationRepository;
 
-  public HandoverPricingService(HandoverLocationRepository handoverLocationRepository) {
-    this.handoverLocationRepository = handoverLocationRepository;
-  }
-
   /**
-   * Alış ve iade noktası aynı kayıt değilse: her iki noktanın {@code surcharge_eur} toplamı + bilinen ülke çifti
-   * güzergâh ücreti (ör. AL→XK 60 €, AL→ME 75 €). Aynı nokta veya eksik ülke kodunda güzergâh 0.
+   * Alış ve iade noktası aynı kayıt değilse: her iki noktanın {@code surcharge_eur} toplamı +
+   * bilinen ülke çifti güzergâh ücreti (ör. AL→XK 60 €, AL→ME 75 €). Aynı nokta veya eksik ülke
+   * kodunda güzergâh 0.
    */
   @Transactional(readOnly = true)
   public HandoverPricingQuoteDto quote(Long pickupHandoverId, Long returnHandoverId) {
-    if (pickupHandoverId == null || returnHandoverId == null || pickupHandoverId.equals(returnHandoverId)) {
+    if (pickupHandoverId == null
+        || returnHandoverId == null
+        || pickupHandoverId.equals(returnHandoverId)) {
       return new HandoverPricingQuoteDto(ZERO, ZERO, ZERO, ZERO, false);
     }
     HandoverLocation pickup =
         handoverLocationRepository
             .findById(pickupHandoverId)
-            .orElseThrow(() -> new ResourceNotFoundException("Alış noktası bulunamadı: " + pickupHandoverId));
+            .orElseThrow(
+                () ->
+                    new ResourceNotFoundException("Alış noktası bulunamadı: " + pickupHandoverId));
     HandoverLocation ret =
         handoverLocationRepository
             .findById(returnHandoverId)
-            .orElseThrow(() -> new ResourceNotFoundException("Teslim noktası bulunamadı: " + returnHandoverId));
+            .orElseThrow(
+                () ->
+                    new ResourceNotFoundException(
+                        "Teslim noktası bulunamadı: " + returnHandoverId));
 
     BigDecimal legP = nz(pickup.getSurchargeEur());
     BigDecimal legR = nz(ret.getSurchargeEur());
@@ -47,7 +52,8 @@ public class HandoverPricingService {
     return new HandoverPricingQuoteDto(legP, legR, route, total, applied);
   }
 
-  public HandoverPricingQuoteDto quoteForPersistedPair(HandoverLocation pickup, HandoverLocation returnLoc) {
+  public HandoverPricingQuoteDto quoteForPersistedPair(
+      HandoverLocation pickup, HandoverLocation returnLoc) {
     if (pickup == null || returnLoc == null) {
       return new HandoverPricingQuoteDto(ZERO, ZERO, ZERO, ZERO, false);
     }

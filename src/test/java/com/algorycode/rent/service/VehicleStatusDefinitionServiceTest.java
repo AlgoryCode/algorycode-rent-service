@@ -63,7 +63,8 @@ class VehicleStatusDefinitionServiceTest {
 
   @Test
   void create_withExplicitCode_thenSaves() {
-    when(vehicleStatusDefinitionRepository.findByCodeIgnoreCase("fleet_hold")).thenReturn(Optional.empty());
+    when(vehicleStatusDefinitionRepository.findByCodeIgnoreCase("fleet_hold"))
+        .thenReturn(Optional.empty());
     when(vehicleStatusDefinitionRepository.save(any(VehicleStatusDefinition.class)))
         .thenAnswer(
             inv -> {

@@ -1,8 +1,7 @@
 package com.algorycode.rent.config;
 
-import org.springframework.boot.context.properties.ConfigurationProperties;
-
 import java.math.BigDecimal;
+import org.springframework.boot.context.properties.ConfigurationProperties;
 
 @ConfigurationProperties(prefix = "app.contract")
 public record AppContractProperties(
@@ -10,8 +9,8 @@ public record AppContractProperties(
     String templatePath,
     String outputDir,
     /**
-     * PDF satir kalemlerinde KDV dagilimi: opsiyon / sigorta / lokasyon tutarlari KDV dahil (brut) kabul edilir.
-     * Ornek 20: net = brut / 1.20. 0: vergi sutunu 0, net = brut.
+     * PDF satir kalemlerinde KDV dagilimi: opsiyon / sigorta / lokasyon tutarlari KDV dahil (brut)
+     * kabul edilir. Ornek 20: net = brut / 1.20. 0: vergi sutunu 0, net = brut.
      */
     BigDecimal pdfLineVatPercent,
     /** İngilizce “Authorization for rental cars” üst paragrafı ve dipnot için şirket bilgileri. */

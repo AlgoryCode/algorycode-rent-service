@@ -2,10 +2,9 @@ package com.algorycode.rent.api.dto;
 
 import com.algorycode.rent.domain.rental.RentalCommissionFlow;
 import com.algorycode.rent.domain.rental.RentalStatus;
-
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
-import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
 

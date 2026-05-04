@@ -38,8 +38,10 @@ class VehicleFormCatalogServiceTest {
     when(vehicleTransmissionTypeService.listAll()).thenReturn(List.of());
     when(vehicleBodyStyleService.listAll()).thenReturn(List.of());
     when(countryService.listAll()).thenReturn(List.of());
-    when(handoverLocationService.list(eq(HandoverLocationKind.PICKUP), eq(false))).thenReturn(List.of());
-    when(handoverLocationService.list(eq(HandoverLocationKind.RETURN), eq(false))).thenReturn(List.of());
+    when(handoverLocationService.list(eq(HandoverLocationKind.PICKUP), eq(false)))
+        .thenReturn(List.of());
+    when(handoverLocationService.list(eq(HandoverLocationKind.RETURN), eq(false)))
+        .thenReturn(List.of());
     when(vehicleOptionTemplateService.list(false)).thenReturn(List.of());
 
     var dto = vehicleFormCatalogService.load();

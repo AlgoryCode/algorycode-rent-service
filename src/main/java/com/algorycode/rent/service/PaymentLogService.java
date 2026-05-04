@@ -13,25 +13,20 @@ import com.algorycode.rent.domain.vehicle.Vehicle;
 import com.algorycode.rent.repository.PaymentLogRepository;
 import com.algorycode.rent.repository.RentalRepository;
 import com.algorycode.rent.service.support.RentalRevenueEur;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.List;
 import java.util.UUID;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
+@RequiredArgsConstructor
 public class PaymentLogService {
 
   private final PaymentLogRepository paymentLogRepository;
   private final RentalRepository rentalRepository;
-
-  public PaymentLogService(
-      PaymentLogRepository paymentLogRepository, RentalRepository rentalRepository) {
-    this.paymentLogRepository = paymentLogRepository;
-    this.rentalRepository = rentalRepository;
-  }
 
   @Transactional(readOnly = true)
   public List<PaymentLogDto> listAll() {
@@ -50,8 +45,7 @@ public class PaymentLogService {
       throw new BadRequestException("İptal edilmiş kiralama için ödeme eklenemez.");
     }
 
-    PaymentLogStatus status =
-        req.status() != null ? req.status() : PaymentLogStatus.completed;
+    PaymentLogStatus status = req.status() != null ? req.status() : PaymentLogStatus.completed;
     PaymentMoneyFlow flow =
         status == PaymentLogStatus.refunded ? PaymentMoneyFlow.refund : req.moneyFlow();
 

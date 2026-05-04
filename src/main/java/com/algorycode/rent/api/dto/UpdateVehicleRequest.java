@@ -2,7 +2,6 @@ package com.algorycode.rent.api.dto;
 
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Size;
-
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
@@ -22,7 +21,8 @@ public record UpdateVehicleRequest(
     /** Geriye uyumluluk; {@code returnHandoverLocationIds} null değilse yok sayılır. */
     Long defaultReturnHandoverLocationId,
     /**
-     * null: teslim noktalarına dokunma. Boş liste: tüm araç-teslim eşlemelerini kaldır. Dolu: tamamen değiştir.
+     * null: teslim noktalarına dokunma. Boş liste: tüm araç-teslim eşlemelerini kaldır. Dolu:
+     * tamamen değiştir.
      */
     @Size(max = 50) List<Long> returnHandoverLocationIds,
     @Size(max = 100) List<Long> optionTemplateIds,
