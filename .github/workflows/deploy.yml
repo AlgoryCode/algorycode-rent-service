@@ -1,14 +1,4 @@
-# 1) Docker: registry’ye tek tag (SHA’nın son 7 karakteri).
-#
-# 2) update-gitops: GITOPS_BUMP_ENABLED=true + GITOPS_PAT (helm reposunda image.tag).
-#
-# 3) deploy-k3s: K3S_DEPLOY_ENABLED=true + KUBE_CONFIG — doğrudan k3s’e helm upgrade + rollout.
-#    Secret KUBE_CONFIG: base64 < ~/.kube/config | tr -d '\n\r '
-#
-# Secrets: DOCKERHUB_USERNAME, DOCKERHUB_TOKEN
-# Opsiyonel: KUBE_CONFIG, GITOPS_PAT
-
-name: Build and push Docker image
+name: algorycode-rent-service CI/CD
 
 on:
   push:
@@ -16,37 +6,26 @@ on:
   workflow_dispatch:
 
 concurrency:
-  group: docker-rent-api-${{ github.ref }}
+  group: rent-service-build-deploy-${{ github.ref }}
   cancel-in-progress: true
 
 env:
   IMAGE_NAME: algorycode-rent-service
-  GITOPS_REPO_DEFAULT: AlgoryCode/algorycode-helm-charts-prod
-  GITOPS_BRANCH_DEFAULT: main
-  GITOPS_VALUES_PATH_DEFAULT: rent-service/env/prod-values.yaml
-  K3S_HELM_RELEASE_DEFAULT: rent-api
-  K3S_NAMESPACE_DEFAULT: rent
-  K3S_HELM_CHART_DEFAULT: helm/algorycode-rent-service
+  K8S_NAMESPACE: algory-prod
+  K8S_DEPLOYMENT: algorycode-rent-service-prod
 
 jobs:
-  build-push:
+  build-and-deploy:
     runs-on: ubuntu-latest
-    outputs:
-      image_tag: ${{ steps.tags.outputs.tag }}
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - id: tags
-        name: Image tag (last 7 chars of SHA)
+      - name: Image tag
         run: |
           TAG="${GITHUB_SHA: -7}"
-          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
           echo "IMAGE_TAG=$TAG" >> "$GITHUB_ENV"
-          echo "Pushing tag: ${TAG}"
 
-      - name: Log in to Docker Hub
-        uses: docker/login-action@v3
+      - uses: docker/login-action@v3
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
@@ -57,62 +36,9 @@ jobs:
           docker build -t "${IMAGE}:${IMAGE_TAG}" .
           docker push "${IMAGE}:${IMAGE_TAG}"
 
-  update-gitops:
-    needs: build-push
-    runs-on: ubuntu-latest
-    if: vars.GITOPS_BUMP_ENABLED == 'true'
-    steps:
-      - name: Install yq
-        run: |
-          curl -fsSL "https://github.com/mikefarah/yq/releases/download/v4.45.1/yq_linux_amd64" -o /usr/local/bin/yq
-          chmod +x /usr/local/bin/yq
-
-      - name: Checkout GitOps / chart repo
-        uses: actions/checkout@v4
-        with:
-          repository: ${{ vars.GITOPS_REPO || env.GITOPS_REPO_DEFAULT }}
-          ref: ${{ vars.GITOPS_BRANCH || env.GITOPS_BRANCH_DEFAULT }}
-          token: ${{ secrets.GITOPS_PAT }}
-          path: gitops
-
-      - name: Set image tag and push
-        working-directory: gitops
-        env:
-          TAG: ${{ needs.build-push.outputs.image_tag }}
-          VALUES_FILE: ${{ vars.GITOPS_VALUES_PATH || env.GITOPS_VALUES_PATH_DEFAULT }}
-          YQ_PATH: ${{ vars.GITOPS_YQ_PATH }}
-        run: |
-          set -euo pipefail
-          YQ="${YQ_PATH:-.image.tag}"
-          test -n "${VALUES_FILE:-}"
-          yq e -i "${YQ} = strenv(TAG)" "$VALUES_FILE"
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add "$VALUES_FILE"
-          if git diff --cached --quiet; then
-            echo "No YAML change."
-            exit 0
-          fi
-          git commit -m "chore(rent-api): deploy image ${{ needs.build-push.outputs.image_tag }}"
-          git push
-
-  deploy-k3s:
-    needs: build-push
-    runs-on: ubuntu-latest
-    if: vars.K3S_DEPLOY_ENABLED == 'true'
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Install kubectl
-        uses: azure/setup-kubectl@v4
+      - uses: azure/setup-kubectl@v4
         with:
           version: v1.28.0
-
-      - name: Install Helm
-        uses: azure/setup-helm@v4
-        with:
-          version: v3.14.4
 
       - name: Configure kubeconfig
         run: |
@@ -120,22 +46,14 @@ jobs:
           echo "${{ secrets.KUBE_CONFIG }}" | tr -d '\n\r ' | base64 -d > "$HOME/.kube/config"
           chmod 600 "$HOME/.kube/config"
 
-      - name: Helm upgrade and rollout
+      - name: Deploy to k3s
         env:
-          RELEASE: ${{ vars.K3S_HELM_RELEASE || env.K3S_HELM_RELEASE_DEFAULT }}
-          NS: ${{ vars.K3S_NAMESPACE || env.K3S_NAMESPACE_DEFAULT }}
-          CHART: ${{ vars.K3S_HELM_CHART || env.K3S_HELM_CHART_DEFAULT }}
-          TAG: ${{ needs.build-push.outputs.image_tag }}
+          CONTAINER_NAME: ${{ vars.K8S_CONTAINER_NAME || 'algorycode-rent-service' }}
         run: |
           set -euo pipefail
           IMAGE="${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}"
-          helm upgrade --install "$RELEASE" "$CHART" \
-            --namespace "$NS" \
-            --create-namespace \
-            --kube-insecure-skip-tls-verify \
-            --set image.repository="$IMAGE" \
-            --set image.tag="$TAG" \
-            --set image.pullPolicy=Always
-          kubectl rollout restart deployment/"$RELEASE-${{ env.IMAGE_NAME }}" \
-            --namespace "$NS" \
-            --insecure-skip-tls-verify=true
+          NS="${{ env.K8S_NAMESPACE }}"
+          DEPLOY="${{ env.K8S_DEPLOYMENT }}"
+          kubectl --insecure-skip-tls-verify -n "$NS" set image \
+            "deployment/$DEPLOY" "$CONTAINER_NAME=${IMAGE}:${IMAGE_TAG}"
+          kubectl --insecure-skip-tls-verify -n "$NS" rollout status "deployment/$DEPLOY"
