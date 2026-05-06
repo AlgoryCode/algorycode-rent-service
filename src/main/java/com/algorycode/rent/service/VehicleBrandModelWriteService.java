@@ -33,7 +33,8 @@ public class VehicleBrandModelWriteService {
     VehicleBrand brand =
         vehicleBrandRepository
             .findById(brandId)
-            .orElseThrow(() -> new ResourceNotFoundException("Vehicle brand not found: " + brandId));
+            .orElseThrow(
+                () -> new ResourceNotFoundException("Vehicle brand not found: " + brandId));
     VehicleModel m = new VehicleModel();
     m.setBrand(brand);
     m.setName(name.trim());

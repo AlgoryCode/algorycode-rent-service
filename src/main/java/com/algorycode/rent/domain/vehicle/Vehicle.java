@@ -34,7 +34,7 @@ public class Vehicle extends AbstractAuditableLongEntity {
    * Silinmemiş kayıtlar arasında plaka benzersizliği serviste doğrulanır (yumuşak silinen plaka
    * yeniden kullanılabilir).
    */
-  @Column(length = 32)
+  @Column(length = 32, nullable = false)
   private String plate;
 
   @Column(name = "is_deleted", nullable = false)

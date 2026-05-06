@@ -41,6 +41,7 @@ class RentalRevenueEurTest {
   void baseRentalEur_multipliesDailyByInclusiveDays() {
     Rental r = new Rental();
     Vehicle v = new Vehicle();
+    v.setPlate("34 REV 1");
     v.setRentalDailyPrice(new BigDecimal("50.00"));
     r.setVehicle(v);
     r.setStartDate(LocalDate.of(2026, 1, 1));
@@ -57,6 +58,7 @@ class RentalRevenueEurTest {
 
     Rental nullPrice = new Rental();
     Vehicle v = new Vehicle();
+    v.setPlate("34 REV 2");
     v.setRentalDailyPrice(null);
     nullPrice.setVehicle(v);
     nullPrice.setStartDate(LocalDate.of(2026, 1, 1));
@@ -94,6 +96,7 @@ class RentalRevenueEurTest {
   void totalRentalRevenueEur_scalesToTwoDecimalsHalfUp() {
     Rental r = new Rental();
     Vehicle v = new Vehicle();
+    v.setPlate("34 REV 3");
     v.setRentalDailyPrice(new BigDecimal("33.33"));
     r.setVehicle(v);
     r.setStartDate(LocalDate.of(2026, 6, 1));

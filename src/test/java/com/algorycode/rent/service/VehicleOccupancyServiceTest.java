@@ -40,6 +40,7 @@ class VehicleOccupancyServiceTest {
     Long vid = 1L;
     Vehicle v = new Vehicle();
     v.setId(vid);
+    v.setPlate("34 OCC 1");
     when(vehicleRepository.findByIdAndDeletedFalse(vid)).thenReturn(Optional.of(v));
 
     Long rid = 1L;

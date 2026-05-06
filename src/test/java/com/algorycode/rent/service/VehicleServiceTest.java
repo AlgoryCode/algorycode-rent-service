@@ -4,8 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
@@ -23,8 +23,6 @@ import com.algorycode.rent.domain.rental.RentalStatus;
 import com.algorycode.rent.domain.request.RentalRequest;
 import com.algorycode.rent.domain.request.RentalRequestStatus;
 import com.algorycode.rent.domain.vehicle.Vehicle;
-import com.algorycode.rent.domain.vehicle.VehicleBrand;
-import com.algorycode.rent.domain.vehicle.VehicleModel;
 import com.algorycode.rent.domain.vehicle.VehicleStatus;
 import com.algorycode.rent.domain.vehicle.VehicleStatusDefinition;
 import com.algorycode.rent.logging.AuditLog;
@@ -115,6 +113,7 @@ class VehicleServiceTest {
     RentalTestFixtures.attachRentalStatus(r, RentalStatus.active);
     Vehicle rv = new Vehicle();
     rv.setId(vid);
+    rv.setPlate("34 RV 1");
     r.setVehicle(rv);
     CustomerSnapshot c = new CustomerSnapshot();
     c.setFullName("Ali");
@@ -160,6 +159,7 @@ class VehicleServiceTest {
     req.setEndDate(LocalDate.of(2026, 8, 11));
     Vehicle rv = new Vehicle();
     rv.setId(vid);
+    rv.setPlate("34 RV 2");
     req.setVehicle(rv);
 
     when(rentalRequestRepository.findPotentiallyBlockingRequestsForAvailability(
@@ -224,6 +224,7 @@ class VehicleServiceTest {
     RentalTestFixtures.attachRentalStatus(r, RentalStatus.active);
     Vehicle rv = new Vehicle();
     rv.setId(vid);
+    rv.setPlate("34 RV 3");
     r.setVehicle(rv);
     CustomerSnapshot c = new CustomerSnapshot();
     c.setFullName("Ali");
@@ -282,8 +283,7 @@ class VehicleServiceTest {
     var available = new VehicleStatusDefinition();
     available.setId(1L);
     available.setCode("available");
-    when(vehicleRepository.existsByPlateIgnoreCaseAndDeletedFalse("34 TEST 34"))
-        .thenReturn(false);
+    when(vehicleRepository.existsByPlateIgnoreCaseAndDeletedFalse("34 TEST 34")).thenReturn(false);
     when(vehicleStatusDefinitionRepository.findByCodeIgnoreCase("available"))
         .thenReturn(Optional.of(available));
     when(vehicleRepository.save(any(Vehicle.class)))

@@ -30,6 +30,7 @@ class RentalOptionLineResolutionTest {
     Long defId = 1L;
     Vehicle vehicle = new Vehicle();
     vehicle.setId(vehicleId);
+    vehicle.setPlate("34 OPT 1");
 
     VehicleOptionDefinition def = new VehicleOptionDefinition();
     def.setTitle("Bebek koltuğu");
@@ -57,6 +58,7 @@ class RentalOptionLineResolutionTest {
     Long defId = 1L;
     Vehicle vehicle = new Vehicle();
     vehicle.setId(vehicleId);
+    vehicle.setPlate("34 OPT 2");
     VehicleOptionDefinition def = new VehicleOptionDefinition();
     def.setTitle("X");
     def.setPrice(BigDecimal.ONE);
@@ -77,6 +79,7 @@ class RentalOptionLineResolutionTest {
   void resolve_usesRequestBodyWhenNoDefinitionId() {
     Vehicle vehicle = new Vehicle();
     vehicle.setId(1L);
+    vehicle.setPlate("34 OPT 3");
     RentalOptionRequest req =
         new RentalOptionRequest(null, null, "Serbest satır", "Açıklama", new BigDecimal("5"), "ic");
 
@@ -93,6 +96,7 @@ class RentalOptionLineResolutionTest {
   void resolve_throwsWhenManualTitleMissing() {
     Vehicle vehicle = new Vehicle();
     vehicle.setId(1L);
+    vehicle.setPlate("34 OPT 4");
     RentalOptionRequest req = new RentalOptionRequest(null, null, "  ", null, BigDecimal.ONE, null);
     assertThatThrownBy(
             () ->
@@ -127,6 +131,7 @@ class RentalOptionLineResolutionTest {
   void resolve_throwsWhenBothVehicleDefAndTemplate() {
     Vehicle vehicle = new Vehicle();
     vehicle.setId(1L);
+    vehicle.setPlate("34 OPT 5");
     RentalOptionRequest req = new RentalOptionRequest(1L, 1L, null, null, null, null);
     assertThatThrownBy(
             () ->

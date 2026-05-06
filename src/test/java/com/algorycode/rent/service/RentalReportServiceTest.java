@@ -117,6 +117,7 @@ class RentalReportServiceTest {
     RentalTestFixtures.attachRentalStatus(cancelled, RentalStatus.cancelled);
     cancelled.setVehicle(new Vehicle());
     cancelled.getVehicle().setId(1L);
+    cancelled.getVehicle().setPlate("34 OFF 1");
     cancelled.getVehicle().setRentalDailyPrice(BigDecimal.TEN);
     cancelled.setStartDate(from);
     cancelled.setEndDate(from);

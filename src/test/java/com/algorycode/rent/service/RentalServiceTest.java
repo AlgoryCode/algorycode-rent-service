@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -20,7 +21,6 @@ import com.algorycode.rent.domain.rental.RentalCommissionFlow;
 import com.algorycode.rent.domain.rental.RentalStatus;
 import com.algorycode.rent.domain.vehicle.Vehicle;
 import com.algorycode.rent.domain.vehicle.VehicleStatus;
-import com.algorycode.rent.domain.vehicle.VehicleStatusDefinition;
 import com.algorycode.rent.logging.AuditLog;
 import com.algorycode.rent.repository.RentalRepository;
 import com.algorycode.rent.repository.RentalStatusDefinitionRepository;
@@ -63,7 +63,8 @@ class RentalServiceTest {
 
   @BeforeEach
   void stubRentalStatusDefinitions() {
-    when(rentalStatusDefinitionRepository.findByCodeIgnoreCase(anyString()))
+    lenient()
+        .when(rentalStatusDefinitionRepository.findByCodeIgnoreCase(anyString()))
         .thenAnswer(
             invocation ->
                 Optional.of(RentalTestFixtures.rentalStatusDefinition(invocation.getArgument(0))));
@@ -256,13 +257,6 @@ class RentalServiceTest {
     Rental rental = sampleRental(1L);
     rental.setId(9L);
     when(rentalRepository.findById(9L)).thenReturn(Optional.of(rental));
-    when(rentalRepository.existsByVehicle_IdAndStatusDefinition_CodeInAndIdNot(
-            vehicleIdOf(rental),
-            List.of(RentalStatus.active.name(), RentalStatus.pending.name()),
-            rental.getId()))
-        .thenReturn(false);
-    when(vehicleStatusDefinitionRepository.findByCodeIgnoreCase("available"))
-        .thenReturn(Optional.of(statusDefinition("available")));
     when(rentalRepository.save(any(Rental.class)))
         .thenAnswer(invocation -> invocation.getArgument(0));
     when(objectStorageService.resolvePublicUrl(any()))
@@ -281,11 +275,6 @@ class RentalServiceTest {
     rental.setId(11L);
     RentalTestFixtures.attachRentalStatus(rental, RentalStatus.active);
     when(rentalRepository.findById(11L)).thenReturn(Optional.of(rental));
-    when(rentalRepository.existsByVehicle_IdAndStatusDefinition_CodeInAndIdNot(
-            vehicleIdOf(rental),
-            List.of(RentalStatus.active.name(), RentalStatus.pending.name()),
-            rental.getId()))
-        .thenReturn(false);
     when(objectStorageService.resolvePublicUrl(any()))
         .thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -302,13 +291,7 @@ class RentalServiceTest {
     rental.setId(21L);
     RentalTestFixtures.attachRentalStatus(rental, RentalStatus.active);
     when(rentalRepository.findById(21L)).thenReturn(Optional.of(rental));
-    when(rentalRepository.existsByVehicle_IdAndStatusDefinition_CodeInAndIdNot(
-            vehicleIdOf(rental),
-            List.of(RentalStatus.active.name(), RentalStatus.pending.name()),
-            rental.getId()))
-        .thenReturn(false);
-    when(vehicleStatusDefinitionRepository.findByCodeIgnoreCase("rented"))
-        .thenReturn(Optional.of(statusDefinition("rented")));
+    when(rentalRepository.findByVehicle_IdOrderByCreatedAtDesc(1L)).thenReturn(List.of());
     when(rentalRepository.save(any(Rental.class)))
         .thenAnswer(invocation -> invocation.getArgument(0));
     when(objectStorageService.resolvePublicUrl(any()))
@@ -372,15 +355,5 @@ class RentalServiceTest {
     rental.setCreatedAt(Instant.parse("2026-03-01T10:00:00Z"));
     rental.setUpdatedAt(Instant.parse("2026-03-01T10:00:00Z"));
     return rental;
-  }
-
-  private static VehicleStatusDefinition statusDefinition(String code) {
-    var definition = new VehicleStatusDefinition();
-    definition.setCode(code);
-    return definition;
-  }
-
-  private static Long vehicleIdOf(Rental rental) {
-    return rental.getVehicle() != null ? rental.getVehicle().getId() : null;
   }
 }

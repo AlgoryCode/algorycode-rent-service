@@ -12,6 +12,9 @@ public final class VehicleTestFixtures {
 
   public static void attachBrandModelStatus(
       Vehicle v, String brand, String model, VehicleStatus status) {
+    if (v.getPlate() == null || v.getPlate().isBlank()) {
+      v.setPlate("34 TEST 01");
+    }
     VehicleBrand b = new VehicleBrand();
     b.setName(brand);
     VehicleModel m = new VehicleModel();

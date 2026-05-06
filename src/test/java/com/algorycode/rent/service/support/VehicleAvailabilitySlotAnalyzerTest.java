@@ -89,6 +89,7 @@ class VehicleAvailabilitySlotAnalyzerTest {
     rr.setEndDate(LocalDate.of(2026, 8, 11));
     Vehicle rv = new Vehicle();
     rv.setId(vid);
+    rv.setPlate("34 AVA 1");
     rr.setVehicle(rv);
     boolean ok =
         analyzer.isAvailableForInclusiveTrip(
@@ -103,6 +104,7 @@ class VehicleAvailabilitySlotAnalyzerTest {
     RentalTestFixtures.attachRentalStatus(r, RentalStatus.active);
     Vehicle v = new Vehicle();
     v.setId(vehicleId);
+    v.setPlate("34 AVA 2");
     r.setVehicle(v);
     CustomerSnapshot c = new CustomerSnapshot();
     c.setFullName("Test");
