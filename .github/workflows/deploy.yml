@@ -1,21 +1,13 @@
-# Sadece Docker imaj? �retir ve registry'ye push eder. Da??t?m Argo CD ile yap?l?r ?
-# Argo taraf?nda image.tag'i bu pipeline'?n �retti?i k?sa SHA (veya latest) ile e?le?tirin.
+# main’e her push. Tek Docker etiketi: tam commit SHA’nın son 7 karakteri (${GITHUB_SHA: -7}), ör. ...b84fc5f.
+# Argo CD’de image.tag ile aynı değeri kullan.
 #
 # Secrets: DOCKERHUB_USERNAME, DOCKERHUB_TOKEN
-#
-# Push edilen etiketler: latest, ${GITHUB_SHA::7}, tam $GITHUB_SHA.
 
 name: Build and push Docker image
 
 on:
   push:
     branches: [main]
-    paths:
-      - "src/**"
-      - "pom.xml"
-      - "Dockerfile"
-      - ".dockerignore"
-      - ".github/workflows/deploy.yml"
   workflow_dispatch:
 
 concurrency:
@@ -32,11 +24,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Compute image tags from commit
+      - name: Image tag from commit (last 7 chars of SHA)
         run: |
-          SHORT_SHA="${GITHUB_SHA::7}"
-          echo "SHORT_SHA=$SHORT_SHA" >> "$GITHUB_ENV"
-          echo "Pushing tags: latest, ${SHORT_SHA}, ${GITHUB_SHA}"
+          IMAGE_TAG="${GITHUB_SHA: -7}"
+          echo "IMAGE_TAG=$IMAGE_TAG" >> "$GITHUB_ENV"
+          echo "Pushing single tag (suffix): ${IMAGE_TAG}"
 
       - name: Log in to Docker Hub
         uses: docker/login-action@v3
@@ -47,7 +39,5 @@ jobs:
       - name: Build and push
         run: |
           IMAGE="${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}"
-          docker build -t "${IMAGE}:${SHORT_SHA}" -t "${IMAGE}:${GITHUB_SHA}" -t "${IMAGE}:latest" .
-          docker push "${IMAGE}:${SHORT_SHA}"
-          docker push "${IMAGE}:${GITHUB_SHA}"
-          docker push "${IMAGE}:latest"
+          docker build -t "${IMAGE}:${IMAGE_TAG}" .
+          docker push "${IMAGE}:${IMAGE_TAG}"
