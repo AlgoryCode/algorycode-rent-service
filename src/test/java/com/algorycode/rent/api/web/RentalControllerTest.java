@@ -69,7 +69,7 @@ class RentalControllerTest {
             List.of(),
             List.of(),
             List.of());
-    when(rentalService.list(nullable(Long.class), eq(RentalStatus.pending), isNull(), isNull()))
+    when(rentalService.list(nullable(Long.class), eq("pending"), isNull(), isNull()))
         .thenReturn(List.of(dto));
 
     mockMvc
@@ -111,7 +111,7 @@ class RentalControllerTest {
             List.of(),
             List.of(),
             List.of());
-    when(rentalService.updateStatus(1L, RentalStatus.cancelled)).thenReturn(dto);
+    when(rentalService.updateStatus(1L, "cancelled")).thenReturn(dto);
 
     mockMvc
         .perform(
@@ -121,6 +121,6 @@ class RentalControllerTest {
         .andExpect(status().isOk())
         .andExpect(jsonPath("$.status").value("cancelled"));
 
-    verify(rentalService).updateStatus(1L, RentalStatus.cancelled);
+    verify(rentalService).updateStatus(1L, "cancelled");
   }
 }

@@ -25,6 +25,9 @@ import java.util.List;
 import java.util.UUID;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.BatchSize;
+import org.hibernate.annotations.Fetch;
+import org.hibernate.annotations.FetchMode;
 
 @Getter
 @Setter
@@ -87,6 +90,8 @@ public class Rental extends AbstractAuditableLongEntity {
   @Column(name = "net_amount", precision = 12, scale = 2)
   private BigDecimal netAmount;
 
+  @Fetch(FetchMode.SUBSELECT)
+  @BatchSize(size = 32)
   @OneToMany(mappedBy = "rental", cascade = CascadeType.ALL, orphanRemoval = true)
   private List<RentalAdditionalDriver> additionalDrivers = new ArrayList<>();
 
@@ -97,12 +102,18 @@ public class Rental extends AbstractAuditableLongEntity {
       fetch = FetchType.LAZY)
   private RentalFeedback feedback;
 
+  @Fetch(FetchMode.SUBSELECT)
+  @BatchSize(size = 32)
   @OneToMany(mappedBy = "rental", cascade = CascadeType.ALL, orphanRemoval = true)
   private List<RentalPhoto> photos = new ArrayList<>();
 
+  @Fetch(FetchMode.SUBSELECT)
+  @BatchSize(size = 32)
   @OneToMany(mappedBy = "rental", cascade = CascadeType.ALL, orphanRemoval = true)
   private List<AccidentReport> accidentReports = new ArrayList<>();
 
+  @Fetch(FetchMode.SUBSELECT)
+  @BatchSize(size = 32)
   @OneToMany(mappedBy = "rental", cascade = CascadeType.ALL, orphanRemoval = true)
   @OrderBy("lineOrder ASC")
   private List<RentalOption> options = new ArrayList<>();
@@ -111,7 +122,7 @@ public class Rental extends AbstractAuditableLongEntity {
     if (statusDefinition == null) {
       return RentalStatus.active;
     }
-    return RentalStatus.fromCode(statusDefinition.getCode());
+    return RentalStatus.fromDbCode(statusDefinition.getCode());
   }
 
   @PrePersist

@@ -1,6 +1,5 @@
 package com.algorycode.rent.api.dto;
 
-import com.algorycode.rent.domain.rental.RentalStatus;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Size;
@@ -15,7 +14,7 @@ public record UpdateRentalRequest(
     Long returnHandoverLocationId,
     @DecimalMin(value = "0", inclusive = true) BigDecimal discountAmount,
     @Size(max = 16) String discountType,
-    RentalStatus status,
+    @Size(max = 64) String status,
     @Valid CustomerBody customer,
     @Size(max = 100) List<@Valid RentalOptionRequest> options) {
 

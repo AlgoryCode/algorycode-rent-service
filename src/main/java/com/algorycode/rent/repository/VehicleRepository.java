@@ -19,6 +19,8 @@ public interface VehicleRepository extends JpaRepository<Vehicle, Long> {
         "statusDefinition",
         "vehicleModel",
         "vehicleModel.brand",
+        "transmissionTypeRef",
+        "bodyStyleRef",
         "defaultPickupHandoverLocation",
         "allowedReturnHandovers",
         "allowedReturnHandovers.handoverLocation"
@@ -30,6 +32,8 @@ public interface VehicleRepository extends JpaRepository<Vehicle, Long> {
         "statusDefinition",
         "vehicleModel",
         "vehicleModel.brand",
+        "transmissionTypeRef",
+        "bodyStyleRef",
         "defaultPickupHandoverLocation",
         "allowedReturnHandovers",
         "allowedReturnHandovers.handoverLocation"
@@ -40,11 +44,11 @@ public interface VehicleRepository extends JpaRepository<Vehicle, Long> {
 
   boolean existsByPlateIgnoreCaseAndDeletedFalseAndIdNot(String plate, Long id);
 
-  long countByBodyStyleCodeAndDeletedFalse(String bodyStyleCode);
+  long countByBodyStyleRef_IdAndDeletedFalse(Long bodyStyleId);
 
   long countByFuelTypeAndDeletedFalse(String fuelType);
 
-  long countByTransmissionTypeAndDeletedFalse(String transmissionType);
+  long countByTransmissionTypeRef_IdAndDeletedFalse(Long transmissionTypeId);
 
   long countByStatusDefinition_IdAndDeletedFalse(Long statusDefinitionId);
 

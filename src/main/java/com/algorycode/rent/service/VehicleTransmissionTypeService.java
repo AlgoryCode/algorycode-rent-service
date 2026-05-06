@@ -74,7 +74,7 @@ public class VehicleTransmissionTypeService implements VehicleCatalogCrudPort {
         vehicleTransmissionTypeRepository
             .findById(id)
             .orElseThrow(() -> new ResourceNotFoundException("Vites türü bulunamadı."));
-    long used = vehicleRepository.countByTransmissionTypeAndDeletedFalse(e.getCode());
+    long used = vehicleRepository.countByTransmissionTypeRef_IdAndDeletedFalse(e.getId());
     if (used > 0) {
       throw new ConflictException("Bu vites türü " + used + " araçta kullanılıyor; silinemez.");
     }

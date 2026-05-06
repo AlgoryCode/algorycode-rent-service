@@ -15,6 +15,7 @@ import com.algorycode.rent.domain.location.HandoverLocationKind;
 import com.algorycode.rent.domain.vehicle.Vehicle;
 import com.algorycode.rent.domain.vehicle.VehicleAllowedReturnHandover;
 import com.algorycode.rent.domain.vehicle.VehicleBodyStyle;
+import com.algorycode.rent.domain.vehicle.VehicleBodyStyleKind;
 import com.algorycode.rent.domain.vehicle.VehicleFuelType;
 import com.algorycode.rent.domain.vehicle.VehicleHighlight;
 import com.algorycode.rent.domain.vehicle.VehicleImage;
@@ -22,7 +23,9 @@ import com.algorycode.rent.domain.vehicle.VehicleImageSlot;
 import com.algorycode.rent.domain.vehicle.VehicleModel;
 import com.algorycode.rent.domain.vehicle.VehicleOptionDefinition;
 import com.algorycode.rent.domain.vehicle.VehicleOptionTemplate;
+import com.algorycode.rent.domain.vehicle.VehicleStatus;
 import com.algorycode.rent.domain.vehicle.VehicleStatusDefinition;
+import com.algorycode.rent.domain.vehicle.VehicleTransmissionKind;
 import com.algorycode.rent.domain.vehicle.VehicleTransmissionType;
 import com.algorycode.rent.logging.AuditLog;
 import com.algorycode.rent.repository.VehicleBodyStyleRepository;
@@ -71,6 +74,10 @@ public class VehicleService {
 
   private String message(String code) {
     return messageSource.getMessage(code, null, LocaleContextHolder.getLocale());
+  }
+
+  private String message(String code, Object... args) {
+    return messageSource.getMessage(code, args, LocaleContextHolder.getLocale());
   }
 
   @Transactional(readOnly = true)
@@ -125,16 +132,8 @@ public class VehicleService {
     Vehicle v = new Vehicle();
     v.setPlate(plate.isBlank() ? null : plate);
     v.setVehicleModel(resolveVehicleModelForCreate(req.vehicleModelId()));
-    VehicleStatusDefinition statusDef =
-        req.vehicleStatusId() != null
-            ? vehicleStatusDefinitionRepository
-                .findById(req.vehicleStatusId())
-                .orElseThrow(() -> new BadRequestException(message("vehicle.error.statusNotFound")))
-            : vehicleStatusDefinitionRepository
-                .findByCodeIgnoreCase("available")
-                .orElseThrow(
-                    () -> new BadRequestException(message("vehicle.error.defaultStatusMissing")));
-    v.setStatusDefinition(statusDef);
+    v.setStatusDefinition(
+        resolveVehicleStatusDefinition(req.vehicleStatusId(), req.vehicleStatus()));
     v.setYear(req.year());
     if (req.external() != null) {
       v.setExternal(req.external());
@@ -157,8 +156,8 @@ public class VehicleService {
     applyOptionalVehicleSpecs(v, req.engine(), req.seats(), req.luggage());
     v.setFuelType(resolveFuelTypeOrNull(req.fuelType()));
     v.setBodyColor(Text.trimOrNull(req.bodyColor()));
-    v.setTransmissionType(resolveTransmissionTypeOrNull(req.transmissionType()));
-    v.setBodyStyleCode(resolveBodyStyleCodeOrNull(req.bodyStyleCode()));
+    applyTransmissionForCreate(v, req.transmissionTypeId(), req.transmissionType());
+    applyBodyStyleForCreate(v, req.bodyStyleId(), req.bodyStyleCode());
     replaceVehicleHighlights(v, req.highlights());
     v = vehicleRepository.save(v);
 
@@ -220,6 +219,9 @@ public class VehicleService {
           vehicleStatusDefinitionRepository
               .findById(req.vehicleStatusId())
               .orElseThrow(() -> new BadRequestException(message("vehicle.error.statusNotFound"))));
+    } else if (req.vehicleStatus() != null && !req.vehicleStatus().isBlank()) {
+      v.setStatusDefinition(
+          requireVehicleStatusDefinition(parseVehicleStatusRequired(req.vehicleStatus())));
     }
     if (req.year() != null) v.setYear(req.year());
 
@@ -270,11 +272,25 @@ public class VehicleService {
     if (req.luggage() != null) {
       v.setLuggage(req.luggage());
     }
-    if (req.transmissionType() != null) {
-      v.setTransmissionType(resolveTransmissionTypeOrNull(req.transmissionType()));
+    if (req.transmissionTypeId() != null) {
+      v.setTransmissionTypeRef(requireTransmissionRowById(req.transmissionTypeId()));
+    } else if (req.transmissionType() != null) {
+      if (req.transmissionType().isBlank()) {
+        v.setTransmissionTypeRef(null);
+      } else {
+        VehicleTransmissionKind k = parseTransmissionKindRequired(req.transmissionType());
+        v.setTransmissionTypeRef(resolveTransmissionCatalogRow(k));
+      }
     }
-    if (req.bodyStyleCode() != null) {
-      v.setBodyStyleCode(resolveBodyStyleCodeOrNull(req.bodyStyleCode()));
+    if (req.bodyStyleId() != null) {
+      v.setBodyStyleRef(requireBodyStyleRowById(req.bodyStyleId()));
+    } else if (req.bodyStyleCode() != null) {
+      if (req.bodyStyleCode().isBlank()) {
+        v.setBodyStyleRef(null);
+      } else {
+        VehicleBodyStyleKind k = parseBodyStyleKindRequired(req.bodyStyleCode());
+        v.setBodyStyleRef(resolveBodyStyleCatalogRow(k));
+      }
     }
 
     if (req.defaultPickupHandoverLocationId() != null) {
@@ -456,14 +472,68 @@ public class VehicleService {
     }
   }
 
-  private String resolveBodyStyleCodeOrNull(String raw) {
-    String c = Text.trimOrNull(raw);
-    return c == null
-        ? null
-        : vehicleBodyStyleRepository
-            .findByCodeIgnoreCase(c)
-            .map(VehicleBodyStyle::getCode)
-            .orElseThrow(() -> new BadRequestException("Geçersiz araç türü: " + raw));
+  private void applyTransmissionForCreate(Vehicle v, Long id, String raw) {
+    if (id != null) {
+      v.setTransmissionTypeRef(requireTransmissionRowById(id));
+      return;
+    }
+    if (raw != null && !raw.isBlank()) {
+      VehicleTransmissionKind k = parseTransmissionKindRequired(raw);
+      v.setTransmissionTypeRef(resolveTransmissionCatalogRow(k));
+    }
+  }
+
+  private void applyBodyStyleForCreate(Vehicle v, Long id, String raw) {
+    if (id != null) {
+      v.setBodyStyleRef(requireBodyStyleRowById(id));
+      return;
+    }
+    if (raw != null && !raw.isBlank()) {
+      VehicleBodyStyleKind k = parseBodyStyleKindRequired(raw);
+      v.setBodyStyleRef(resolveBodyStyleCatalogRow(k));
+    }
+  }
+
+  private VehicleTransmissionType requireTransmissionRowById(Long id) {
+    return vehicleTransmissionTypeRepository
+        .findById(id)
+        .orElseThrow(() -> new BadRequestException(message("vehicle.error.transmissionNotFound")));
+  }
+
+  private VehicleBodyStyle requireBodyStyleRowById(Long id) {
+    return vehicleBodyStyleRepository
+        .findById(id)
+        .orElseThrow(() -> new BadRequestException(message("vehicle.error.bodyStyleNotFound")));
+  }
+
+  private VehicleTransmissionType resolveTransmissionCatalogRow(VehicleTransmissionKind k) {
+    return vehicleTransmissionTypeRepository
+        .findById(k.getStableId())
+        .or(() -> vehicleTransmissionTypeRepository.findByCodeIgnoreCase(k.persistenceCode()))
+        .orElseThrow(() -> new BadRequestException(message("vehicle.error.transmissionNotFound")));
+  }
+
+  private VehicleBodyStyle resolveBodyStyleCatalogRow(VehicleBodyStyleKind k) {
+    return vehicleBodyStyleRepository
+        .findById(k.getStableId())
+        .or(() -> vehicleBodyStyleRepository.findByCodeIgnoreCase(k.persistenceCode()))
+        .orElseThrow(() -> new BadRequestException(message("vehicle.error.bodyStyleNotFound")));
+  }
+
+  private VehicleTransmissionKind parseTransmissionKindRequired(String raw) {
+    try {
+      return VehicleTransmissionKind.parseRequired(raw);
+    } catch (IllegalArgumentException ex) {
+      throw new BadRequestException(message("vehicle.error.invalidTransmissionType", raw));
+    }
+  }
+
+  private VehicleBodyStyleKind parseBodyStyleKindRequired(String raw) {
+    try {
+      return VehicleBodyStyleKind.parseRequired(raw);
+    } catch (IllegalArgumentException ex) {
+      throw new BadRequestException(message("vehicle.error.invalidBodyStyle", raw));
+    }
   }
 
   private String resolveFuelTypeOrNull(String raw) {
@@ -474,16 +544,6 @@ public class VehicleService {
             .findByCodeIgnoreCase(t)
             .map(VehicleFuelType::getCode)
             .orElseThrow(() -> new BadRequestException("Geçersiz yakıt türü: " + raw));
-  }
-
-  private String resolveTransmissionTypeOrNull(String raw) {
-    String t = Text.trimOrNull(raw);
-    return t == null
-        ? null
-        : vehicleTransmissionTypeRepository
-            .findByCodeIgnoreCase(t)
-            .map(VehicleTransmissionType::getCode)
-            .orElseThrow(() -> new BadRequestException("Geçersiz vites türü: " + raw));
   }
 
   private void applyOptionalVehicleSpecs(Vehicle v, String engine, Integer seats, Integer luggage) {
@@ -538,13 +598,10 @@ public class VehicleService {
             .toList();
     HandoverLocationRefDto firstReturn = returnRefs.isEmpty() ? null : returnRefs.get(0);
 
-    String bodyStyleLabel =
-        v.getBodyStyleCode() == null || v.getBodyStyleCode().isBlank()
-            ? null
-            : vehicleBodyStyleRepository
-                .findByCodeIgnoreCase(v.getBodyStyleCode().trim())
-                .map(VehicleBodyStyle::getLabelTr)
-                .orElse(null);
+    String bodyStyleLabel = v.getBodyStyleRef() != null ? v.getBodyStyleRef().getLabelTr() : null;
+    Long transmissionTypeId =
+        v.getTransmissionTypeRef() != null ? v.getTransmissionTypeRef().getId() : null;
+    Long bodyStyleId = v.getBodyStyleRef() != null ? v.getBodyStyleRef().getId() : null;
 
     String statusCode =
         v.getStatusDefinition().getCode() == null || v.getStatusDefinition().getCode().isBlank()
@@ -557,6 +614,8 @@ public class VehicleService {
         v.getId(),
         modelId,
         v.getStatusDefinition().getId(),
+        transmissionTypeId,
+        bodyStyleId,
         v.getPlate(),
         v.getBrand(),
         v.getModel(),
@@ -576,7 +635,7 @@ public class VehicleService {
         v.getBodyColor(),
         v.getSeats(),
         v.getLuggage(),
-        v.getTransmissionType(),
+        v.getTransmissionTypeCode(),
         v.getBodyStyleCode(),
         bodyStyleLabel,
         HandoverLocationMapper.toRef(v.getDefaultPickupHandoverLocation()),
@@ -589,5 +648,36 @@ public class VehicleService {
             .toList(),
         Map.copyOf(images),
         fleetSnapshotForResponse(v));
+  }
+
+  private VehicleStatusDefinition resolveVehicleStatusDefinition(
+      Long vehicleStatusId, String vehicleStatusRaw) {
+    if (vehicleStatusId != null) {
+      return vehicleStatusDefinitionRepository
+          .findById(vehicleStatusId)
+          .orElseThrow(() -> new BadRequestException(message("vehicle.error.statusNotFound")));
+    }
+    if (vehicleStatusRaw != null && !vehicleStatusRaw.isBlank()) {
+      return requireVehicleStatusDefinition(parseVehicleStatusRequired(vehicleStatusRaw));
+    }
+    return requireVehicleStatusDefinition(VehicleStatus.active);
+  }
+
+  private VehicleStatusDefinition requireVehicleStatusDefinition(VehicleStatus status) {
+    for (String code : status.dbLookupCodes()) {
+      var row = vehicleStatusDefinitionRepository.findByCodeIgnoreCase(code);
+      if (row.isPresent()) {
+        return row.get();
+      }
+    }
+    throw new BadRequestException(message("vehicle.error.defaultStatusMissing"));
+  }
+
+  private VehicleStatus parseVehicleStatusRequired(String raw) {
+    try {
+      return VehicleStatus.parseRequired(raw);
+    } catch (IllegalArgumentException ex) {
+      throw new BadRequestException(message("vehicle.error.invalidStatus", raw));
+    }
   }
 }

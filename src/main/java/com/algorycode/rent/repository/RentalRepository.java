@@ -34,9 +34,19 @@ public interface RentalRepository
   boolean existsByVehicle_IdAndStatusDefinition_CodeInAndIdNot(
       Long vehicleId, Collection<String> codes, Long id);
 
-  @EntityGraph(attributePaths = {"vehicle", "statusDefinition", "options"})
+  @EntityGraph(
+      attributePaths = {
+        "statusDefinition",
+        "vehicle",
+        "vehicle.statusDefinition",
+        "vehicle.vehicleModel",
+        "vehicle.vehicleModel.brand",
+        "pickupHandoverLocation",
+        "returnHandoverLocation",
+        "feedback"
+      })
   @Query("select r from Rental r where r.id = :id")
-  Optional<Rental> findByIdWithVehicleAndOptions(@Param("id") Long id);
+  Optional<Rental> findDetailById(@Param("id") Long id);
 
   @Query(
       """

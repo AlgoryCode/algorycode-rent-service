@@ -19,10 +19,13 @@ spring:
     username: postgres
     password: algorycode1.
     driver-class-name: org.postgresql.Driver
+  flyway:
+    enabled: false
+    locations: classpath:db/migration
   jpa:
     show-sql: false
     hibernate:
-      ddl-auto: update
+      ddl-auto: none
     open-in-view: false
     properties:
       hibernate:

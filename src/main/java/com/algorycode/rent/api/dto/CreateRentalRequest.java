@@ -1,6 +1,5 @@
 package com.algorycode.rent.api.dto;
 
-import com.algorycode.rent.domain.rental.RentalStatus;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -19,7 +18,7 @@ public record CreateRentalRequest(
     Long returnHandoverLocationId,
     @NotNull @Valid CustomerBody customer,
     @Size(max = 1) List<@Valid AdditionalDriverBody> additionalDrivers,
-    RentalStatus status,
+    @Size(max = 64) String status,
     @Size(max = 100) List<@Valid RentalOptionRequest> options) {
 
   public record CustomerBody(

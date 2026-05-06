@@ -39,11 +39,16 @@ public final class VehicleMapper {
             ? v.getStatus().name()
             : v.getStatusDefinition().getCode().trim().toLowerCase(Locale.ROOT);
     Long modelId = v.getVehicleModel() != null ? v.getVehicleModel().getId() : null;
+    Long transmissionTypeId =
+        v.getTransmissionTypeRef() != null ? v.getTransmissionTypeRef().getId() : null;
+    Long bodyStyleId = v.getBodyStyleRef() != null ? v.getBodyStyleRef().getId() : null;
 
     return new VehicleDto(
         v.getId(),
         modelId,
         v.getStatusDefinition().getId(),
+        transmissionTypeId,
+        bodyStyleId,
         v.getPlate(),
         v.getBrand(),
         v.getModel(),
@@ -63,9 +68,9 @@ public final class VehicleMapper {
         v.getBodyColor(),
         v.getSeats(),
         v.getLuggage(),
-        v.getTransmissionType(),
+        v.getTransmissionTypeCode(),
         v.getBodyStyleCode(),
-        null,
+        v.getBodyStyleRef() != null ? v.getBodyStyleRef().getLabelTr() : null,
         HandoverLocationMapper.toRef(v.getDefaultPickupHandoverLocation()),
         firstReturn,
         returnRefs,

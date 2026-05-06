@@ -1,6 +1,6 @@
 package com.algorycode.rent.api.dto;
 
-import com.algorycode.rent.domain.rental.RentalStatus;
-import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Size;
 
-public record UpdateRentalStatusRequest(@NotNull RentalStatus status) {}
+public record UpdateRentalStatusRequest(@NotBlank @Size(max = 64) String status) {}

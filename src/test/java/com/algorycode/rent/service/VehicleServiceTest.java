@@ -4,8 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
@@ -280,13 +280,12 @@ class VehicleServiceTest {
 
   @Test
   void create_whenVehicleModelIdMissing_savesWithoutModel() {
-    var available = new VehicleStatusDefinition();
-    available.setId(1L);
-    available.setCode("available");
-    when(vehicleRepository.existsByPlateIgnoreCaseAndDeletedFalse("34 TEST 34"))
-        .thenReturn(false);
-    when(vehicleStatusDefinitionRepository.findByCodeIgnoreCase("available"))
-        .thenReturn(Optional.of(available));
+    var activeRow = new VehicleStatusDefinition();
+    activeRow.setId(1L);
+    activeRow.setCode("active");
+    when(vehicleRepository.existsByPlateIgnoreCaseAndDeletedFalse("34 TEST 34")).thenReturn(false);
+    when(vehicleStatusDefinitionRepository.findByCodeIgnoreCase("active"))
+        .thenReturn(Optional.of(activeRow));
     when(vehicleRepository.save(any(Vehicle.class)))
         .thenAnswer(
             invocation -> {
@@ -313,7 +312,7 @@ class VehicleServiceTest {
     var v = new Vehicle();
     v.setId(301L);
     v.setPlate("34 ABC 101");
-    VehicleTestFixtures.attachBrandModelStatus(v, "Toyota", "Corolla", VehicleStatus.available);
+    VehicleTestFixtures.attachBrandModelStatus(v, "Toyota", "Corolla", VehicleStatus.active);
     v.setYear(2023);
     v.setCreatedAt(Instant.parse("2026-01-01T00:00:00Z"));
     v.setUpdatedAt(Instant.parse("2026-01-01T00:00:00Z"));

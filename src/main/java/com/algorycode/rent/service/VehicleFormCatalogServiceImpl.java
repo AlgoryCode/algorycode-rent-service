@@ -19,9 +19,6 @@ import org.springframework.transaction.annotation.Transactional;
 public class VehicleFormCatalogServiceImpl implements VehicleFormCatalogService {
 
   private final VehicleBrandRepository vehicleBrandRepository;
-  private final VehicleFuelTypeService vehicleFuelTypeService;
-  private final VehicleTransmissionTypeService vehicleTransmissionTypeService;
-  private final VehicleBodyStyleService vehicleBodyStyleService;
   private final VehicleStatusDefinitionRepository vehicleStatusDefinitionRepository;
   private final CountryService countryService;
   private final HandoverLocationService handoverLocationService;
@@ -61,9 +58,6 @@ public class VehicleFormCatalogServiceImpl implements VehicleFormCatalogService 
 
     return new VehicleFormCatalogDto(
         brands,
-        vehicleFuelTypeService.listAll(),
-        vehicleTransmissionTypeService.listAll(),
-        vehicleBodyStyleService.listAll(),
         statuses,
         countryService.listAll(),
         pickups,

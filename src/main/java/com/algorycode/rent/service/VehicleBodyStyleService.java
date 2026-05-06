@@ -73,7 +73,7 @@ public class VehicleBodyStyleService implements VehicleCatalogCrudPort {
         vehicleBodyStyleRepository
             .findById(id)
             .orElseThrow(() -> new ResourceNotFoundException("Araç türü bulunamadı."));
-    long used = vehicleRepository.countByBodyStyleCodeAndDeletedFalse(e.getCode());
+    long used = vehicleRepository.countByBodyStyleRef_IdAndDeletedFalse(e.getId());
     if (used > 0) {
       throw new ConflictException("Bu araç türü " + used + " araçta kullanılıyor; silinemez.");
     }

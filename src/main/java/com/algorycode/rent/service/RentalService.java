@@ -37,6 +37,8 @@ import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.MessageSource;
+import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -53,11 +55,16 @@ public class RentalService {
   private final VehicleOptionDefinitionRepository vehicleOptionDefinitionRepository;
   private final ReservationExtraOptionTemplateRepository reservationExtraOptionTemplateRepository;
   private final AuditLog auditLog;
+  private final MessageSource messageSource;
 
   @Transactional(readOnly = true)
   public List<RentalDto> list(
-      Long vehicleId, RentalStatus status, LocalDate startDate, LocalDate endDate) {
+      Long vehicleId, String statusRaw, LocalDate startDate, LocalDate endDate) {
     DateRangeValidator.requireEndNotBeforeStartIfBothPresent(startDate, endDate);
+    RentalStatus status = null;
+    if (statusRaw != null && !statusRaw.isBlank()) {
+      status = parseRentalStatusRequired(statusRaw);
+    }
 
     List<Rental> base = findRentalsForListFilter(vehicleId, status);
 
@@ -71,7 +78,7 @@ public class RentalService {
   public RentalDto getById(Long id) {
     var r =
         rentalRepository
-            .findByIdWithVehicleAndOptions(id)
+            .findDetailById(id)
             .orElseThrow(() -> new ResourceNotFoundException("Rental not found: " + id));
     return RentalMapper.toDto(r, objectStorageService::resolvePublicUrl);
   }
@@ -92,7 +99,10 @@ public class RentalService {
             req.startDate(), req.endDate(), vehicle.getRentalDailyPrice());
     var commissionSnap = RentalCommissionFromVehicle.deriveSnapshot(vehicle, draftBase);
     RentalCommissionFromVehicle.validateDerivedOrThrow(commissionSnap);
-    RentalStatus status = req.status() != null ? req.status() : RentalStatus.active;
+    RentalStatus status =
+        (req.status() != null && !req.status().isBlank())
+            ? parseRentalStatusRequired(req.status())
+            : RentalStatus.active;
     List<Rental> sameVehicle =
         rentalRepository.findByVehicle_IdOrderByCreatedAtDesc(req.vehicleId());
     ensureNoOverlap(sameVehicle, req.startDate(), req.endDate(), null);
@@ -158,7 +168,8 @@ public class RentalService {
   }
 
   @Transactional
-  public RentalDto updateStatus(Long id, RentalStatus status) {
+  public RentalDto updateStatus(Long id, String statusRaw) {
+    RentalStatus status = parseRentalStatusRequired(statusRaw);
     Rental rental =
         rentalRepository
             .findById(id)
@@ -191,7 +202,10 @@ public class RentalService {
     LocalDate nextEnd = req.endDate() != null ? req.endDate() : rental.getEndDate();
     DateRangeValidator.requireEndNotBeforeStart(nextStart, nextEnd);
 
-    RentalStatus nextStatus = req.status() != null ? req.status() : rental.getStatus();
+    RentalStatus nextStatus =
+        (req.status() != null && !req.status().isBlank())
+            ? parseRentalStatusRequired(req.status())
+            : rental.getStatus();
 
     if (nextStatus != RentalStatus.cancelled) {
       List<Rental> sameVehicle =
@@ -279,13 +293,14 @@ public class RentalService {
   private List<Rental> findRentalsForListFilter(Long vehicleId, RentalStatus status) {
     if (vehicleId != null && status != null) {
       return rentalRepository.findByVehicle_IdAndStatusDefinition_CodeOrderByCreatedAtDesc(
-          vehicleId, status.name());
+          vehicleId, status.persistenceCode());
     }
     if (vehicleId != null) {
       return rentalRepository.findByVehicle_IdOrderByCreatedAtDesc(vehicleId);
     }
     if (status != null) {
-      return rentalRepository.findByStatusDefinition_CodeOrderByCreatedAtDesc(status.name());
+      return rentalRepository.findByStatusDefinition_CodeOrderByCreatedAtDesc(
+          status.persistenceCode());
     }
     return rentalRepository.findAllByOrderByCreatedAtDesc();
   }
@@ -461,8 +476,26 @@ public class RentalService {
   }
 
   private RentalStatusDefinition requireRentalStatusDefinition(RentalStatus status) {
-    return rentalStatusDefinitionRepository
-        .findByCodeIgnoreCase(status.name())
-        .orElseThrow(() -> new BadRequestException("Kiralama durumu bulunamadı: " + status));
+    for (String code : status.dbLookupCodes()) {
+      var row = rentalStatusDefinitionRepository.findByCodeIgnoreCase(code);
+      if (row.isPresent()) {
+        return row.get();
+      }
+    }
+    throw new BadRequestException(
+        messageSource.getMessage(
+            "rental.error.statusNotFound",
+            new Object[] {status.persistenceCode()},
+            LocaleContextHolder.getLocale()));
+  }
+
+  private RentalStatus parseRentalStatusRequired(String raw) {
+    try {
+      return RentalStatus.parseRequired(raw);
+    } catch (IllegalArgumentException ex) {
+      throw new BadRequestException(
+          messageSource.getMessage(
+              "rental.error.invalidStatus", new Object[] {raw}, LocaleContextHolder.getLocale()));
+    }
   }
 }

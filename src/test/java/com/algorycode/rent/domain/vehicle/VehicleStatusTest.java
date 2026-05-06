@@ -7,13 +7,21 @@ import org.junit.jupiter.api.Test;
 class VehicleStatusTest {
 
   @Test
-  void fromCode_whenUnknownCode_thenReturnsAvailable() {
-    assertThat(VehicleStatus.fromCode("custom_status")).isEqualTo(VehicleStatus.available);
+  void fromDbCode_whenUnknownCode_thenReturnsActive() {
+    assertThat(VehicleStatus.fromDbCode("custom_status")).isEqualTo(VehicleStatus.active);
   }
 
   @Test
-  void fromCode_whenKnownCode_thenReturnsMatchingEnum() {
-    assertThat(VehicleStatus.fromCode("MAINTENANCE")).isEqualTo(VehicleStatus.maintenance);
-    assertThat(VehicleStatus.fromCode("rented")).isEqualTo(VehicleStatus.rented);
+  void fromDbCode_whenKnownCode_thenReturnsMatchingEnum() {
+    assertThat(VehicleStatus.fromDbCode("MAINTENANCE")).isEqualTo(VehicleStatus.maintenance);
+    assertThat(VehicleStatus.fromDbCode("rented")).isEqualTo(VehicleStatus.rented);
+    assertThat(VehicleStatus.fromDbCode("available")).isEqualTo(VehicleStatus.active);
+  }
+
+  @Test
+  void tryParse_acceptsFeAliases() {
+    assertThat(VehicleStatus.tryParse("Active")).contains(VehicleStatus.active);
+    assertThat(VehicleStatus.tryParse("Tamirde")).contains(VehicleStatus.maintenance);
+    assertThat(VehicleStatus.tryParse("pending")).contains(VehicleStatus.pending);
   }
 }

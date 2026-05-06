@@ -46,7 +46,7 @@ public class FeFleetSnapshotBuilder {
     root.put("category", categoryLabel(v));
     root.put("statusCode", feStatusCode(v));
     root.set("specs", specsArray(v, f));
-    root.put("transmission", feTransmission(v.getTransmissionType()));
+    root.put("transmission", feTransmission(v.getTransmissionTypeCode()));
     root.put("seats", v.getSeats() != null && v.getSeats() > 0 ? v.getSeats() : 5);
     root.put("fuel", feFuel(v.getFuelType()));
     root.put("year", v.getYear() != null ? v.getYear() : 2024);

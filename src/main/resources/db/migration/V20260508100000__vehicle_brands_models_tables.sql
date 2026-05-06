@@ -1,0 +1,12 @@
+CREATE TABLE IF NOT EXISTS vehicle_brands (
+    id BIGSERIAL PRIMARY KEY,
+    name VARCHAR(255) NOT NULL,
+    sort_order INTEGER NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS vehicle_models (
+    id BIGSERIAL PRIMARY KEY,
+    brand_id BIGINT NOT NULL REFERENCES vehicle_brands (id) ON DELETE CASCADE,
+    name VARCHAR(255) NOT NULL,
+    sort_order INTEGER NOT NULL
+);

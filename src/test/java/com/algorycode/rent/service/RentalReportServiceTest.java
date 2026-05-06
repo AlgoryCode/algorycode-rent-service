@@ -76,7 +76,7 @@ class RentalReportServiceTest {
     Vehicle v = new Vehicle();
     v.setId(vehicleId);
     v.setPlate("34 X 1");
-    VehicleTestFixtures.attachBrandModelStatus(v, "Test", "Car", VehicleStatus.available);
+    VehicleTestFixtures.attachBrandModelStatus(v, "Test", "Car", VehicleStatus.active);
     v.setRentalDailyPrice(new BigDecimal("100.00"));
 
     RentalOption opt = new RentalOption();

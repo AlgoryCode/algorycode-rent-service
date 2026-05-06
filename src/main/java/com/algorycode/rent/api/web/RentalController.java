@@ -4,7 +4,6 @@ import com.algorycode.rent.api.dto.CreateRentalRequest;
 import com.algorycode.rent.api.dto.RentalDto;
 import com.algorycode.rent.api.dto.UpdateRentalRequest;
 import com.algorycode.rent.api.dto.UpdateRentalStatusRequest;
-import com.algorycode.rent.domain.rental.RentalStatus;
 import com.algorycode.rent.service.RentalService;
 import jakarta.validation.Valid;
 import java.time.LocalDate;
@@ -29,7 +28,7 @@ public class RentalController {
   @GetMapping
   public List<RentalDto> list(
       @RequestParam(required = false) Long vehicleId,
-      @RequestParam(required = false) RentalStatus status,
+      @RequestParam(required = false) String status,
       @RequestParam(required = false) LocalDate startDate,
       @RequestParam(required = false) LocalDate endDate) {
     return rentalService.list(vehicleId, status, startDate, endDate);

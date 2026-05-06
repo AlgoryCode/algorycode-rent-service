@@ -10,6 +10,7 @@ public record UpdateVehicleRequest(
     @Size(max = 32) String plate,
     Long vehicleModelId,
     Long vehicleStatusId,
+    @Size(max = 64) String vehicleStatus,
     Integer year,
     Boolean external,
     @Size(max = 255) String externalCompany,
@@ -33,6 +34,8 @@ public record UpdateVehicleRequest(
     @Size(max = 64) String bodyColor,
     Integer seats,
     Integer luggage,
+    Long transmissionTypeId,
+    Long bodyStyleId,
     @Size(max = 32) String transmissionType,
     @Size(max = 32) String bodyStyleCode,
     /**

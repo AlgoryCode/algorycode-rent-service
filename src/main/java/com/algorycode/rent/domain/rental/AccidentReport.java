@@ -16,6 +16,9 @@ import java.util.ArrayList;
 import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.BatchSize;
+import org.hibernate.annotations.Fetch;
+import org.hibernate.annotations.FetchMode;
 
 @Getter
 @Setter
@@ -36,6 +39,8 @@ public class AccidentReport extends AbstractAuditableLongEntity {
   @Column(nullable = false, length = 4000)
   private String description;
 
+  @Fetch(FetchMode.SUBSELECT)
+  @BatchSize(size = 32)
   @OneToMany(mappedBy = "accidentReport", cascade = CascadeType.ALL, orphanRemoval = true)
   private List<AccidentPhoto> photos = new ArrayList<>();
 

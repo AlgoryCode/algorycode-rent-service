@@ -18,6 +18,9 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
 import lombok.*;
+import org.hibernate.annotations.BatchSize;
+import org.hibernate.annotations.Fetch;
+import org.hibernate.annotations.FetchMode;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
@@ -109,22 +112,27 @@ public class Vehicle extends AbstractAuditableLongEntity {
   @Column(name = "luggage")
   private Integer luggage;
 
-  /** Örn. {@code otomatik}, {@code manuel} (panel / arama ile uyumlu). */
-  @Column(name = "transmission_type", length = 32)
-  private String transmissionType;
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "transmission_type_id")
+  private VehicleTransmissionType transmissionTypeRef;
 
-  /** {@link VehicleBodyStyle#getCode()} — referans tablo. */
-  @Column(name = "body_style_code", length = 32)
-  private String bodyStyleCode;
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "body_style_id")
+  private VehicleBodyStyle bodyStyleRef;
 
+  @Fetch(FetchMode.SUBSELECT)
+  @BatchSize(size = 32)
   @OneToMany(mappedBy = "vehicle", cascade = CascadeType.ALL, orphanRemoval = true)
   private List<VehicleImage> images = new ArrayList<>();
 
+  @Fetch(FetchMode.SUBSELECT)
+  @BatchSize(size = 32)
   @OneToMany(mappedBy = "vehicle", cascade = CascadeType.ALL, orphanRemoval = true)
   @OrderBy("lineOrder ASC, title ASC")
   private List<VehicleOptionDefinition> optionDefinitions = new ArrayList<>();
 
-  /** Öne çıkanlar (acente kaydında opsiyonel; sıra line_order). */
+  @Fetch(FetchMode.SUBSELECT)
+  @BatchSize(size = 32)
   @OneToMany(mappedBy = "vehicle", cascade = CascadeType.ALL, orphanRemoval = true)
   @OrderBy("lineOrder ASC")
   private List<VehicleHighlight> highlights = new ArrayList<>();
@@ -138,7 +146,15 @@ public class Vehicle extends AbstractAuditableLongEntity {
   private JsonNode feFleetSnapshot;
 
   public VehicleStatus getStatus() {
-    return VehicleStatus.fromCode(statusDefinition.getCode());
+    return VehicleStatus.fromDbCode(statusDefinition.getCode());
+  }
+
+  public String getTransmissionTypeCode() {
+    return transmissionTypeRef == null ? null : transmissionTypeRef.getCode();
+  }
+
+  public String getBodyStyleCode() {
+    return bodyStyleRef == null ? null : bodyStyleRef.getCode();
   }
 
   public String getBrand() {

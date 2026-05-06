@@ -35,6 +35,7 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -43,6 +44,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.MessageSource;
 
 @ExtendWith(MockitoExtension.class)
 class RentalServiceTest {
@@ -58,11 +60,15 @@ class RentalServiceTest {
   @Mock private RentalStatusDefinitionRepository rentalStatusDefinitionRepository;
   @Mock private FeFleetSnapshotBuilder feFleetSnapshotBuilder;
   @Mock private AuditLog auditLog;
+  @Mock private MessageSource messageSource;
 
   @InjectMocks private RentalService rentalService;
 
   @BeforeEach
   void stubRentalStatusDefinitions() {
+    lenient()
+        .when(messageSource.getMessage(anyString(), any(), any(Locale.class)))
+        .thenAnswer(invocation -> invocation.getArgument(0));
     lenient()
         .when(rentalStatusDefinitionRepository.findByCodeIgnoreCase(anyString()))
         .thenAnswer(
@@ -94,7 +100,7 @@ class RentalServiceTest {
     when(rentalRepository.findByStatusDefinition_CodeOrderByCreatedAtDesc("pending"))
         .thenReturn(List.of());
 
-    rentalService.list(null, RentalStatus.pending, null, null);
+    rentalService.list(null, "pending", null, null);
 
     verify(rentalRepository).findByStatusDefinition_CodeOrderByCreatedAtDesc("pending");
   }
@@ -106,7 +112,7 @@ class RentalServiceTest {
             vid, "active"))
         .thenReturn(List.of(sampleRental(vid)));
 
-    var rows = rentalService.list(vid, RentalStatus.active, null, null);
+    var rows = rentalService.list(vid, "active", null, null);
 
     assertThat(rows).hasSize(1);
     assertThat(rows.getFirst().status()).isEqualTo(RentalStatus.active);
@@ -119,7 +125,7 @@ class RentalServiceTest {
     var id = 1L;
     var r = sampleRental(1L);
     r.setId(id);
-    when(rentalRepository.findByIdWithVehicleAndOptions(id)).thenReturn(Optional.of(r));
+    when(rentalRepository.findDetailById(id)).thenReturn(Optional.of(r));
 
     var dto = rentalService.getById(id);
 
@@ -130,7 +136,7 @@ class RentalServiceTest {
   @Test
   void getById_throwsWhenMissing() {
     var id = 1L;
-    when(rentalRepository.findByIdWithVehicleAndOptions(id)).thenReturn(Optional.empty());
+    when(rentalRepository.findDetailById(id)).thenReturn(Optional.empty());
 
     assertThatThrownBy(() -> rentalService.getById(id))
         .isInstanceOf(ResourceNotFoundException.class)
@@ -159,8 +165,7 @@ class RentalServiceTest {
     Vehicle vehicle = new Vehicle();
     vehicle.setId(vehicleId);
     vehicle.setPlate("34 T 1");
-    VehicleTestFixtures.attachBrandModelStatus(
-        vehicle, "Toyota", "Corolla", VehicleStatus.available);
+    VehicleTestFixtures.attachBrandModelStatus(vehicle, "Toyota", "Corolla", VehicleStatus.active);
     vehicle.setYear(2023);
     vehicle.setDefaultPickupHandoverLocation(oldDefaultPickup);
     vehicle.setCreatedAt(Instant.now());
@@ -195,8 +200,7 @@ class RentalServiceTest {
         .thenAnswer(invocation -> invocation.getArgument(0));
 
     UpdateRentalRequest req =
-        new UpdateRentalRequest(
-            null, null, null, null, null, null, RentalStatus.completed, null, null);
+        new UpdateRentalRequest(null, null, null, null, null, null, "completed", null, null);
 
     rentalService.update(rentalId, req);
 
@@ -212,7 +216,7 @@ class RentalServiceTest {
     Vehicle vehicle = new Vehicle();
     vehicle.setId(vehicleId);
     vehicle.setPlate("06 A 2");
-    VehicleTestFixtures.attachBrandModelStatus(vehicle, "VW", "Polo", VehicleStatus.available);
+    VehicleTestFixtures.attachBrandModelStatus(vehicle, "VW", "Polo", VehicleStatus.active);
     vehicle.setYear(2021);
     vehicle.setCreatedAt(Instant.now());
     vehicle.setUpdatedAt(Instant.now());
@@ -246,8 +250,7 @@ class RentalServiceTest {
 
     rentalService.update(
         rentalId,
-        new UpdateRentalRequest(
-            null, null, null, null, null, null, RentalStatus.completed, null, null));
+        new UpdateRentalRequest(null, null, null, null, null, null, "completed", null, null));
 
     verify(vehicleRepository, never()).save(any());
   }
@@ -262,7 +265,7 @@ class RentalServiceTest {
     when(objectStorageService.resolvePublicUrl(any()))
         .thenAnswer(invocation -> invocation.getArgument(0));
 
-    var dto = rentalService.updateStatus(9L, RentalStatus.cancelled);
+    var dto = rentalService.updateStatus(9L, "cancelled");
 
     assertThat(dto.status()).isEqualTo(RentalStatus.cancelled);
     verify(rentalRepository).save(any(Rental.class));
@@ -278,7 +281,7 @@ class RentalServiceTest {
     when(objectStorageService.resolvePublicUrl(any()))
         .thenAnswer(invocation -> invocation.getArgument(0));
 
-    var dto = rentalService.updateStatus(11L, RentalStatus.active);
+    var dto = rentalService.updateStatus(11L, "active");
 
     assertThat(dto.status()).isEqualTo(RentalStatus.active);
     verify(rentalRepository, never()).save(any());
@@ -297,7 +300,7 @@ class RentalServiceTest {
     when(objectStorageService.resolvePublicUrl(any()))
         .thenAnswer(invocation -> invocation.getArgument(0));
 
-    rentalService.updateStatus(21L, RentalStatus.pending);
+    rentalService.updateStatus(21L, "pending");
 
     verify(vehicleRepository, never()).save(any(Vehicle.class));
   }
@@ -335,7 +338,7 @@ class RentalServiceTest {
     v.setId(vehicleIdParam);
     v.setPlate("06 X 06");
     v.setRentalDailyPrice(BigDecimal.valueOf(100));
-    VehicleTestFixtures.attachBrandModelStatus(v, "VW", "Golf", VehicleStatus.available);
+    VehicleTestFixtures.attachBrandModelStatus(v, "VW", "Golf", VehicleStatus.active);
     v.setYear(2022);
     v.setCreatedAt(Instant.now());
     v.setUpdatedAt(Instant.now());

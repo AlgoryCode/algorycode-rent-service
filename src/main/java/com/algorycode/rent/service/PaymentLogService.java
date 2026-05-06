@@ -39,7 +39,7 @@ public class PaymentLogService {
   public PaymentLogDto create(CreatePaymentLogRequest req) {
     Rental rental =
         rentalRepository
-            .findByIdWithVehicleAndOptions(req.rentalId())
+            .findDetailById(req.rentalId())
             .orElseThrow(() -> new BadRequestException("Kiralama bulunamadı."));
     if (rental.getStatus() == RentalStatus.cancelled) {
       throw new BadRequestException("İptal edilmiş kiralama için ödeme eklenemez.");

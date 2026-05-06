@@ -5,22 +5,33 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 
-public enum VehicleStatus {
-  active(1L, "active", "available"),
-  pending(2L, "pending"),
-  maintenance(3L, "maintenance", "in_repair"),
-  rented(4L, "rented");
+public enum VehicleTransmissionKind {
+  manual(1L, 1, "Manuel", "manual"),
+  automatic(2L, 2, "Otomatik", "automatic"),
+  semi_automatic(3L, 3, "Yarı otomatik", "semi_automatic", "semi-automatic", "semi automatic");
 
   private final long stableId;
+  private final int sortOrder;
+  private final String labelTr;
   private final String[] dbLookupCodes;
 
-  VehicleStatus(long stableId, String... dbLookupCodes) {
+  VehicleTransmissionKind(long stableId, int sortOrder, String labelTr, String... dbLookupCodes) {
     this.stableId = stableId;
+    this.sortOrder = sortOrder;
+    this.labelTr = labelTr;
     this.dbLookupCodes = dbLookupCodes;
   }
 
   public long getStableId() {
     return stableId;
+  }
+
+  public int getSortOrder() {
+    return sortOrder;
+  }
+
+  public String getLabelTr() {
+    return labelTr;
   }
 
   public String persistenceCode() {
@@ -31,23 +42,22 @@ public enum VehicleStatus {
     return dbLookupCodes.clone();
   }
 
-  private static final Map<String, VehicleStatus> PARSE_INDEX = new HashMap<>();
+  private static final Map<String, VehicleTransmissionKind> PARSE_INDEX = new HashMap<>();
 
   static {
-    for (VehicleStatus v : values()) {
+    for (VehicleTransmissionKind v : values()) {
       register(v.name(), v);
       for (String code : v.dbLookupCodes) {
         register(code, v);
       }
     }
-    register("aktif", active);
-    register("beklemede", pending);
-    register("tamirde", maintenance);
-    register("tamir", maintenance);
-    register("kirada", rented);
+    register("manuel", manual);
+    register("otomatik", automatic);
+    register("yarı otomatik", semi_automatic);
+    register("yarıotomatik", semi_automatic);
   }
 
-  private static void register(String key, VehicleStatus v) {
+  private static void register(String key, VehicleTransmissionKind v) {
     if (key == null || key.isBlank()) {
       return;
     }
@@ -56,17 +66,18 @@ public enum VehicleStatus {
       String n = collapsed.toLowerCase(loc);
       PARSE_INDEX.putIfAbsent(n, v);
       PARSE_INDEX.putIfAbsent(n.replace(" ", ""), v);
+      PARSE_INDEX.putIfAbsent(n.replace("_", ""), v);
     }
   }
 
-  public static Optional<VehicleStatus> tryParse(String raw) {
+  public static Optional<VehicleTransmissionKind> tryParse(String raw) {
     if (raw == null || raw.isBlank()) {
       return Optional.empty();
     }
     String collapsed = raw.trim().replaceAll("\\s+", " ");
     for (Locale loc : new Locale[] {Locale.forLanguageTag("tr"), Locale.ROOT}) {
       String n = collapsed.toLowerCase(loc);
-      VehicleStatus v = PARSE_INDEX.get(n);
+      VehicleTransmissionKind v = PARSE_INDEX.get(n);
       if (v != null) {
         return Optional.of(v);
       }
@@ -74,21 +85,16 @@ public enum VehicleStatus {
       if (v != null) {
         return Optional.of(v);
       }
+      v = PARSE_INDEX.get(n.replace("_", ""));
+      if (v != null) {
+        return Optional.of(v);
+      }
     }
     return Optional.empty();
   }
 
-  public static VehicleStatus parseRequired(String raw) {
+  public static VehicleTransmissionKind parseRequired(String raw) {
     return tryParse(raw)
-        .orElseThrow(() -> new IllegalArgumentException("invalid vehicle status: " + raw));
-  }
-
-  public static VehicleStatus fromDbCode(String code) {
-    return tryParse(code).orElse(active);
-  }
-
-  @Deprecated
-  public static VehicleStatus fromCode(String code) {
-    return fromDbCode(code);
+        .orElseThrow(() -> new IllegalArgumentException("invalid transmission type: " + raw));
   }
 }
