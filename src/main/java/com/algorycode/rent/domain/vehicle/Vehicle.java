@@ -16,6 +16,7 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
 import lombok.*;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
@@ -33,7 +34,7 @@ public class Vehicle extends AbstractAuditableLongEntity {
    * Silinmemiş kayıtlar arasında plaka benzersizliği serviste doğrulanır (yumuşak silinen plaka
    * yeniden kullanılabilir).
    */
-  @Column(nullable = false, length = 32)
+  @Column(length = 32)
   private String plate;
 
   @Column(name = "is_deleted", nullable = false)
@@ -46,7 +47,7 @@ public class Vehicle extends AbstractAuditableLongEntity {
   private VehicleStatusDefinition statusDefinition;
 
   @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "vehicle_model_id", nullable = false)
+  @JoinColumn(name = "vehicle_model_id")
   private VehicleModel vehicleModel;
 
   /** Araç başka bir firmadan geldiyse işaretlenir. */
@@ -141,11 +142,17 @@ public class Vehicle extends AbstractAuditableLongEntity {
   }
 
   public String getBrand() {
-    return vehicleModel.getBrand().getName();
+    if (vehicleModel == null || vehicleModel.getBrand() == null) {
+      return "";
+    }
+    return Optional.ofNullable(vehicleModel.getBrand().getName()).orElse("");
   }
 
   public String getModel() {
-    return vehicleModel.getName();
+    if (vehicleModel == null) {
+      return "";
+    }
+    return Optional.ofNullable(vehicleModel.getName()).orElse("");
   }
 
   public List<Long> orderedReturnHandoverLocationIds() {

@@ -23,8 +23,6 @@
     <lombok.version>1.18.38</lombok.version>
     <spring-cloud.version>2025.1.1</spring-cloud.version>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    <!-- Helm values.yaml image.tag ile aynı tut (mail-service :s19, authservice :s19 benzeri) -->
-    <jib.image.tag>latest</jib.image.tag>
     <spotless.version>2.43.0</spotless.version>
     <google-java-format.version>1.22.0</google-java-format.version>
   </properties>
@@ -113,15 +111,6 @@
   </dependencies>
 
   <build>
-    <pluginManagement>
-      <plugins>
-        <plugin>
-          <groupId>com.google.cloud.tools</groupId>
-          <artifactId>jib-maven-plugin</artifactId>
-          <version>3.5.1</version>
-        </plugin>
-      </plugins>
-    </pluginManagement>
     <plugins>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
@@ -166,29 +155,6 @@
             <phase>verify</phase>
           </execution>
         </executions>
-      </plugin>
-      <plugin>
-        <groupId>com.google.cloud.tools</groupId>
-        <artifactId>jib-maven-plugin</artifactId>
-        <version>3.5.1</version>
-        <configuration>
-          <from>
-            <image>eclipse-temurin:25-jre-alpine</image>
-          </from>
-          <to>
-            <image>tarikhamarat/algorycode-rent-service:${jib.image.tag}</image>
-          </to>
-          <container>
-            <ports>
-              <port>8090</port>
-            </ports>
-            <creationTime>USE_CURRENT_TIMESTAMP</creationTime>
-            <jvmFlags>
-              <jvmFlag>-XX:+UseContainerSupport</jvmFlag>
-              <jvmFlag>-XX:MaxRAMPercentage=75.0</jvmFlag>
-            </jvmFlags>
-          </container>
-        </configuration>
       </plugin>
     </plugins>
   </build>

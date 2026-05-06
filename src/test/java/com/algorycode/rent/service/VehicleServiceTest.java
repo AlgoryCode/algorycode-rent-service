@@ -5,8 +5,11 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -45,6 +48,7 @@ import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.MessageSource;
@@ -274,17 +278,12 @@ class VehicleServiceTest {
   }
 
   @Test
-  void create_whenVehicleModelIdMissing_usesFirstModel() {
-    var model = new VehicleModel();
-    model.setId(11L);
-    var brand = new VehicleBrand();
-    brand.setName("Genel");
-    model.setBrand(brand);
-    model.setName("—");
+  void create_whenVehicleModelIdMissing_savesWithoutModel() {
     var available = new VehicleStatusDefinition();
     available.setId(1L);
     available.setCode("available");
-    when(vehicleModelRepository.findFirstByOrderByIdAsc()).thenReturn(Optional.of(model));
+    when(vehicleRepository.existsByPlateIgnoreCaseAndDeletedFalse("34 TEST 34"))
+        .thenReturn(false);
     when(vehicleStatusDefinitionRepository.findByCodeIgnoreCase("available"))
         .thenReturn(Optional.of(available));
     when(vehicleRepository.save(any(Vehicle.class)))
@@ -302,7 +301,11 @@ class VehicleServiceTest {
             CreateVehicleRequest.builder().plate("34 TEST 34").countryCode("TR").build());
 
     assertThat(createdId).isEqualTo(999L);
-    verify(vehicleModelRepository).findFirstByOrderByIdAsc();
+    verify(vehicleModelRepository, never()).findFirstByOrderByIdAsc();
+    verify(vehicleModelRepository, never()).findById(anyLong());
+    ArgumentCaptor<Vehicle> captor = ArgumentCaptor.forClass(Vehicle.class);
+    verify(vehicleRepository, atLeastOnce()).save(captor.capture());
+    assertThat(captor.getAllValues().getFirst().getVehicleModel()).isNull();
   }
 
   private static Vehicle sampleVehicle() {

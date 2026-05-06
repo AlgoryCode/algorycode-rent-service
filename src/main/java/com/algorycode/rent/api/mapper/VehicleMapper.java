@@ -38,9 +38,11 @@ public final class VehicleMapper {
         v.getStatusDefinition().getCode() == null || v.getStatusDefinition().getCode().isBlank()
             ? v.getStatus().name()
             : v.getStatusDefinition().getCode().trim().toLowerCase(Locale.ROOT);
+    Long modelId = v.getVehicleModel() != null ? v.getVehicleModel().getId() : null;
+
     return new VehicleDto(
         v.getId(),
-        v.getVehicleModel().getId(),
+        modelId,
         v.getStatusDefinition().getId(),
         v.getPlate(),
         v.getBrand(),

@@ -53,4 +53,23 @@ class VehicleMapperTest {
     assertThat(dto.highlights()).isEmpty();
     assertThat(dto.feFleetSnapshot()).isNull();
   }
+
+  @Test
+  void toDto_whenVehicleModelNull_mapsModelIdBrandModelNullOrEmpty() {
+    var v = new Vehicle();
+    v.setId(2L);
+    v.setPlate(null);
+    VehicleStatusDefinition sd = new VehicleStatusDefinition();
+    sd.setCode("available");
+    v.setStatusDefinition(sd);
+    v.setYear(2023);
+    v.setCreatedAt(Instant.now());
+    v.setUpdatedAt(Instant.now());
+
+    var dto = VehicleMapper.toDto(v);
+
+    assertThat(dto.vehicleModelId()).isNull();
+    assertThat(dto.brand()).isEmpty();
+    assertThat(dto.model()).isEmpty();
+  }
 }

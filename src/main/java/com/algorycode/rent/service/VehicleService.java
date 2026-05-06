@@ -123,11 +123,8 @@ public class VehicleService {
     }
 
     Vehicle v = new Vehicle();
-    if (!plate.isBlank()) {
-      v.setPlate(plate);
-    }
-    VehicleModel model = resolveVehicleModelForCreate(req.vehicleModelId());
-    v.setVehicleModel(model);
+    v.setPlate(plate.isBlank() ? null : plate);
+    v.setVehicleModel(resolveVehicleModelForCreate(req.vehicleModelId()));
     VehicleStatusDefinition statusDef =
         req.vehicleStatusId() != null
             ? vehicleStatusDefinitionRepository
@@ -186,13 +183,11 @@ public class VehicleService {
   }
 
   private VehicleModel resolveVehicleModelForCreate(Long vehicleModelId) {
-    if (vehicleModelId != null) {
-      return vehicleModelRepository
-          .findById(vehicleModelId)
-          .orElseThrow(() -> new BadRequestException(message("vehicle.error.modelNotFound")));
+    if (vehicleModelId == null) {
+      return null;
     }
     return vehicleModelRepository
-        .findFirstByOrderByIdAsc()
+        .findById(vehicleModelId)
         .orElseThrow(() -> new BadRequestException(message("vehicle.error.modelNotFound")));
   }
 
@@ -364,11 +359,12 @@ public class VehicleService {
     }
     List<VehicleOptionDefinitionRequest> man = manual != null ? manual : List.of();
     for (VehicleOptionDefinitionRequest r : man) {
+      BigDecimal mp = r.price() == null ? BigDecimal.ZERO : r.price();
       merged.add(
           new VehicleOptionDefinitionRequest(
               r.title(),
               r.description(),
-              r.price().setScale(2, RoundingMode.HALF_UP),
+              mp.setScale(2, RoundingMode.HALF_UP),
               r.icon(),
               lo++,
               r.active() == null || Boolean.TRUE.equals(r.active())));
@@ -400,12 +396,13 @@ public class VehicleService {
     for (VehicleOptionDefinitionRequest r : defs) {
       VehicleOptionDefinition e = new VehicleOptionDefinition();
       e.setVehicle(v);
-      e.setTitle(r.title().trim());
+      e.setTitle(r.title() == null ? "" : r.title().trim());
       e.setDescription(
           r.description() != null && !r.description().isBlank() ? r.description().trim() : null);
-      e.setPrice(r.price().setScale(2, RoundingMode.HALF_UP));
+      BigDecimal price = r.price() == null ? BigDecimal.ZERO : r.price();
+      e.setPrice(price.setScale(2, RoundingMode.HALF_UP));
       e.setIcon(r.icon() != null && !r.icon().isBlank() ? r.icon().trim() : null);
-      e.setLineOrder(r.lineOrder());
+      e.setLineOrder(r.lineOrder() != null ? r.lineOrder() : 0);
       e.setActive(r.active() == null || Boolean.TRUE.equals(r.active()));
       v.getOptionDefinitions().add(e);
     }
@@ -554,9 +551,11 @@ public class VehicleService {
             ? v.getStatus().name()
             : v.getStatusDefinition().getCode().trim().toLowerCase(java.util.Locale.ROOT);
 
+    Long modelId = v.getVehicleModel() != null ? v.getVehicleModel().getId() : null;
+
     return new VehicleDto(
         v.getId(),
-        v.getVehicleModel().getId(),
+        modelId,
         v.getStatusDefinition().getId(),
         v.getPlate(),
         v.getBrand(),

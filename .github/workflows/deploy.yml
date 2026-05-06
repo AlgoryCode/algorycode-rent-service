@@ -1,13 +1,11 @@
-# algorycode-rent-service — CI/CD (pom.xml Jib + helm/algorycode-rent-service)
+# Sadece Docker imajı üretir ve registry'ye push eder. Dağıtım Argo CD ile yapılır —
+# Argo tarafında image.tag'i bu pipeline'ın ürettiği kısa SHA (veya latest) ile eşleştirin.
 #
-# Secrets:
-#   DOCKERHUB_USERNAME / DOCKERHUB_TOKEN  — Docker Hub (tarikhamarat ile uyumlu hesap)
-#   KUBE_CONFIG                         — ~/.kube/config dosyasının base64 tek satırı:
-#                                         base64 < ~/.kube/config | tr -d '\n\r '
+# Secrets: DOCKERHUB_USERNAME, DOCKERHUB_TOKEN
 #
-# İmaj adı pom ve values ile aynı: tarikhamarat/algorycode-rent-service
+# Push edilen etiketler: latest, ${GITHUB_SHA::7}, tam $GITHUB_SHA.
 
-name: algorycode-rent-service CI/CD
+name: Build and push Docker image
 
 on:
   push:
@@ -15,33 +13,30 @@ on:
     paths:
       - "src/**"
       - "pom.xml"
-      - "helm/**"
+      - "Dockerfile"
+      - ".dockerignore"
       - ".github/workflows/deploy.yml"
   workflow_dispatch:
 
 concurrency:
-  group: rent-service-${{ github.ref }}
+  group: docker-rent-api-${{ github.ref }}
   cancel-in-progress: true
 
 env:
-  IMAGE_REPO: tarikhamarat/algorycode-rent-service
-  HELM_RELEASE: rent-api
-  HELM_NAMESPACE: rent
-  HELM_CHART: helm/algorycode-rent-service
+  IMAGE_NAME: algorycode-rent-service
 
 jobs:
-  build-push-deploy:
+  build-push:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up JDK 25
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: "25"
-          cache: maven
+      - name: Compute image tags from commit
+        run: |
+          SHORT_SHA="${GITHUB_SHA::7}"
+          echo "SHORT_SHA=$SHORT_SHA" >> "$GITHUB_ENV"
+          echo "Pushing tags: latest, ${SHORT_SHA}, ${GITHUB_SHA}"
 
       - name: Log in to Docker Hub
         uses: docker/login-action@v3
@@ -49,34 +44,10 @@ jobs:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
 
-      - name: Maven package + Jib push
+      - name: Build and push
         run: |
-          chmod +x mvnw
-          ./mvnw -B -DskipTests package jib:build -Djib.image.tag=latest
-
-      - name: Install kubectl
-        uses: azure/setup-kubectl@v4
-
-      - name: Install Helm
-        uses: azure/setup-helm@v4
-        with:
-          version: v3.14.4
-
-      - name: Configure kubeconfig
-        run: |
-          mkdir -p "$HOME/.kube"
-          echo "${{ secrets.KUBE_CONFIG }}" | tr -d '\n\r ' | base64 -d > "$HOME/.kube/config"
-          chmod 600 "$HOME/.kube/config"
-
-      - name: Helm upgrade
-        run: |
-          helm upgrade --install "${{ env.HELM_RELEASE }}" "${{ env.HELM_CHART }}" \
-            --namespace "${{ env.HELM_NAMESPACE }}" \
-            --create-namespace \
-            --kube-insecure-skip-tls-verify \
-            --set image.repository="${{ env.IMAGE_REPO }}" \
-            --set image.tag=latest \
-            --set image.pullPolicy=Always
-          kubectl rollout restart deployment/"${{ env.HELM_RELEASE }}-algorycode-rent-service" \
-            --namespace "${{ env.HELM_NAMESPACE }}" \
-            --insecure-skip-tls-verify=true
+          IMAGE="${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}"
+          docker build -t "${IMAGE}:${SHORT_SHA}" -t "${IMAGE}:${GITHUB_SHA}" -t "${IMAGE}:latest" .
+          docker push "${IMAGE}:${SHORT_SHA}"
+          docker push "${IMAGE}:${GITHUB_SHA}"
+          docker push "${IMAGE}:latest"
