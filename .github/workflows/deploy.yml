@@ -1,5 +1,22 @@
-# main’e her push. Tek Docker etiketi: tam commit SHA’nın son 7 karakteri (${GITHUB_SHA: -7}), ör. ...b84fc5f.
-# Argo CD’de image.tag ile aynı değeri kullan.
+# 1) Docker: registry’ye tek tag (SHA son 7 karakter).
+#
+# 2) Argo’nun yeni imajı alması için genelde Helm chart reposunda image.tag bu değişene kadar
+#    Git güncellenir. İki seçenek:
+#
+#    A — Bu workflow’daki ikinci job (aşağı): push sonrası chart repo’yu clone edip
+#        values’ta `.image.tag` yazar ve commit/push yapar (Image Updater gerekmez).
+#        Repo ayarları (Settings → Secrets and variables → Actions):
+#          Secret  GITOPS_PAT      — infra/chart reposuna yazma yetkili PAT (fine-grained: Contents RW)
+#          Variable GITOPS_BUMP_ENABLED — `true` olunca ikinci job çalışır
+#          Variable GITOPS_REPO — isteğe bağlı; unset ise AlgoryCode/algorycode-helm-charts-prod
+#            Git clone URL https://github.com/AlgoryCode/algorycode-helm-charts-prod.git ise checkout `owner/repo`: AlgoryCode/algorycode-helm-charts-prod
+#          Variable GITOPS_BRANCH — isteğe bağlı; unset ise main
+#          Variable GITOPS_VALUES_PATH — isteğe bağlı; unset ise rent-service/env/prod-values.yaml
+#        Opsiyonel: GITOPS_YQ_PATH — tag alanının yq yolu, varsayılan `.image.tag`
+#
+#    B — Argo CD Image Updater (küme içi): registry’yi izler, Git’e commit yazar veya App’i
+#        günceller; bu repodaki pipeline’a ek satır gerekmez. Kurulum: cluster + Application
+#        annotation’ları (argocd-image-updater doc).
 #
 # Secrets: DOCKERHUB_USERNAME, DOCKERHUB_TOKEN
 
@@ -16,19 +33,26 @@ concurrency:
 
 env:
   IMAGE_NAME: algorycode-rent-service
+  GITOPS_REPO_DEFAULT: AlgoryCode/algorycode-helm-charts-prod
+  GITOPS_BRANCH_DEFAULT: main
+  GITOPS_VALUES_PATH_DEFAULT: rent-service/env/prod-values.yaml
 
 jobs:
   build-push:
     runs-on: ubuntu-latest
+    outputs:
+      image_tag: ${{ steps.tags.outputs.tag }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Image tag from commit (last 7 chars of SHA)
+      - id: tags
+        name: Image tag (last 7 chars of SHA)
         run: |
-          IMAGE_TAG="${GITHUB_SHA: -7}"
-          echo "IMAGE_TAG=$IMAGE_TAG" >> "$GITHUB_ENV"
-          echo "Pushing single tag (suffix): ${IMAGE_TAG}"
+          TAG="${GITHUB_SHA: -7}"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "IMAGE_TAG=$TAG" >> "$GITHUB_ENV"
+          echo "Pushing tag: ${TAG}"
 
       - name: Log in to Docker Hub
         uses: docker/login-action@v3
@@ -41,3 +65,42 @@ jobs:
           IMAGE="${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}"
           docker build -t "${IMAGE}:${IMAGE_TAG}" .
           docker push "${IMAGE}:${IMAGE_TAG}"
+
+  update-gitops:
+    needs: build-push
+    runs-on: ubuntu-latest
+    if: vars.GITOPS_BUMP_ENABLED == 'true'
+    steps:
+      - name: Install yq
+        run: |
+          curl -fsSL "https://github.com/mikefarah/yq/releases/download/v4.45.1/yq_linux_amd64" -o /usr/local/bin/yq
+          chmod +x /usr/local/bin/yq
+
+      - name: Checkout GitOps / chart repo
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ vars.GITOPS_REPO || env.GITOPS_REPO_DEFAULT }}
+          ref: ${{ vars.GITOPS_BRANCH || env.GITOPS_BRANCH_DEFAULT }}
+          token: ${{ secrets.GITOPS_PAT }}
+          path: gitops
+
+      - name: Set image tag and push
+        working-directory: gitops
+        env:
+          TAG: ${{ needs.build-push.outputs.image_tag }}
+          VALUES_FILE: ${{ vars.GITOPS_VALUES_PATH || env.GITOPS_VALUES_PATH_DEFAULT }}
+          YQ_PATH: ${{ vars.GITOPS_YQ_PATH }}
+        run: |
+          set -euo pipefail
+          YQ="${YQ_PATH:-.image.tag}"
+          test -n "${VALUES_FILE:-}"
+          yq e -i "${YQ} = strenv(TAG)" "$VALUES_FILE"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "$VALUES_FILE"
+          if git diff --cached --quiet; then
+            echo "No YAML change."
+            exit 0
+          fi
+          git commit -m "chore(rent-api): deploy image ${{ needs.build-push.outputs.image_tag }}"
+          git push
