@@ -1,24 +1,12 @@
-# 1) Docker: registry’ye tek tag (SHA son 7 karakter).
+# 1) Docker: registry’ye tek tag (SHA’nın son 7 karakteri).
 #
-# 2) Argo’nun yeni imajı alması için genelde Helm chart reposunda image.tag bu değişene kadar
-#    Git güncellenir. İki seçenek:
+# 2) update-gitops: GITOPS_BUMP_ENABLED=true + GITOPS_PAT (helm reposunda image.tag).
 #
-#    A — Bu workflow’daki ikinci job (aşağı): push sonrası chart repo’yu clone edip
-#        values’ta `.image.tag` yazar ve commit/push yapar (Image Updater gerekmez).
-#        Repo ayarları (Settings → Secrets and variables → Actions):
-#          Secret  GITOPS_PAT      — infra/chart reposuna yazma yetkili PAT (fine-grained: Contents RW)
-#          Variable GITOPS_BUMP_ENABLED — `true` olunca ikinci job çalışır
-#          Variable GITOPS_REPO — isteğe bağlı; unset ise AlgoryCode/algorycode-helm-charts-prod
-#            Git clone URL https://github.com/AlgoryCode/algorycode-helm-charts-prod.git ise checkout `owner/repo`: AlgoryCode/algorycode-helm-charts-prod
-#          Variable GITOPS_BRANCH — isteğe bağlı; unset ise main
-#          Variable GITOPS_VALUES_PATH — isteğe bağlı; unset ise rent-service/env/prod-values.yaml
-#        Opsiyonel: GITOPS_YQ_PATH — tag alanının yq yolu, varsayılan `.image.tag`
-#
-#    B — Argo CD Image Updater (küme içi): registry’yi izler, Git’e commit yazar veya App’i
-#        günceller; bu repodaki pipeline’a ek satır gerekmez. Kurulum: cluster + Application
-#        annotation’ları (argocd-image-updater doc).
+# 3) deploy-k3s: K3S_DEPLOY_ENABLED=true + KUBE_CONFIG — doğrudan k3s’e helm upgrade + rollout.
+#    Secret KUBE_CONFIG: base64 < ~/.kube/config | tr -d '\n\r '
 #
 # Secrets: DOCKERHUB_USERNAME, DOCKERHUB_TOKEN
+# Opsiyonel: KUBE_CONFIG, GITOPS_PAT
 
 name: Build and push Docker image
 
@@ -36,6 +24,9 @@ env:
   GITOPS_REPO_DEFAULT: AlgoryCode/algorycode-helm-charts-prod
   GITOPS_BRANCH_DEFAULT: main
   GITOPS_VALUES_PATH_DEFAULT: rent-service/env/prod-values.yaml
+  K3S_HELM_RELEASE_DEFAULT: rent-api
+  K3S_NAMESPACE_DEFAULT: rent
+  K3S_HELM_CHART_DEFAULT: helm/algorycode-rent-service
 
 jobs:
   build-push:
@@ -104,3 +95,47 @@ jobs:
           fi
           git commit -m "chore(rent-api): deploy image ${{ needs.build-push.outputs.image_tag }}"
           git push
+
+  deploy-k3s:
+    needs: build-push
+    runs-on: ubuntu-latest
+    if: vars.K3S_DEPLOY_ENABLED == 'true'
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install kubectl
+        uses: azure/setup-kubectl@v4
+        with:
+          version: v1.28.0
+
+      - name: Install Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: v3.14.4
+
+      - name: Configure kubeconfig
+        run: |
+          mkdir -p "$HOME/.kube"
+          echo "${{ secrets.KUBE_CONFIG }}" | tr -d '\n\r ' | base64 -d > "$HOME/.kube/config"
+          chmod 600 "$HOME/.kube/config"
+
+      - name: Helm upgrade and rollout
+        env:
+          RELEASE: ${{ vars.K3S_HELM_RELEASE || env.K3S_HELM_RELEASE_DEFAULT }}
+          NS: ${{ vars.K3S_NAMESPACE || env.K3S_NAMESPACE_DEFAULT }}
+          CHART: ${{ vars.K3S_HELM_CHART || env.K3S_HELM_CHART_DEFAULT }}
+          TAG: ${{ needs.build-push.outputs.image_tag }}
+        run: |
+          set -euo pipefail
+          IMAGE="${{ secrets.DOCKERHUB_USERNAME }}/${{ env.IMAGE_NAME }}"
+          helm upgrade --install "$RELEASE" "$CHART" \
+            --namespace "$NS" \
+            --create-namespace \
+            --kube-insecure-skip-tls-verify \
+            --set image.repository="$IMAGE" \
+            --set image.tag="$TAG" \
+            --set image.pullPolicy=Always
+          kubectl rollout restart deployment/"$RELEASE-${{ env.IMAGE_NAME }}" \
+            --namespace "$NS" \
+            --insecure-skip-tls-verify=true
