@@ -1,5 +1,5 @@
-# Sadece Docker imajı üretir ve registry'ye push eder. Dağıtım Argo CD ile yapılır —
-# Argo tarafında image.tag'i bu pipeline'ın ürettiği kısa SHA (veya latest) ile eşleştirin.
+# Sadece Docker imaj? �retir ve registry'ye push eder. Da??t?m Argo CD ile yap?l?r ?
+# Argo taraf?nda image.tag'i bu pipeline'?n �retti?i k?sa SHA (veya latest) ile e?le?tirin.
 #
 # Secrets: DOCKERHUB_USERNAME, DOCKERHUB_TOKEN
 #
