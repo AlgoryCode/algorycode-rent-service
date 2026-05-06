@@ -4,8 +4,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
@@ -283,7 +283,8 @@ class VehicleServiceTest {
     var available = new VehicleStatusDefinition();
     available.setId(1L);
     available.setCode("available");
-    when(vehicleRepository.existsByPlateIgnoreCaseAndDeletedFalse("34 TEST 34")).thenReturn(false);
+    when(vehicleRepository.existsByPlateIgnoreCaseAndDeletedFalse("34 TEST 34"))
+        .thenReturn(false);
     when(vehicleStatusDefinitionRepository.findByCodeIgnoreCase("available"))
         .thenReturn(Optional.of(available));
     when(vehicleRepository.save(any(Vehicle.class)))
