@@ -40,7 +40,7 @@ spring:
           time_zone: UTC
   sql:
     init:
-      mode: none
+      mode: never
   # AuthService / mail-service ile aynı broker (DNS: rabbitmq.algorycode.com veya küme içi servis)
   rabbitmq:
     host: localhost
