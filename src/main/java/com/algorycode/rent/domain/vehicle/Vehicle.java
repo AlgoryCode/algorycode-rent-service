@@ -2,7 +2,6 @@ package com.algorycode.rent.domain.vehicle;
 
 import com.algorycode.rent.domain.AbstractAuditableLongEntity;
 import com.algorycode.rent.domain.location.HandoverLocation;
-import com.fasterxml.jackson.databind.JsonNode;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -21,8 +20,6 @@ import lombok.*;
 import org.hibernate.annotations.BatchSize;
 import org.hibernate.annotations.Fetch;
 import org.hibernate.annotations.FetchMode;
-import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.type.SqlTypes;
 
 @Getter
 @Setter
@@ -152,14 +149,6 @@ public class Vehicle extends AbstractAuditableLongEntity {
   @OneToMany(mappedBy = "vehicle", cascade = CascadeType.ALL, orphanRemoval = true)
   @OrderBy("lineOrder ASC")
   private List<VehicleHighlight> highlights = new ArrayList<>();
-
-  /**
-   * user-fe vitrin paketi ({@code feFleetSnapshot}); {@link
-   * com.algorycode.rent.service.readmodel.FeFleetSnapshotBuilder}.
-   */
-  @JdbcTypeCode(SqlTypes.JSON)
-  @Column(name = "fe_fleet_snapshot", columnDefinition = "json")
-  private JsonNode feFleetSnapshot;
 
   public VehicleStatus getStatus() {
     if (vehicleStatus == null) {

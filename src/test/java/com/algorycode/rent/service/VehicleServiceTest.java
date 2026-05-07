@@ -29,7 +29,6 @@ import com.algorycode.rent.repository.RentalRepository;
 import com.algorycode.rent.repository.RentalRequestRepository;
 import com.algorycode.rent.repository.VehicleOptionTemplateRepository;
 import com.algorycode.rent.repository.VehicleRepository;
-import com.algorycode.rent.service.readmodel.FeFleetSnapshotBuilder;
 import com.algorycode.rent.service.support.RentalTestFixtures;
 import com.algorycode.rent.service.support.VehicleAvailabilitySlotAnalyzer;
 import com.algorycode.rent.service.support.VehicleTestFixtures;
@@ -81,7 +80,6 @@ class VehicleServiceTest {
                 new VehicleAvailabilitySlotAnalyzer()),
             vehicleImageService,
             mock(AuditLog.class),
-            mock(FeFleetSnapshotBuilder.class),
             applicationEventPublisher);
   }
 
@@ -264,7 +262,7 @@ class VehicleServiceTest {
               return vehicle;
             });
 
-    var created =
+    Long createdId =
         vehicleService.create(
             CreateVehicleRequest.builder()
                 .plate("34 TEST 34")
@@ -287,7 +285,7 @@ class VehicleServiceTest {
                 .images(Map.of())
                 .build());
 
-    assertThat(created.id()).isEqualTo(999L);
+    assertThat(createdId).isEqualTo(999L);
     verify(vehicleRepository, atLeastOnce())
         .save(
             argThat(

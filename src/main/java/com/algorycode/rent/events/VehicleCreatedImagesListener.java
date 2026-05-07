@@ -14,6 +14,6 @@ public class VehicleCreatedImagesListener {
 
   @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
   public void onCreated(VehicleCreatedImagesEvent event) {
-    vehicleImageService.processVehicleImagesAndSnapshotAsync(event.vehicleId(), event.images());
+    vehicleImageService.processVehicleImagesAsync(event.vehicleId(), event.images());
   }
 }

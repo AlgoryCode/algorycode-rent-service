@@ -1,11 +1,13 @@
 package com.algorycode.rent.api.web;
 
-import static org.hamcrest.Matchers.containsString;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -92,8 +94,7 @@ class VehicleControllerTest {
                     Collections.emptyList(),
                     Collections.emptyList(),
                     Collections.emptyList(),
-                    Map.of(),
-                    null)));
+                    Map.of())));
 
     mockMvc
         .perform(get("/vehicles").accept(MediaType.APPLICATION_JSON))
@@ -134,45 +135,8 @@ class VehicleControllerTest {
   }
 
   @Test
-  void create_returns201WithBodyAndLocation() throws Exception {
-    when(vehicleService.create(any()))
-        .thenReturn(
-            new VehicleDto(
-                42L,
-                5L,
-                1L,
-                null,
-                null,
-                null,
-                "34 X 1",
-                "Toyota",
-                "Corolla",
-                2024,
-                VehicleStatus.active,
-                "active",
-                false,
-                null,
-                null,
-                false,
-                null,
-                null,
-                null,
-                "TR",
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                Collections.emptyList(),
-                Collections.emptyList(),
-                Collections.emptyList(),
-                Map.of(),
-                null));
+  void create_returns201WithPlainTextMessage() throws Exception {
+    when(vehicleService.create(any())).thenReturn(42L);
 
     mockMvc
         .perform(
@@ -183,51 +147,12 @@ class VehicleControllerTest {
                     {"plate":"34 X 1","vehicleModelId":5,"year":2024,"countryCode":"TR"}
                     """))
         .andExpect(status().isCreated())
-        .andExpect(header().string("Location", containsString("/vehicles/42")))
-        .andExpect(jsonPath("$.id").value(42))
-        .andExpect(jsonPath("$.plate").value("34 X 1"));
+        .andExpect(content().string("Vehicle created successfully"));
   }
 
   @Test
-  void create_withoutVehicleModelId_returns201() throws Exception {
-    when(vehicleService.create(any()))
-        .thenReturn(
-            new VehicleDto(
-                52L,
-                null,
-                1L,
-                null,
-                null,
-                null,
-                "34 X 2",
-                "",
-                "",
-                2024,
-                VehicleStatus.active,
-                "active",
-                false,
-                null,
-                null,
-                false,
-                null,
-                null,
-                null,
-                "TR",
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                null,
-                Collections.emptyList(),
-                Collections.emptyList(),
-                Collections.emptyList(),
-                Map.of(),
-                null));
+  void create_withoutVehicleModelId_returns201WithPlainTextMessage() throws Exception {
+    when(vehicleService.create(any())).thenReturn(52L);
 
     mockMvc
         .perform(
@@ -238,9 +163,23 @@ class VehicleControllerTest {
                     {"plate":"34 X 2","year":2024,"countryCode":"TR"}
                     """))
         .andExpect(status().isCreated())
-        .andExpect(header().string("Location", containsString("/vehicles/52")))
-        .andExpect(jsonPath("$.id").value(52))
-        .andExpect(jsonPath("$.plate").value("34 X 2"));
+        .andExpect(content().string("Vehicle created successfully"));
+  }
+
+  @Test
+  void update_returns200WithPlainTextMessage() throws Exception {
+    doNothing().when(vehicleService).update(anyLong(), any());
+
+    mockMvc
+        .perform(
+            patch("/vehicles/{id}", 7L)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(
+                    """
+                    {"plate":"34 X 9","vehicleStatusId":1}
+                    """))
+        .andExpect(status().isOk())
+        .andExpect(content().string("Updated Successfully"));
   }
 
   @Test

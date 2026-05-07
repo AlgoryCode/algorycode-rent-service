@@ -11,9 +11,7 @@ import com.algorycode.rent.domain.vehicle.VehicleImageSlot;
 import com.algorycode.rent.service.VehicleFormCatalogService;
 import com.algorycode.rent.service.VehicleOccupancyService;
 import com.algorycode.rent.service.VehicleService;
-import com.fasterxml.jackson.databind.JsonNode;
 import jakarta.validation.Valid;
-import java.net.URI;
 import java.time.LocalDate;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -29,7 +27,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 @RestController
 @RequestMapping("/vehicles")
@@ -80,33 +77,24 @@ public class VehicleController {
         Boolean.TRUE.equals(includePartialAvailability));
   }
 
-  @GetMapping("/snapshots")
-  public List<JsonNode> listSnapshots() {
-    return vehicleService.listAllSnapshots();
-  }
-
   @GetMapping("/{id:\\d+}")
   public VehicleDto get(@PathVariable Long id) {
     return vehicleService.getById(id);
   }
 
   @PostMapping
-  public ResponseEntity<VehicleDto> create(
+  public ResponseEntity<String> create(
       @Valid @RequestBody CreateVehicleRequest body) {
-    VehicleDto created = vehicleService.create(body);
-    URI location =
-        ServletUriComponentsBuilder.fromCurrentRequest()
-            .path("/{id}")
-            .buildAndExpand(created.id())
-            .toUri();
+    vehicleService.create(body);
     return ResponseEntity.status(HttpStatus.CREATED)
-        .location(location)
-        .body(created);
+        .body("Vehicle created successfully");
   }
 
   @PatchMapping("/{id:\\d+}")
-  public VehicleDto update(@PathVariable Long id, @Valid @RequestBody UpdateVehicleRequest body) {
-    return vehicleService.update(id, body);
+  public ResponseEntity<String> update(
+      @PathVariable Long id, @Valid @RequestBody UpdateVehicleRequest body) {
+    vehicleService.update(id, body);
+    return ResponseEntity.ok("Updated Successfully");
   }
 
   @DeleteMapping("/{id:\\d+}")

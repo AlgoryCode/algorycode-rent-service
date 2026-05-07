@@ -23,8 +23,6 @@ import com.algorycode.rent.logging.AuditLog;
 import com.algorycode.rent.repository.HandoverLocationRepository;
 import com.algorycode.rent.repository.VehicleOptionTemplateRepository;
 import com.algorycode.rent.repository.VehicleRepository;
-import com.algorycode.rent.service.readmodel.FeFleetSnapshotBuilder;
-import com.fasterxml.jackson.databind.JsonNode;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
@@ -33,7 +31,6 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
@@ -51,7 +48,6 @@ public class VehicleService {
   private final VehicleAvailabilityService vehicleAvailabilityService;
   private final VehicleImageService vehicleImageService;
   private final AuditLog auditLog;
-  private final FeFleetSnapshotBuilder feFleetSnapshotBuilder;
   private final ApplicationEventPublisher applicationEventPublisher;
 
   @Transactional(readOnly = true)
@@ -88,7 +84,7 @@ public class VehicleService {
   }
 
   @Transactional
-  public VehicleDto create(CreateVehicleRequest req) {
+  public Long create(CreateVehicleRequest req) {
     String normalizedPlate = normalizePlate(req.plate());
     if (vehicleRepository.existsByPlateIgnoreCaseAndDeletedFalse(normalizedPlate)) {
       throw new ConflictException("Vehicle plate already exists: " + normalizedPlate);
@@ -126,15 +122,13 @@ public class VehicleService {
       applicationEventPublisher.publishEvent(
           new VehicleCreatedImagesEvent(v.getId(), Map.copyOf(req.images())));
     }
-    persistFleetSnapshot(v);
-    v = vehicleRepository.save(v);
 
     auditLog.infoEvent("vehicle_created", Map.of("vehicleId", v.getId().toString()));
-    return toDto(v);
+    return v.getId();
   }
 
   @Transactional
-  public VehicleDto update(Long id, UpdateVehicleRequest req) {
+  public void update(Long id, UpdateVehicleRequest req) {
     Vehicle v =
         vehicleRepository
             .findByIdAndDeletedFalse(id)
@@ -172,30 +166,19 @@ public class VehicleService {
     }
     replaceVehicleHighlights(v, req.highlights());
 
-    Vehicle saved = vehicleRepository.save(v);
-    persistFleetSnapshot(saved);
-    return toDto(vehicleRepository.save(saved));
-  }
-
-  @Transactional(readOnly = true)
-  public List<JsonNode> listAllSnapshots() {
-    return vehicleRepository.findAllFeFleetSnapshotsByDeletedFalse().stream()
-        .filter(Objects::nonNull)
-        .toList();
+    vehicleRepository.save(v);
   }
 
   @Transactional
   public VehicleDto replaceImageSlot(Long vehicleId, VehicleImageSlot slot, String imageValue) {
     Vehicle v = vehicleImageService.replaceImageSlot(vehicleId, slot, imageValue);
-    persistFleetSnapshot(v);
-    return toDto(vehicleRepository.save(v));
+    return toDto(v);
   }
 
   @Transactional
   public VehicleDto deleteImageSlot(Long vehicleId, VehicleImageSlot slot) {
     Vehicle v = vehicleImageService.deleteImageSlot(vehicleId, slot);
-    persistFleetSnapshot(v);
-    return toDto(vehicleRepository.save(v));
+    return toDto(v);
   }
 
   @Transactional
@@ -306,15 +289,6 @@ public class VehicleService {
     }
   }
 
-  private void persistFleetSnapshot(Vehicle v) {
-    v.setFeFleetSnapshot(feFleetSnapshotBuilder.build(v));
-  }
-
-  private JsonNode fleetSnapshotForResponse(Vehicle v) {
-    JsonNode cached = v.getFeFleetSnapshot();
-    return cached != null ? cached : feFleetSnapshotBuilder.build(v);
-  }
-
   private VehicleDto toDto(Vehicle v) {
     Map<String, String> images = new HashMap<>();
     for (VehicleImage img : v.getImages()) {
@@ -390,7 +364,6 @@ public class VehicleService {
             .sorted((a, b) -> Integer.compare(a.getLineOrder(), b.getLineOrder()))
             .map(VehicleHighlight::getText)
             .toList(),
-        Map.copyOf(images),
-        fleetSnapshotForResponse(v));
+        Map.copyOf(images));
   }
 }

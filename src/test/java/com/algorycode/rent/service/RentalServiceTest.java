@@ -27,7 +27,6 @@ import com.algorycode.rent.repository.RentalStatusDefinitionRepository;
 import com.algorycode.rent.repository.ReservationExtraOptionTemplateRepository;
 import com.algorycode.rent.repository.VehicleOptionDefinitionRepository;
 import com.algorycode.rent.repository.VehicleRepository;
-import com.algorycode.rent.service.readmodel.FeFleetSnapshotBuilder;
 import com.algorycode.rent.service.support.RentalTestFixtures;
 import com.algorycode.rent.service.support.VehicleTestFixtures;
 import java.math.BigDecimal;
@@ -56,7 +55,6 @@ class RentalServiceTest {
   @Mock private VehicleOptionDefinitionRepository vehicleOptionDefinitionRepository;
   @Mock private ReservationExtraOptionTemplateRepository reservationExtraOptionTemplateRepository;
   @Mock private RentalStatusDefinitionRepository rentalStatusDefinitionRepository;
-  @Mock private FeFleetSnapshotBuilder feFleetSnapshotBuilder;
   @Mock private AuditLog auditLog;
   @Mock private MessageSource messageSource;
 

@@ -110,7 +110,6 @@ public final class VehicleMapper {
             .sorted((a, b) -> Integer.compare(a.getLineOrder(), b.getLineOrder()))
             .map(VehicleHighlight::getText)
             .toList(),
-        Map.copyOf(images),
-        null);
+        Map.copyOf(images));
   }
 }

@@ -7,7 +7,6 @@ import com.algorycode.rent.domain.vehicle.VehicleImage;
 import com.algorycode.rent.domain.vehicle.VehicleImageSlot;
 import com.algorycode.rent.repository.VehicleImageRepository;
 import com.algorycode.rent.repository.VehicleRepository;
-import com.algorycode.rent.service.readmodel.FeFleetSnapshotBuilder;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
@@ -19,7 +18,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
 
-/** Araç görsel slotları: yükleme, doğrulama, toplu uygulama ve asenkron tamamlama. */
 @Service
 @RequiredArgsConstructor
 @Slf4j
@@ -28,7 +26,6 @@ public class VehicleImageService {
   private final VehicleRepository vehicleRepository;
   private final VehicleImageRepository vehicleImageRepository;
   private final ObjectStorageService objectStorageService;
-  private final FeFleetSnapshotBuilder feFleetSnapshotBuilder;
   private final TransactionTemplate transactionTemplate;
 
   public void applyVehicleImages(Vehicle vehicle, Map<String, String> images) {
@@ -59,7 +56,7 @@ public class VehicleImageService {
   }
 
   @Async("vehicleAsyncTaskExecutor")
-  public void processVehicleImagesAndSnapshotAsync(Long vehicleId, Map<String, String> images) {
+  public void processVehicleImagesAsync(Long vehicleId, Map<String, String> images) {
     try {
       if (images == null || images.isEmpty()) {
         return;
@@ -81,15 +78,6 @@ public class VehicleImageService {
         }
       }
       if (resolved.isEmpty()) {
-        try {
-          transactionTemplate.executeWithoutResult(status -> persistFleetSnapshotOnly(vehicleId));
-        } catch (Exception ex) {
-          log.error(
-              "Async vehicle images failed at stage=SNAPSHOT vehicleId={} message={}",
-              vehicleId,
-              ex.getMessage(),
-              ex);
-        }
         return;
       }
       List<SlotKey> uploaded;
@@ -117,16 +105,6 @@ public class VehicleImageService {
       } catch (Exception ex) {
         log.error(
             "Async vehicle images failed at stage=DB vehicleId={} message={}",
-            vehicleId,
-            ex.getMessage(),
-            ex);
-        return;
-      }
-      try {
-        transactionTemplate.executeWithoutResult(status -> persistFleetSnapshotOnly(vehicleId));
-      } catch (Exception ex) {
-        log.error(
-            "Async vehicle images failed at stage=SNAPSHOT vehicleId={} message={}",
             vehicleId,
             ex.getMessage(),
             ex);
@@ -163,15 +141,6 @@ public class VehicleImageService {
       rows.add(img);
     }
     vehicleImageRepository.saveAll(rows);
-    vehicleRepository.save(v);
-  }
-
-  private void persistFleetSnapshotOnly(Long vehicleId) {
-    Vehicle v =
-        vehicleRepository
-            .findByIdAndDeletedFalse(vehicleId)
-            .orElseThrow(() -> new ResourceNotFoundException("Vehicle not found: " + vehicleId));
-    v.setFeFleetSnapshot(feFleetSnapshotBuilder.build(v));
     vehicleRepository.save(v);
   }
 
