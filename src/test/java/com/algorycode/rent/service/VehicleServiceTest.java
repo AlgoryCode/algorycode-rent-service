@@ -46,6 +46,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.context.ApplicationEventPublisher;
 @ExtendWith(MockitoExtension.class)
 class VehicleServiceTest {
 
@@ -56,6 +57,7 @@ class VehicleServiceTest {
   @Mock private RentalRepository rentalRepository;
   @Mock private RentalRequestRepository rentalRequestRepository;
   @Mock private VehicleImageService vehicleImageService;
+  @Mock private ApplicationEventPublisher applicationEventPublisher;
 
   private VehicleService vehicleService;
 
@@ -79,7 +81,8 @@ class VehicleServiceTest {
                 new VehicleAvailabilitySlotAnalyzer()),
             vehicleImageService,
             mock(AuditLog.class),
-            mock(FeFleetSnapshotBuilder.class));
+            mock(FeFleetSnapshotBuilder.class),
+            applicationEventPublisher);
   }
 
   @Test

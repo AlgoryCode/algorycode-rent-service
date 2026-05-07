@@ -18,6 +18,7 @@ import com.algorycode.rent.domain.vehicle.VehicleImage;
 import com.algorycode.rent.domain.vehicle.VehicleImageSlot;
 import com.algorycode.rent.domain.vehicle.VehicleOptionDefinition;
 import com.algorycode.rent.domain.vehicle.VehicleOptionTemplate;
+import com.algorycode.rent.events.VehicleCreatedImagesEvent;
 import com.algorycode.rent.logging.AuditLog;
 import com.algorycode.rent.repository.HandoverLocationRepository;
 import com.algorycode.rent.repository.VehicleOptionTemplateRepository;
@@ -34,6 +35,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -50,6 +52,7 @@ public class VehicleService {
   private final VehicleImageService vehicleImageService;
   private final AuditLog auditLog;
   private final FeFleetSnapshotBuilder feFleetSnapshotBuilder;
+  private final ApplicationEventPublisher applicationEventPublisher;
 
   @Transactional(readOnly = true)
   public List<VehicleDto> listAll() {
@@ -119,8 +122,9 @@ public class VehicleService {
     replaceVehicleOptionDefinitions(v, merged);
     v = vehicleRepository.save(v);
 
-    if (req.images() != null) {
-      vehicleImageService.processVehicleImagesAndSnapshotAsync(v.getId(), req.images());
+    if (req.images() != null && !req.images().isEmpty()) {
+      applicationEventPublisher.publishEvent(
+          new VehicleCreatedImagesEvent(v.getId(), Map.copyOf(req.images())));
     }
     persistFleetSnapshot(v);
     v = vehicleRepository.save(v);
@@ -254,20 +258,22 @@ public class VehicleService {
     }
   }
 
+
+
+
+
   private void replaceVehicleOptionDefinitions(
       Vehicle v, List<VehicleOptionDefinitionRequest> defs) {
-    v.getOptionDefinitions().clear();
     for (VehicleOptionDefinitionRequest r : defs) {
-      VehicleOptionDefinition e = new VehicleOptionDefinition();
-      e.setVehicle(v);
-      e.setTitle(r.title().trim());
-      e.setDescription(
-          r.description() != null && !r.description().isBlank() ? r.description().trim() : null);
-      e.setPrice(r.price().setScale(2, RoundingMode.HALF_UP));
-      e.setIcon(r.icon() != null && !r.icon().isBlank() ? r.icon().trim() : null);
-      e.setLineOrder(r.lineOrder());
-      e.setActive(r.active() == null || Boolean.TRUE.equals(r.active()));
-      v.getOptionDefinitions().add(e);
+      VehicleOptionDefinition option = new VehicleOptionDefinition();
+      option.setVehicleId(v.getId());
+      option.setTitle(r.title().trim());
+      option.setDescription(r.description());
+      option.setPrice(r.price().setScale(2, RoundingMode.HALF_UP));
+      option.setIcon(r.icon());
+      option.setLineOrder(r.lineOrder());
+      option.setActive(r.active());
+      v.getOptionDefinitions().add(option);
     }
   }
 
