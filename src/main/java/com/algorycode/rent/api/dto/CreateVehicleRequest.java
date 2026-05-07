@@ -11,7 +11,6 @@ import lombok.Builder;
 public record CreateVehicleRequest(
     @Size(max = 32) String plate,
     Long vehicleModelId,
-    Long vehicleStatusId,
     Integer year,
     Boolean external,
     @Size(max = 255) String externalCompany,

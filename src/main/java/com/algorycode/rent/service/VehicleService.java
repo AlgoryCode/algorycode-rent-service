@@ -22,6 +22,7 @@ import com.algorycode.rent.logging.AuditLog;
 import com.algorycode.rent.repository.HandoverLocationRepository;
 import com.algorycode.rent.repository.VehicleOptionTemplateRepository;
 import com.algorycode.rent.repository.VehicleRepository;
+import com.algorycode.rent.repository.VehicleStatusCatalogRepository;
 import com.algorycode.rent.service.readmodel.FeFleetSnapshotBuilder;
 import com.fasterxml.jackson.databind.JsonNode;
 import java.math.BigDecimal;
@@ -44,6 +45,7 @@ public class VehicleService {
   private final VehicleRepository vehicleRepository;
   private final HandoverLocationRepository handoverLocationRepository;
   private final VehicleOptionTemplateRepository vehicleOptionTemplateRepository;
+  private final VehicleStatusCatalogRepository vehicleStatusCatalogRepository;
   private final ObjectStorageService objectStorageService;
   private final VehicleAvailabilityService vehicleAvailabilityService;
   private final VehicleImageService vehicleImageService;
@@ -92,7 +94,7 @@ public class VehicleService {
     Vehicle v = new Vehicle();
     v.setPlate(normalizedPlate);
     v.setVehicleModelId(req.vehicleModelId());
-    v.setVehicleStatusId(req.vehicleStatusId());
+    v.setVehicleStatusId(resolveVehicleStatusId());
     v.setYear(req.year());
     v.setExternal(Boolean.TRUE.equals(req.external()));
     v.setExternalCompany(req.externalCompany());
@@ -209,6 +211,13 @@ public class VehicleService {
       throw new BadRequestException("Vehicle plate is required");
     }
     return plate.trim().replaceAll("\\s+", " ");
+  }
+
+  private Long resolveVehicleStatusId() {
+    return vehicleStatusCatalogRepository
+        .findByCodeIgnoreCase("active")
+        .map(s -> s.getId())
+        .orElseThrow(() -> new BadRequestException("Vehicle status is required"));
   }
 
   private List<VehicleOptionDefinitionRequest> mergeOptionDefinitions(
