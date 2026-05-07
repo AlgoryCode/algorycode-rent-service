@@ -29,7 +29,6 @@ import com.algorycode.rent.repository.RentalRepository;
 import com.algorycode.rent.repository.RentalRequestRepository;
 import com.algorycode.rent.repository.VehicleOptionTemplateRepository;
 import com.algorycode.rent.repository.VehicleRepository;
-import com.algorycode.rent.repository.VehicleStatusCatalogRepository;
 import com.algorycode.rent.service.readmodel.FeFleetSnapshotBuilder;
 import com.algorycode.rent.service.support.RentalTestFixtures;
 import com.algorycode.rent.service.support.VehicleAvailabilitySlotAnalyzer;
@@ -53,7 +52,6 @@ class VehicleServiceTest {
   @Mock private VehicleRepository vehicleRepository;
   @Mock private HandoverLocationRepository handoverLocationRepository;
   @Mock private VehicleOptionTemplateRepository vehicleOptionTemplateRepository;
-  @Mock private VehicleStatusCatalogRepository vehicleStatusCatalogRepository;
   @Mock private ObjectStorageService objectStorageService;
   @Mock private RentalRepository rentalRepository;
   @Mock private RentalRequestRepository rentalRequestRepository;
@@ -73,7 +71,6 @@ class VehicleServiceTest {
             vehicleRepository,
             handoverLocationRepository,
             vehicleOptionTemplateRepository,
-            vehicleStatusCatalogRepository,
             objectStorageService,
             new VehicleAvailabilityService(
                 vehicleRepository,
