@@ -1,7 +1,6 @@
 package com.algorycode.rent.api.web;
 
 import com.algorycode.rent.api.dto.CreateVehicleRequest;
-import com.algorycode.rent.api.dto.SimpleMessageResponse;
 import com.algorycode.rent.api.dto.UpdateVehicleImageRequest;
 import com.algorycode.rent.api.dto.UpdateVehicleRequest;
 import com.algorycode.rent.api.dto.VehicleCalendarOccupancyDto;
@@ -18,8 +17,6 @@ import java.net.URI;
 import java.time.LocalDate;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
-import org.springframework.context.MessageSource;
-import org.springframework.context.i18n.LocaleContextHolder;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -42,7 +39,6 @@ public class VehicleController {
   private final VehicleService vehicleService;
   private final VehicleOccupancyService vehicleOccupancyService;
   private final VehicleFormCatalogService vehicleFormCatalogService;
-  private final MessageSource messageSource;
 
   @GetMapping("/{id:\\d+}/calendar/occupancy")
   public VehicleCalendarOccupancyDto calendarOccupancy(
@@ -95,16 +91,17 @@ public class VehicleController {
   }
 
   @PostMapping
-  public ResponseEntity<SimpleMessageResponse> create(
+  public ResponseEntity<VehicleDto> create(
       @Valid @RequestBody CreateVehicleRequest body) {
-    Long id = vehicleService.create(body);
+    VehicleDto created = vehicleService.create(body);
     URI location =
-        ServletUriComponentsBuilder.fromCurrentRequest().path("/{id}").buildAndExpand(id).toUri();
-    String message =
-        messageSource.getMessage("vehicle.created", null, LocaleContextHolder.getLocale());
+        ServletUriComponentsBuilder.fromCurrentRequest()
+            .path("/{id}")
+            .buildAndExpand(created.id())
+            .toUri();
     return ResponseEntity.status(HttpStatus.CREATED)
         .location(location)
-        .body(new SimpleMessageResponse(message));
+        .body(created);
   }
 
   @PatchMapping("/{id:\\d+}")

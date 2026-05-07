@@ -22,14 +22,12 @@ import com.algorycode.rent.service.VehicleService;
 import java.time.LocalDate;
 import java.util.Collections;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.context.support.StaticMessageSource;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
@@ -46,15 +44,10 @@ class VehicleControllerTest {
 
   @BeforeEach
   void setUp() {
-    StaticMessageSource messageSource = new StaticMessageSource();
-    messageSource.addMessage("vehicle.created", Locale.ENGLISH, "Vehicle created.");
     mockMvc =
         MockMvcBuilders.standaloneSetup(
                 new VehicleController(
-                    vehicleService,
-                    vehicleOccupancyService,
-                    vehicleFormCatalogService,
-                    messageSource))
+                    vehicleService, vehicleOccupancyService, vehicleFormCatalogService))
             .setControllerAdvice(new GlobalExceptionHandler(auditLog))
             .build();
   }
@@ -141,8 +134,45 @@ class VehicleControllerTest {
   }
 
   @Test
-  void create_returns201WithMessageAndLocation() throws Exception {
-    when(vehicleService.create(any())).thenReturn(42L);
+  void create_returns201WithBodyAndLocation() throws Exception {
+    when(vehicleService.create(any()))
+        .thenReturn(
+            new VehicleDto(
+                42L,
+                5L,
+                1L,
+                null,
+                null,
+                null,
+                "34 X 1",
+                "Toyota",
+                "Corolla",
+                2024,
+                VehicleStatus.active,
+                "active",
+                false,
+                null,
+                null,
+                false,
+                null,
+                null,
+                null,
+                "TR",
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                Collections.emptyList(),
+                Collections.emptyList(),
+                Collections.emptyList(),
+                Map.of(),
+                null));
 
     mockMvc
         .perform(
@@ -154,12 +184,50 @@ class VehicleControllerTest {
                     """))
         .andExpect(status().isCreated())
         .andExpect(header().string("Location", containsString("/vehicles/42")))
-        .andExpect(jsonPath("$.message").value("Vehicle created."));
+        .andExpect(jsonPath("$.id").value(42))
+        .andExpect(jsonPath("$.plate").value("34 X 1"));
   }
 
   @Test
   void create_withoutVehicleModelId_returns201() throws Exception {
-    when(vehicleService.create(any())).thenReturn(52L);
+    when(vehicleService.create(any()))
+        .thenReturn(
+            new VehicleDto(
+                52L,
+                null,
+                1L,
+                null,
+                null,
+                null,
+                "34 X 2",
+                "",
+                "",
+                2024,
+                VehicleStatus.active,
+                "active",
+                false,
+                null,
+                null,
+                false,
+                null,
+                null,
+                null,
+                "TR",
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                Collections.emptyList(),
+                Collections.emptyList(),
+                Collections.emptyList(),
+                Map.of(),
+                null));
 
     mockMvc
         .perform(
@@ -171,7 +239,8 @@ class VehicleControllerTest {
                     """))
         .andExpect(status().isCreated())
         .andExpect(header().string("Location", containsString("/vehicles/52")))
-        .andExpect(jsonPath("$.message").value("Vehicle created."));
+        .andExpect(jsonPath("$.id").value(52))
+        .andExpect(jsonPath("$.plate").value("34 X 2"));
   }
 
   @Test

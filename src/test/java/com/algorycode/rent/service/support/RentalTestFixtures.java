@@ -10,6 +10,7 @@ public final class RentalTestFixtures {
 
   public static RentalStatusDefinition rentalStatusDefinition(String code) {
     var d = new RentalStatusDefinition();
+    d.setId(Math.abs((long) code.toLowerCase().hashCode()) + 1000L);
     d.setCode(code);
     d.setLabelTr("");
     d.setSortOrder(0);

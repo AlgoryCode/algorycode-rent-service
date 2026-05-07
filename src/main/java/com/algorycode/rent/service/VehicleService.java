@@ -6,6 +6,8 @@ import com.algorycode.rent.api.dto.UpdateVehicleRequest;
 import com.algorycode.rent.api.dto.VehicleDto;
 import com.algorycode.rent.api.dto.VehicleOptionDefinitionDto;
 import com.algorycode.rent.api.dto.VehicleOptionDefinitionRequest;
+import com.algorycode.rent.api.error.BadRequestException;
+import com.algorycode.rent.api.error.ConflictException;
 import com.algorycode.rent.api.error.ResourceNotFoundException;
 import com.algorycode.rent.api.mapper.HandoverLocationMapper;
 import com.algorycode.rent.domain.location.HandoverLocation;
@@ -54,14 +56,6 @@ public class VehicleService {
   }
 
   @Transactional(readOnly = true)
-  public List<JsonNode> listAllSnapshots() {
-    return vehicleRepository.findAllFeFleetSnapshotsByDeletedFalse().stream()
-        .filter(Objects::nonNull)
-        .filter(n -> !n.isNull())
-        .toList();
-  }
-
-  @Transactional(readOnly = true)
   public List<VehicleDto> listWithAvailabilityFilter(
       LocalDate availableFrom,
       LocalDate availableTo,
@@ -90,11 +84,15 @@ public class VehicleService {
   }
 
   @Transactional
-  public Long create(CreateVehicleRequest req) {
+  public VehicleDto create(CreateVehicleRequest req) {
+    String normalizedPlate = normalizePlate(req.plate());
+    if (vehicleRepository.existsByPlateIgnoreCaseAndDeletedFalse(normalizedPlate)) {
+      throw new ConflictException("Vehicle plate already exists: " + normalizedPlate);
+    }
     Vehicle v = new Vehicle();
-    v.setPlate(req.plate().trim().replaceAll("\\s+", " "));
+    v.setPlate(normalizedPlate);
     v.setVehicleModelId(req.vehicleModelId());
-    v.setVehicleStatusId(1L);
+    v.setVehicleStatusId(req.vehicleStatusId());
     v.setYear(req.year());
     v.setExternal(Boolean.TRUE.equals(req.external()));
     v.setExternalCompany(req.externalCompany());
@@ -115,16 +113,19 @@ public class VehicleService {
     replaceVehicleHighlights(v, req.highlights());
     v = vehicleRepository.save(v);
 
-    replaceVehicleOptionDefinitions(
-        v, mergeOptionDefinitions(req.optionTemplateIds(), req.optionDefinitions()));
+    List<VehicleOptionDefinitionRequest> merged =
+        mergeOptionDefinitions(req.optionTemplateIds(), req.optionDefinitions());
+    replaceVehicleOptionDefinitions(v, merged);
     v = vehicleRepository.save(v);
 
-    vehicleImageService.processVehicleImagesAndSnapshotAsync(v.getId(), req.images());
+    if (req.images() != null) {
+      vehicleImageService.processVehicleImagesAndSnapshotAsync(v.getId(), req.images());
+    }
     persistFleetSnapshot(v);
     v = vehicleRepository.save(v);
 
     auditLog.infoEvent("vehicle_created", Map.of("vehicleId", v.getId().toString()));
-    return v.getId();
+    return toDto(v);
   }
 
   @Transactional
@@ -134,7 +135,11 @@ public class VehicleService {
             .findByIdAndDeletedFalse(id)
             .orElseThrow(() -> new ResourceNotFoundException("Vehicle not found: " + id));
 
-    v.setPlate(req.plate().trim().replaceAll("\\s+", " "));
+    String normalizedPlate = normalizePlate(req.plate());
+    if (vehicleRepository.existsByPlateIgnoreCaseAndDeletedFalseAndIdNot(normalizedPlate, id)) {
+      throw new ConflictException("Vehicle plate already exists: " + normalizedPlate);
+    }
+    v.setPlate(normalizedPlate);
     v.setVehicleModelId(req.vehicleModelId());
     v.setVehicleStatusId(req.vehicleStatusId());
     v.setYear(req.year());
@@ -155,13 +160,23 @@ public class VehicleService {
     v.setDefaultPickupHandoverLocationId(req.defaultPickupHandoverLocationId());
     replaceVehicleReturnHandovers(v, req.returnHandoverLocationIds());
     replaceVehicleOptionDefinitions(
-        v, mergeOptionDefinitions(req.optionTemplateIds(), req.optionDefinitions()));
-    vehicleImageService.applyVehicleImages(v, req.images());
+        v,
+        mergeOptionDefinitions(req.optionTemplateIds(), req.optionDefinitions()));
+    if (req.images() != null) {
+      vehicleImageService.applyVehicleImages(v, req.images());
+    }
     replaceVehicleHighlights(v, req.highlights());
 
     Vehicle saved = vehicleRepository.save(v);
     persistFleetSnapshot(saved);
     return toDto(vehicleRepository.save(saved));
+  }
+
+  @Transactional(readOnly = true)
+  public List<JsonNode> listAllSnapshots() {
+    return vehicleRepository.findAllFeFleetSnapshotsByDeletedFalse().stream()
+        .filter(Objects::nonNull)
+        .toList();
   }
 
   @Transactional
@@ -186,13 +201,22 @@ public class VehicleService {
             .orElseThrow(() -> new ResourceNotFoundException("Vehicle not found: " + id));
     v.setDeleted(true);
     vehicleRepository.save(v);
+    auditLog.infoEvent("vehicle_deleted", Map.of("vehicleId", v.getId().toString()));
+  }
+
+  private String normalizePlate(String plate) {
+    if (plate == null || plate.isBlank()) {
+      throw new BadRequestException("Vehicle plate is required");
+    }
+    return plate.trim().replaceAll("\\s+", " ");
   }
 
   private List<VehicleOptionDefinitionRequest> mergeOptionDefinitions(
       List<Long> templateIds, List<VehicleOptionDefinitionRequest> manual) {
     List<VehicleOptionDefinitionRequest> merged = new ArrayList<>();
     int lo = 0;
-    for (Long tid : templateIds) {
+    List<Long> safeTemplateIds = templateIds == null ? List.of() : templateIds;
+    for (Long tid : safeTemplateIds) {
       VehicleOptionTemplate t = vehicleOptionTemplateRepository.getReferenceById(tid);
       merged.add(
           new VehicleOptionDefinitionRequest(
@@ -203,13 +227,13 @@ public class VehicleService {
               lo++,
               true));
     }
-    for (VehicleOptionDefinitionRequest r : manual) {
-      BigDecimal mp = r.price() == null ? BigDecimal.ZERO : r.price();
+    List<VehicleOptionDefinitionRequest> safeManual = manual == null ? List.of() : manual;
+    for (VehicleOptionDefinitionRequest r : safeManual) {
       merged.add(
           new VehicleOptionDefinitionRequest(
               r.title(),
               r.description(),
-              mp.setScale(2, RoundingMode.HALF_UP),
+              r.price().setScale(2, RoundingMode.HALF_UP),
               r.icon(),
               lo++,
               r.active() == null || Boolean.TRUE.equals(r.active())));
@@ -219,18 +243,12 @@ public class VehicleService {
 
   private void replaceVehicleHighlights(Vehicle v, List<String> lines) {
     v.getHighlights().clear();
-    if (lines == null || lines.isEmpty()) {
-      return;
-    }
-    int order = 0;
-    for (String line : lines) {
-      if (line == null || line.isBlank()) {
-        continue;
-      }
+    List<String> safeLines = lines == null ? List.of() : lines;
+    for (String line : safeLines) {
       VehicleHighlight h = new VehicleHighlight();
       h.setVehicle(v);
-      h.setLineOrder(order++);
-      h.setText(line.trim());
+      h.setLineOrder(v.getHighlights().size());
+      h.setText(line);
       v.getHighlights().add(h);
     }
   }
@@ -241,13 +259,12 @@ public class VehicleService {
     for (VehicleOptionDefinitionRequest r : defs) {
       VehicleOptionDefinition e = new VehicleOptionDefinition();
       e.setVehicle(v);
-      e.setTitle(r.title() == null ? "" : r.title().trim());
+      e.setTitle(r.title().trim());
       e.setDescription(
           r.description() != null && !r.description().isBlank() ? r.description().trim() : null);
-      BigDecimal price = r.price() == null ? BigDecimal.ZERO : r.price();
-      e.setPrice(price.setScale(2, RoundingMode.HALF_UP));
+      e.setPrice(r.price().setScale(2, RoundingMode.HALF_UP));
       e.setIcon(r.icon() != null && !r.icon().isBlank() ? r.icon().trim() : null);
-      e.setLineOrder(r.lineOrder() != null ? r.lineOrder() : 0);
+      e.setLineOrder(r.lineOrder());
       e.setActive(r.active() == null || Boolean.TRUE.equals(r.active()));
       v.getOptionDefinitions().add(e);
     }
@@ -271,7 +288,8 @@ public class VehicleService {
   private void replaceVehicleReturnHandovers(Vehicle v, List<Long> ids) {
     v.getAllowedReturnHandovers().clear();
     int order = 0;
-    for (Long hid : ids) {
+    List<Long> safeIds = ids == null ? List.of() : ids;
+    for (Long hid : safeIds) {
       HandoverLocation loc = handoverLocationRepository.getReferenceById(hid);
       VehicleAllowedReturnHandover link = new VehicleAllowedReturnHandover();
       link.setVehicle(v);
@@ -311,20 +329,7 @@ public class VehicleService {
             .toList();
     HandoverLocationRefDto firstReturn = returnRefs.isEmpty() ? null : returnRefs.get(0);
 
-    String bodyStyleLabel =
-        v.getBodyStyleRef() != null ? v.getBodyStyleRef().getLabelTr() : null;
-    Long transmissionTypeId =
-        v.getTransmissionTypeId() != null
-            ? v.getTransmissionTypeId()
-            : (v.getTransmissionTypeRef() != null ? v.getTransmissionTypeRef().getId() : null);
-    Long bodyStyleId =
-        v.getBodyStyleId() != null
-            ? v.getBodyStyleId()
-            : (v.getBodyStyleRef() != null ? v.getBodyStyleRef().getId() : null);
-    Long fuelTypeId =
-        v.getFuelTypeId() != null
-            ? v.getFuelTypeId()
-            : (v.getFuelTypeRef() != null ? v.getFuelTypeRef().getId() : null);
+    String bodyStyleLabel = v.getBodyStyleRef() != null ? v.getBodyStyleRef().getLabelTr() : null;
 
     String statusCode =
         v.getVehicleStatus() != null
@@ -333,20 +338,18 @@ public class VehicleService {
             ? v.getVehicleStatus().getCode().trim().toLowerCase(java.util.Locale.ROOT)
             : v.getStatus().name();
 
-    Long modelId =
-        v.getVehicleModelId() != null
-            ? v.getVehicleModelId()
-            : (v.getVehicleModel() != null ? v.getVehicleModel().getId() : null);
-
-    Long vehicleCatalogStatusId =
-        v.getVehicleStatusId() != null
-            ? v.getVehicleStatusId()
-            : (v.getVehicleStatus() != null ? v.getVehicleStatus().getId() : null);
+    Long modelId = v.getVehicleModel() != null ? v.getVehicleModel().getId() : null;
+    Long transmissionTypeId =
+        v.getTransmissionTypeRef() != null ? v.getTransmissionTypeRef().getId() : null;
+    Long bodyStyleId = v.getBodyStyleRef() != null ? v.getBodyStyleRef().getId() : null;
+    Long fuelTypeId = v.getFuelTypeRef() != null ? v.getFuelTypeRef().getId() : null;
 
     return new VehicleDto(
         v.getId(),
         modelId,
-        vehicleCatalogStatusId,
+        v.getVehicleStatusId() != null
+            ? v.getVehicleStatusId()
+            : (v.getVehicleStatus() != null ? v.getVehicleStatus().getId() : null),
         transmissionTypeId,
         bodyStyleId,
         fuelTypeId,

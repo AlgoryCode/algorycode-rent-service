@@ -5,7 +5,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.lenient;
@@ -252,13 +251,6 @@ class VehicleServiceTest {
 
   @Test
   void create_persistsVehicle() {
-    when(handoverLocationRepository.getReferenceById(anyLong()))
-        .thenAnswer(
-            inv -> {
-              HandoverLocation loc = mock(HandoverLocation.class);
-              when(loc.getId()).thenReturn(inv.getArgument(0));
-              return loc;
-            });
     when(vehicleRepository.save(any(Vehicle.class)))
         .thenAnswer(
             invocation -> {
@@ -269,7 +261,7 @@ class VehicleServiceTest {
               return vehicle;
             });
 
-    Long createdId =
+    var created =
         vehicleService.create(
             CreateVehicleRequest.builder()
                 .plate("34 TEST 34")
@@ -293,7 +285,7 @@ class VehicleServiceTest {
                 .images(Map.of())
                 .build());
 
-    assertThat(createdId).isEqualTo(999L);
+    assertThat(created.id()).isEqualTo(999L);
     verify(vehicleRepository, atLeastOnce())
         .save(
             argThat(
