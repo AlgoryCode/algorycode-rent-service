@@ -68,7 +68,7 @@ public class PaymentLogService {
     p.setStatus(status);
     p.setMethod(req.method().trim());
     p.setPlate(plate);
-    p.setVehicle(v);
+    p.setVehicleId(rental.getVehicleId());
     p.setRental(rental);
     p.setRentalRevenueEur(revenueEur);
     p.setCustomerName(customerName);

@@ -71,6 +71,7 @@ class VehicleControllerTest {
                     1L,
                     null,
                     null,
+                    null,
                     "34 A 1",
                     "Toyota",
                     "Corolla",

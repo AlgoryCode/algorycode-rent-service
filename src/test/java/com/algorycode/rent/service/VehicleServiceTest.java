@@ -4,12 +4,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
-import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -24,49 +24,39 @@ import com.algorycode.rent.domain.request.RentalRequest;
 import com.algorycode.rent.domain.request.RentalRequestStatus;
 import com.algorycode.rent.domain.vehicle.Vehicle;
 import com.algorycode.rent.domain.vehicle.VehicleStatus;
-import com.algorycode.rent.domain.vehicle.VehicleStatusDefinition;
 import com.algorycode.rent.logging.AuditLog;
+import com.algorycode.rent.repository.HandoverLocationRepository;
 import com.algorycode.rent.repository.RentalRepository;
 import com.algorycode.rent.repository.RentalRequestRepository;
-import com.algorycode.rent.repository.VehicleBodyStyleRepository;
-import com.algorycode.rent.repository.VehicleFuelTypeRepository;
-import com.algorycode.rent.repository.VehicleModelRepository;
+import com.algorycode.rent.repository.VehicleOptionTemplateRepository;
 import com.algorycode.rent.repository.VehicleRepository;
-import com.algorycode.rent.repository.VehicleStatusDefinitionRepository;
-import com.algorycode.rent.repository.VehicleTransmissionTypeRepository;
 import com.algorycode.rent.service.readmodel.FeFleetSnapshotBuilder;
 import com.algorycode.rent.service.support.RentalTestFixtures;
 import com.algorycode.rent.service.support.VehicleAvailabilitySlotAnalyzer;
 import com.algorycode.rent.service.support.VehicleTestFixtures;
+import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.Collections;
+import java.util.Objects;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.context.MessageSource;
-
 @ExtendWith(MockitoExtension.class)
 class VehicleServiceTest {
 
   @Mock private VehicleRepository vehicleRepository;
-  @Mock private VehicleModelRepository vehicleModelRepository;
-  @Mock private VehicleStatusDefinitionRepository vehicleStatusDefinitionRepository;
-  @Mock private VehicleBodyStyleRepository vehicleBodyStyleRepository;
-  @Mock private VehicleFuelTypeRepository vehicleFuelTypeRepository;
-  @Mock private VehicleTransmissionTypeRepository vehicleTransmissionTypeRepository;
+  @Mock private HandoverLocationRepository handoverLocationRepository;
+  @Mock private VehicleOptionTemplateRepository vehicleOptionTemplateRepository;
   @Mock private ObjectStorageService objectStorageService;
-  @Mock private HandoverLocationService handoverLocationService;
-  @Mock private VehicleOptionTemplateService vehicleOptionTemplateService;
   @Mock private RentalRepository rentalRepository;
   @Mock private RentalRequestRepository rentalRequestRepository;
   @Mock private VehicleImageService vehicleImageService;
-  @Mock private MessageSource messageSource;
 
   private VehicleService vehicleService;
 
@@ -77,20 +67,12 @@ class VehicleServiceTest {
             rentalRequestRepository.findPotentiallyBlockingRequestsForAvailability(
                 any(), any(), anyList()))
         .thenReturn(Collections.emptyList());
-    lenient()
-        .when(messageSource.getMessage(any(), any(), any()))
-        .thenAnswer(invocation -> invocation.getArgument(0).toString());
     vehicleService =
         new VehicleService(
             vehicleRepository,
-            vehicleModelRepository,
-            vehicleStatusDefinitionRepository,
-            vehicleBodyStyleRepository,
-            vehicleFuelTypeRepository,
-            vehicleTransmissionTypeRepository,
+            handoverLocationRepository,
+            vehicleOptionTemplateRepository,
             objectStorageService,
-            handoverLocationService,
-            vehicleOptionTemplateService,
             new VehicleAvailabilityService(
                 vehicleRepository,
                 rentalRepository,
@@ -98,8 +80,7 @@ class VehicleServiceTest {
                 new VehicleAvailabilitySlotAnalyzer()),
             vehicleImageService,
             mock(AuditLog.class),
-            mock(FeFleetSnapshotBuilder.class),
-            messageSource);
+            mock(FeFleetSnapshotBuilder.class));
   }
 
   @Test
@@ -111,10 +92,7 @@ class VehicleServiceTest {
     r.setStartDate(LocalDate.of(2026, 6, 15));
     r.setEndDate(LocalDate.of(2026, 6, 16));
     RentalTestFixtures.attachRentalStatus(r, RentalStatus.active);
-    Vehicle rv = new Vehicle();
-    rv.setId(vid);
-    rv.setPlate("34 RV 1");
-    r.setVehicle(rv);
+    r.setVehicleId(vid);
     CustomerSnapshot c = new CustomerSnapshot();
     c.setFullName("Ali");
     r.setCustomer(c);
@@ -157,10 +135,7 @@ class VehicleServiceTest {
     req.setStatus(RentalRequestStatus.pending);
     req.setStartDate(LocalDate.of(2026, 8, 10));
     req.setEndDate(LocalDate.of(2026, 8, 11));
-    Vehicle rv = new Vehicle();
-    rv.setId(vid);
-    rv.setPlate("34 RV 2");
-    req.setVehicle(rv);
+    req.setVehicleId(vid);
 
     when(rentalRequestRepository.findPotentiallyBlockingRequestsForAvailability(
             eq(LocalDate.of(2026, 8, 10)), eq(LocalDate.of(2026, 8, 12)), anyList()))
@@ -222,10 +197,7 @@ class VehicleServiceTest {
     r.setStartDate(LocalDate.of(2026, 6, 20));
     r.setEndDate(LocalDate.of(2026, 6, 22));
     RentalTestFixtures.attachRentalStatus(r, RentalStatus.active);
-    Vehicle rv = new Vehicle();
-    rv.setId(vid);
-    rv.setPlate("34 RV 3");
-    r.setVehicle(rv);
+    r.setVehicleId(vid);
     CustomerSnapshot c = new CustomerSnapshot();
     c.setFullName("Ali");
     r.setCustomer(c);
@@ -279,13 +251,14 @@ class VehicleServiceTest {
   }
 
   @Test
-  void create_whenVehicleModelIdMissing_savesWithoutModel() {
-    var activeRow = new VehicleStatusDefinition();
-    activeRow.setId(1L);
-    activeRow.setCode("active");
-    when(vehicleRepository.existsByPlateIgnoreCaseAndDeletedFalse("34 TEST 34")).thenReturn(false);
-    when(vehicleStatusDefinitionRepository.findByCodeIgnoreCase("active"))
-        .thenReturn(Optional.of(activeRow));
+  void create_persistsVehicle() {
+    when(handoverLocationRepository.getReferenceById(anyLong()))
+        .thenAnswer(
+            inv -> {
+              HandoverLocation loc = mock(HandoverLocation.class);
+              when(loc.getId()).thenReturn(inv.getArgument(0));
+              return loc;
+            });
     when(vehicleRepository.save(any(Vehicle.class)))
         .thenAnswer(
             invocation -> {
@@ -298,14 +271,38 @@ class VehicleServiceTest {
 
     Long createdId =
         vehicleService.create(
-            CreateVehicleRequest.builder().plate("34 TEST 34").countryCode("TR").build());
+            CreateVehicleRequest.builder()
+                .plate("34 TEST 34")
+                .vehicleModelId(1L)
+                .vehicleStatusId(1L)
+                .year(2024)
+                .external(false)
+                .rentalDailyPrice(BigDecimal.TEN)
+                .countryCode("TR")
+                .engine("1.6")
+                .fuelTypeId(2L)
+                .bodyColor("white")
+                .seats(5)
+                .luggage(3)
+                .transmissionTypeId(1L)
+                .bodyStyleId(1L)
+                .returnHandoverLocationIds(List.of())
+                .optionTemplateIds(List.of())
+                .optionDefinitions(List.of())
+                .highlights(List.of())
+                .images(Map.of())
+                .build());
 
     assertThat(createdId).isEqualTo(999L);
-    verify(vehicleModelRepository, never()).findFirstByOrderByIdAsc();
-    verify(vehicleModelRepository, never()).findById(anyLong());
-    ArgumentCaptor<Vehicle> captor = ArgumentCaptor.forClass(Vehicle.class);
-    verify(vehicleRepository, atLeastOnce()).save(captor.capture());
-    assertThat(captor.getAllValues().getFirst().getVehicleModel()).isNull();
+    verify(vehicleRepository, atLeastOnce())
+        .save(
+            argThat(
+                veh ->
+                    Objects.equals(veh.getVehicleModelId(), 1L)
+                        && Objects.equals(veh.getVehicleStatusId(), 1L)
+                        && Objects.equals(veh.getFuelTypeId(), 2L)
+                        && Objects.equals(veh.getTransmissionTypeId(), 1L)
+                        && Objects.equals(veh.getBodyStyleId(), 1L)));
   }
 
   private static Vehicle sampleVehicle() {

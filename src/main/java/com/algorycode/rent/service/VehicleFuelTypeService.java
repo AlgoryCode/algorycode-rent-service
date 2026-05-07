@@ -73,7 +73,7 @@ public class VehicleFuelTypeService implements VehicleCatalogCrudPort {
         vehicleFuelTypeRepository
             .findById(id)
             .orElseThrow(() -> new ResourceNotFoundException("Yakıt türü bulunamadı."));
-    long used = vehicleRepository.countByFuelTypeAndDeletedFalse(e.getCode());
+    long used = vehicleRepository.countByFuelTypeIdAndDeletedFalse(e.getId());
     if (used > 0) {
       throw new ConflictException("Bu yakıt türü " + used + " araçta kullanılıyor; silinemez.");
     }

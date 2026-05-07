@@ -30,13 +30,11 @@ public class VehicleBrandModelWriteService {
 
   @Transactional
   public VehicleModelCatalogDto createModel(long brandId, String name, int sortOrder) {
-    VehicleBrand brand =
-        vehicleBrandRepository
-            .findById(brandId)
-            .orElseThrow(
-                () -> new ResourceNotFoundException("Vehicle brand not found: " + brandId));
+    if (!vehicleBrandRepository.existsById(brandId)) {
+      throw new ResourceNotFoundException("Vehicle brand not found: " + brandId);
+    }
     VehicleModel m = new VehicleModel();
-    m.setBrand(brand);
+    m.setBrandId(brandId);
     m.setName(name.trim());
     m.setSortOrder(sortOrder);
     m = vehicleModelRepository.save(m);

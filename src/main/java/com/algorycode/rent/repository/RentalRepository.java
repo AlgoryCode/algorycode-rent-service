@@ -38,7 +38,7 @@ public interface RentalRepository
       attributePaths = {
         "statusDefinition",
         "vehicle",
-        "vehicle.statusDefinition",
+        "vehicle.vehicleStatus",
         "vehicle.vehicleModel",
         "vehicle.vehicleModel.brand",
         "pickupHandoverLocation",

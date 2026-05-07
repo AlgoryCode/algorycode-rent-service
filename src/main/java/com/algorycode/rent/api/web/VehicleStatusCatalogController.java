@@ -3,7 +3,7 @@ package com.algorycode.rent.api.web;
 import com.algorycode.rent.api.dto.VehicleCatalogEntryDto;
 import com.algorycode.rent.api.dto.VehicleLookupCreateRequest;
 import com.algorycode.rent.api.dto.VehicleLookupUpdateRequest;
-import com.algorycode.rent.service.VehicleStatusDefinitionService;
+import com.algorycode.rent.service.VehicleStatusCatalogService;
 import jakarta.validation.Valid;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -19,33 +19,33 @@ import org.springframework.web.bind.annotation.RestController;
 @RestController
 @RequestMapping("/rent/vehicle-statuses")
 @RequiredArgsConstructor
-public class VehicleStatusDefinitionController {
+public class VehicleStatusCatalogController {
 
-  private final VehicleStatusDefinitionService vehicleStatusDefinitionService;
+  private final VehicleStatusCatalogService vehicleStatusCatalogService;
 
   @GetMapping
   public List<VehicleCatalogEntryDto> list() {
-    return vehicleStatusDefinitionService.listAll();
+    return vehicleStatusCatalogService.listAll();
   }
 
   @GetMapping("/{code}")
   public VehicleCatalogEntryDto get(@PathVariable String code) {
-    return vehicleStatusDefinitionService.getByCode(code);
+    return vehicleStatusCatalogService.getByCode(code);
   }
 
   @PostMapping
   public VehicleCatalogEntryDto create(@Valid @RequestBody VehicleLookupCreateRequest body) {
-    return vehicleStatusDefinitionService.create(body);
+    return vehicleStatusCatalogService.create(body);
   }
 
   @PutMapping("/{code}")
   public VehicleCatalogEntryDto update(
       @PathVariable String code, @Valid @RequestBody VehicleLookupUpdateRequest body) {
-    return vehicleStatusDefinitionService.update(code, body);
+    return vehicleStatusCatalogService.update(code, body);
   }
 
   @DeleteMapping("/by-id/{id}")
   public void delete(@PathVariable long id) {
-    vehicleStatusDefinitionService.delete(id);
+    vehicleStatusCatalogService.delete(id);
   }
 }

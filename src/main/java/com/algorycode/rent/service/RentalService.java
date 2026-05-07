@@ -16,7 +16,6 @@ import com.algorycode.rent.domain.rental.RentalAdditionalDriver;
 import com.algorycode.rent.domain.rental.RentalCommissionFlow;
 import com.algorycode.rent.domain.rental.RentalOption;
 import com.algorycode.rent.domain.rental.RentalStatus;
-import com.algorycode.rent.domain.rental.RentalStatusDefinition;
 import com.algorycode.rent.domain.vehicle.Vehicle;
 import com.algorycode.rent.domain.vehicle.VehicleStatus;
 import com.algorycode.rent.logging.AuditLog;
@@ -107,7 +106,7 @@ public class RentalService {
         rentalRepository.findByVehicle_IdOrderByCreatedAtDesc(req.vehicleId());
     ensureNoOverlap(sameVehicle, req.startDate(), req.endDate(), null);
     Rental rental = new Rental();
-    rental.setVehicle(vehicle);
+    rental.setVehicleId(req.vehicleId());
     rental.setUserId(req.userId());
     rental.setStartDate(req.startDate());
     rental.setEndDate(req.endDate());
@@ -115,7 +114,7 @@ public class RentalService {
         resolvePickupHandover(vehicle, req.pickupHandoverLocationId()));
     rental.setReturnHandoverLocation(
         resolveReturnHandover(vehicle, req.returnHandoverLocationId()));
-    rental.setStatusDefinition(requireRentalStatusDefinition(status));
+    rental.setRentalStatusId(requireRentalStatusId(status));
     rental.setCommissionAmount(BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP));
     rental.setCommissionFlow(RentalCommissionFlow.collect);
     rental.setCommissionCompany(null);
@@ -182,7 +181,7 @@ public class RentalService {
           rentalRepository.findByVehicle_IdOrderByCreatedAtDesc(rental.getVehicle().getId());
       ensureNoOverlap(sameVehicle, rental.getStartDate(), rental.getEndDate(), rental.getId());
     }
-    rental.setStatusDefinition(requireRentalStatusDefinition(status));
+    rental.setRentalStatusId(requireRentalStatusId(status));
     Rental saved = rentalRepository.save(rental);
     syncDefaultPickupHandoverFromCompletedRental(saved);
     auditLog.infoEvent(
@@ -230,7 +229,7 @@ public class RentalService {
       rental.setReturnHandoverLocation(
           handoverLocationService.requireForAssignment(rid, HandoverLocationKind.RETURN));
     }
-    rental.setStatusDefinition(requireRentalStatusDefinition(nextStatus));
+    rental.setRentalStatusId(requireRentalStatusId(nextStatus));
     rental.setCommissionAmount(BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP));
     rental.setCommissionFlow(RentalCommissionFlow.collect);
     rental.setCommissionCompany(null);
@@ -475,11 +474,11 @@ public class RentalService {
         : handoverLocationService.requireForAssignment(returnId, HandoverLocationKind.RETURN);
   }
 
-  private RentalStatusDefinition requireRentalStatusDefinition(RentalStatus status) {
+  private long requireRentalStatusId(RentalStatus status) {
     for (String code : status.dbLookupCodes()) {
       var row = rentalStatusDefinitionRepository.findByCodeIgnoreCase(code);
       if (row.isPresent()) {
-        return row.get();
+        return row.get().getId();
       }
     }
     throw new BadRequestException(

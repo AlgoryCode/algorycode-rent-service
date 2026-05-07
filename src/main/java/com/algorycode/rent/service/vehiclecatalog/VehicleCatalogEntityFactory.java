@@ -2,7 +2,7 @@ package com.algorycode.rent.service.vehiclecatalog;
 
 import com.algorycode.rent.domain.vehicle.VehicleBodyStyle;
 import com.algorycode.rent.domain.vehicle.VehicleFuelType;
-import com.algorycode.rent.domain.vehicle.VehicleStatusDefinition;
+import com.algorycode.rent.domain.vehicle.VehicleStatusCatalog;
 import com.algorycode.rent.domain.vehicle.VehicleTransmissionType;
 
 public final class VehicleCatalogEntityFactory {
@@ -34,9 +34,9 @@ public final class VehicleCatalogEntityFactory {
     return e;
   }
 
-  public static VehicleStatusDefinition newVehicleStatusDefinition(
+  public static VehicleStatusCatalog newVehicleStatusCatalog(
       String code, String labelTr, int sortOrder) {
-    VehicleStatusDefinition e = new VehicleStatusDefinition();
+    VehicleStatusCatalog e = new VehicleStatusCatalog();
     e.setCode(code);
     e.setLabelTr(labelTr);
     e.setSortOrder(sortOrder);

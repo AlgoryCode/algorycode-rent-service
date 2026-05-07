@@ -7,7 +7,7 @@ import static org.mockito.Mockito.when;
 
 import com.algorycode.rent.domain.location.HandoverLocationKind;
 import com.algorycode.rent.repository.VehicleBrandRepository;
-import com.algorycode.rent.repository.VehicleStatusDefinitionRepository;
+import com.algorycode.rent.repository.VehicleStatusCatalogRepository;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -20,7 +20,7 @@ import org.springframework.data.domain.Sort;
 class VehicleFormCatalogServiceTest {
 
   @Mock private VehicleBrandRepository vehicleBrandRepository;
-  @Mock private VehicleStatusDefinitionRepository vehicleStatusDefinitionRepository;
+  @Mock private VehicleStatusCatalogRepository vehicleStatusCatalogRepository;
   @Mock private CountryService countryService;
   @Mock private HandoverLocationService handoverLocationService;
   @Mock private VehicleOptionTemplateService vehicleOptionTemplateService;
@@ -30,7 +30,7 @@ class VehicleFormCatalogServiceTest {
   @Test
   void load_whenRepositoriesEmpty_thenReturnsEmptyCollections() {
     when(vehicleBrandRepository.findAllWithModelsForCatalog()).thenReturn(List.of());
-    when(vehicleStatusDefinitionRepository.findAll(any(Sort.class))).thenReturn(List.of());
+    when(vehicleStatusCatalogRepository.findAll(any(Sort.class))).thenReturn(List.of());
     when(countryService.listAll()).thenReturn(List.of());
     when(handoverLocationService.list(eq(HandoverLocationKind.PICKUP), eq(false)))
         .thenReturn(List.of());

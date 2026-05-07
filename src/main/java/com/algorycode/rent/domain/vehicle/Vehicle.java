@@ -45,12 +45,18 @@ public class Vehicle extends AbstractAuditableLongEntity {
 
   private Integer year;
 
-  @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "vehicle_status_id", nullable = false)
-  private VehicleStatusDefinition statusDefinition;
+  @Column(name = "vehicle_status_id", nullable = false)
+  private Long vehicleStatusId;
 
   @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "vehicle_model_id")
+  @JoinColumn(name = "vehicle_status_id", nullable = false, insertable = false, updatable = false)
+  private VehicleStatusCatalog vehicleStatus;
+
+  @Column(name = "vehicle_model_id")
+  private Long vehicleModelId;
+
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "vehicle_model_id", insertable = false, updatable = false)
   private VehicleModel vehicleModel;
 
   /** Araç başka bir firmadan geldiyse işaretlenir. */
@@ -100,8 +106,12 @@ public class Vehicle extends AbstractAuditableLongEntity {
   @Column(name = "engine", length = 255)
   private String engine;
 
-  @Column(name = "fuel_type", length = 64)
-  private String fuelType;
+  @Column(name = "fuel_type_id")
+  private Long fuelTypeId;
+
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "fuel_type_id", insertable = false, updatable = false)
+  private VehicleFuelType fuelTypeRef;
 
   @Column(name = "body_color", length = 64)
   private String bodyColor;
@@ -112,12 +122,18 @@ public class Vehicle extends AbstractAuditableLongEntity {
   @Column(name = "luggage")
   private Integer luggage;
 
-  @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "transmission_type_id")
-  private VehicleTransmissionType transmissionTypeRef;
+  @Column(name = "transmission_type_id")
+  private Long transmissionTypeId;
 
   @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "body_style_id")
+  @JoinColumn(name = "transmission_type_id", insertable = false, updatable = false)
+  private VehicleTransmissionType transmissionTypeRef;
+
+  @Column(name = "body_style_id")
+  private Long bodyStyleId;
+
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "body_style_id", insertable = false, updatable = false)
   private VehicleBodyStyle bodyStyleRef;
 
   @Fetch(FetchMode.SUBSELECT)
@@ -146,7 +162,10 @@ public class Vehicle extends AbstractAuditableLongEntity {
   private JsonNode feFleetSnapshot;
 
   public VehicleStatus getStatus() {
-    return VehicleStatus.fromDbCode(statusDefinition.getCode());
+    if (vehicleStatus == null) {
+      return VehicleStatus.active;
+    }
+    return VehicleStatus.fromDbCode(vehicleStatus.getCode());
   }
 
   public String getTransmissionTypeCode() {
@@ -155,6 +174,10 @@ public class Vehicle extends AbstractAuditableLongEntity {
 
   public String getBodyStyleCode() {
     return bodyStyleRef == null ? null : bodyStyleRef.getCode();
+  }
+
+  public String getFuelType() {
+    return fuelTypeRef == null ? null : fuelTypeRef.getCode();
   }
 
   public String getBrand() {

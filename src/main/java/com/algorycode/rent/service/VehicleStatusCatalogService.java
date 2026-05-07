@@ -6,9 +6,9 @@ import com.algorycode.rent.api.dto.VehicleLookupUpdateRequest;
 import com.algorycode.rent.api.error.BadRequestException;
 import com.algorycode.rent.api.error.ConflictException;
 import com.algorycode.rent.api.error.ResourceNotFoundException;
-import com.algorycode.rent.domain.vehicle.VehicleStatusDefinition;
+import com.algorycode.rent.domain.vehicle.VehicleStatusCatalog;
 import com.algorycode.rent.repository.VehicleRepository;
-import com.algorycode.rent.repository.VehicleStatusDefinitionRepository;
+import com.algorycode.rent.repository.VehicleStatusCatalogRepository;
 import com.algorycode.rent.service.support.Text;
 import com.algorycode.rent.service.support.VehicleCatalogSupport;
 import com.algorycode.rent.service.vehiclecatalog.VehicleCatalogEntityFactory;
@@ -21,17 +21,17 @@ import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @RequiredArgsConstructor
-public class VehicleStatusDefinitionService {
+public class VehicleStatusCatalogService {
 
-  private final VehicleStatusDefinitionRepository vehicleStatusDefinitionRepository;
+  private final VehicleStatusCatalogRepository vehicleStatusCatalogRepository;
   private final VehicleRepository vehicleRepository;
 
   @Transactional(readOnly = true)
   public List<VehicleCatalogEntryDto> listAll() {
-    return vehicleStatusDefinitionRepository
+    return vehicleStatusCatalogRepository
         .findAll(Sort.by(Sort.Direction.ASC, "sortOrder"))
         .stream()
-        .map(VehicleStatusDefinitionService::toDto)
+        .map(VehicleStatusCatalogService::toDto)
         .toList();
   }
 
@@ -47,17 +47,17 @@ public class VehicleStatusDefinitionService {
             req.code(),
             req.labelTr().trim(),
             false,
-            c -> vehicleStatusDefinitionRepository.findByCodeIgnoreCase(c).isPresent());
+            c -> vehicleStatusCatalogRepository.findByCodeIgnoreCase(c).isPresent());
     return toDto(
-        vehicleStatusDefinitionRepository.save(
-            VehicleCatalogEntityFactory.newVehicleStatusDefinition(
+        vehicleStatusCatalogRepository.save(
+            VehicleCatalogEntityFactory.newVehicleStatusCatalog(
                 code, req.labelTr().trim(), req.sortOrder())));
   }
 
   @Transactional
   public VehicleCatalogEntryDto update(String code, VehicleLookupUpdateRequest req) {
     VehicleCatalogSupport.requireUpdateHasSomething(req.labelTr(), req.sortOrder());
-    VehicleStatusDefinition e = requireEntity(code);
+    VehicleStatusCatalog e = requireEntity(code);
     if (req.labelTr() != null) {
       if (req.labelTr().isBlank()) {
         throw new BadRequestException("Özellik adı boş olamaz.");
@@ -67,32 +67,32 @@ public class VehicleStatusDefinitionService {
     if (req.sortOrder() != null) {
       e.setSortOrder(req.sortOrder());
     }
-    return toDto(vehicleStatusDefinitionRepository.save(e));
+    return toDto(vehicleStatusCatalogRepository.save(e));
   }
 
   @Transactional
   public void delete(long id) {
-    VehicleStatusDefinition e =
-        vehicleStatusDefinitionRepository
+    VehicleStatusCatalog e =
+        vehicleStatusCatalogRepository
             .findById(id)
             .orElseThrow(() -> new ResourceNotFoundException("Araç statüsü bulunamadı."));
-    long used = vehicleRepository.countByStatusDefinition_IdAndDeletedFalse(e.getId());
+    long used = vehicleRepository.countByVehicleStatusIdAndDeletedFalse(e.getId());
     if (used > 0) {
       throw new ConflictException("Bu araç statüsü " + used + " araçta kullanılıyor; silinemez.");
     }
-    vehicleStatusDefinitionRepository.delete(e);
+    vehicleStatusCatalogRepository.delete(e);
   }
 
-  private VehicleStatusDefinition requireEntity(String rawCode) {
+  private VehicleStatusCatalog requireEntity(String rawCode) {
     String key =
         Optional.ofNullable(Text.trimOrNull(rawCode))
             .orElseThrow(() -> new BadRequestException("Kod gerekli."));
-    return vehicleStatusDefinitionRepository
+    return vehicleStatusCatalogRepository
         .findByCodeIgnoreCase(key)
         .orElseThrow(() -> new ResourceNotFoundException("Araç statüsü bulunamadı: " + key));
   }
 
-  private static VehicleCatalogEntryDto toDto(VehicleStatusDefinition e) {
+  private static VehicleCatalogEntryDto toDto(VehicleStatusCatalog e) {
     return new VehicleCatalogEntryDto(e.getId(), e.getCode(), e.getLabelTr(), e.getSortOrder());
   }
 }

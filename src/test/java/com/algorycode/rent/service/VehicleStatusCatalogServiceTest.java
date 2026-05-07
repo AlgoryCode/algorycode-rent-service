@@ -9,9 +9,9 @@ import static org.mockito.Mockito.when;
 
 import com.algorycode.rent.api.dto.VehicleLookupCreateRequest;
 import com.algorycode.rent.api.error.ConflictException;
-import com.algorycode.rent.domain.vehicle.VehicleStatusDefinition;
+import com.algorycode.rent.domain.vehicle.VehicleStatusCatalog;
 import com.algorycode.rent.repository.VehicleRepository;
-import com.algorycode.rent.repository.VehicleStatusDefinitionRepository;
+import com.algorycode.rent.repository.VehicleStatusCatalogRepository;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -20,61 +20,61 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 @ExtendWith(MockitoExtension.class)
-class VehicleStatusDefinitionServiceTest {
+class VehicleStatusCatalogServiceTest {
 
-  @Mock private VehicleStatusDefinitionRepository vehicleStatusDefinitionRepository;
+  @Mock private VehicleStatusCatalogRepository vehicleStatusCatalogRepository;
   @Mock private VehicleRepository vehicleRepository;
 
-  @InjectMocks private VehicleStatusDefinitionService vehicleStatusDefinitionService;
+  @InjectMocks private VehicleStatusCatalogService vehicleStatusCatalogService;
 
   @Test
   void delete_whenUsedByVehicle_thenThrowsConflict() {
-    VehicleStatusDefinition row = new VehicleStatusDefinition();
+    VehicleStatusCatalog row = new VehicleStatusCatalog();
     row.setId(9L);
     row.setCode("custom");
     row.setLabelTr("Özel");
     row.setSortOrder(5);
 
-    when(vehicleStatusDefinitionRepository.findById(9L)).thenReturn(Optional.of(row));
-    when(vehicleRepository.countByStatusDefinition_IdAndDeletedFalse(9L)).thenReturn(3L);
+    when(vehicleStatusCatalogRepository.findById(9L)).thenReturn(Optional.of(row));
+    when(vehicleRepository.countByVehicleStatusIdAndDeletedFalse(9L)).thenReturn(3L);
 
-    assertThatThrownBy(() -> vehicleStatusDefinitionService.delete(9L))
+    assertThatThrownBy(() -> vehicleStatusCatalogService.delete(9L))
         .isInstanceOf(ConflictException.class)
         .hasMessageContaining("3");
 
-    verify(vehicleStatusDefinitionRepository, never()).delete(any());
+    verify(vehicleStatusCatalogRepository, never()).delete(any());
   }
 
   @Test
   void delete_whenUnused_thenDeletes() {
-    VehicleStatusDefinition row = new VehicleStatusDefinition();
+    VehicleStatusCatalog row = new VehicleStatusCatalog();
     row.setId(2L);
     row.setCode("orphan");
     row.setLabelTr("Yetim");
     row.setSortOrder(99);
 
-    when(vehicleStatusDefinitionRepository.findById(2L)).thenReturn(Optional.of(row));
-    when(vehicleRepository.countByStatusDefinition_IdAndDeletedFalse(2L)).thenReturn(0L);
+    when(vehicleStatusCatalogRepository.findById(2L)).thenReturn(Optional.of(row));
+    when(vehicleRepository.countByVehicleStatusIdAndDeletedFalse(2L)).thenReturn(0L);
 
-    vehicleStatusDefinitionService.delete(2L);
+    vehicleStatusCatalogService.delete(2L);
 
-    verify(vehicleStatusDefinitionRepository).delete(row);
+    verify(vehicleStatusCatalogRepository).delete(row);
   }
 
   @Test
   void create_withExplicitCode_thenSaves() {
-    when(vehicleStatusDefinitionRepository.findByCodeIgnoreCase("fleet_hold"))
+    when(vehicleStatusCatalogRepository.findByCodeIgnoreCase("fleet_hold"))
         .thenReturn(Optional.empty());
-    when(vehicleStatusDefinitionRepository.save(any(VehicleStatusDefinition.class)))
+    when(vehicleStatusCatalogRepository.save(any(VehicleStatusCatalog.class)))
         .thenAnswer(
             inv -> {
-              VehicleStatusDefinition e = inv.getArgument(0);
+              VehicleStatusCatalog e = inv.getArgument(0);
               e.setId(100L);
               return e;
             });
 
     var dto =
-        vehicleStatusDefinitionService.create(
+        vehicleStatusCatalogService.create(
             new VehicleLookupCreateRequest("fleet_hold", "Filoda beklemede", 12));
 
     assertThat(dto.code()).isEqualTo("fleet_hold");

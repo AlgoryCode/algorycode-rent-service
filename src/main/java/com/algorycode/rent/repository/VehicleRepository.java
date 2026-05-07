@@ -16,11 +16,12 @@ public interface VehicleRepository extends JpaRepository<Vehicle, Long> {
 
   @EntityGraph(
       attributePaths = {
-        "statusDefinition",
+        "vehicleStatus",
         "vehicleModel",
         "vehicleModel.brand",
         "transmissionTypeRef",
         "bodyStyleRef",
+        "fuelTypeRef",
         "defaultPickupHandoverLocation",
         "allowedReturnHandovers",
         "allowedReturnHandovers.handoverLocation"
@@ -29,11 +30,12 @@ public interface VehicleRepository extends JpaRepository<Vehicle, Long> {
 
   @EntityGraph(
       attributePaths = {
-        "statusDefinition",
+        "vehicleStatus",
         "vehicleModel",
         "vehicleModel.brand",
         "transmissionTypeRef",
         "bodyStyleRef",
+        "fuelTypeRef",
         "defaultPickupHandoverLocation",
         "allowedReturnHandovers",
         "allowedReturnHandovers.handoverLocation"
@@ -44,13 +46,13 @@ public interface VehicleRepository extends JpaRepository<Vehicle, Long> {
 
   boolean existsByPlateIgnoreCaseAndDeletedFalseAndIdNot(String plate, Long id);
 
-  long countByBodyStyleRef_IdAndDeletedFalse(Long bodyStyleId);
+  long countByBodyStyleIdAndDeletedFalse(Long bodyStyleId);
 
-  long countByFuelTypeAndDeletedFalse(String fuelType);
+  long countByFuelTypeIdAndDeletedFalse(Long fuelTypeId);
 
-  long countByTransmissionTypeRef_IdAndDeletedFalse(Long transmissionTypeId);
+  long countByTransmissionTypeIdAndDeletedFalse(Long transmissionTypeId);
 
-  long countByStatusDefinition_IdAndDeletedFalse(Long statusDefinitionId);
+  long countByVehicleStatusIdAndDeletedFalse(Long vehicleStatusId);
 
   @Query("select v.feFleetSnapshot from Vehicle v where v.deleted = false order by v.id desc")
   List<JsonNode> findAllFeFleetSnapshotsByDeletedFalse();

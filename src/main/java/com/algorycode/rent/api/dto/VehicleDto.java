@@ -13,6 +13,7 @@ public record VehicleDto(
     Long vehicleStatusId,
     Long transmissionTypeId,
     Long bodyStyleId,
+    Long fuelTypeId,
     String plate,
     String brand,
     String model,

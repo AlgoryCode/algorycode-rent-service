@@ -115,15 +115,15 @@ public class FeFleetSnapshotBuilder {
   }
 
   private static String feStatusCode(Vehicle v) {
-    if (v.getStatusDefinition() == null || v.getStatusDefinition().getCode() == null) {
+    if (v.getVehicleStatus() == null || v.getVehicleStatus().getCode() == null) {
       return v.getStatus().name();
     }
-    String c = v.getStatusDefinition().getCode().trim();
+    String c = v.getVehicleStatus().getCode().trim();
     return c.isEmpty() ? v.getStatus().name() : c.toLowerCase(Locale.ROOT);
   }
 
   private static String categoryLabel(Vehicle v) {
-    return Optional.ofNullable(v.getStatusDefinition().getLabelTr())
+    return Optional.ofNullable(v.getVehicleStatus().getLabelTr())
         .map(String::trim)
         .filter(s -> !s.isEmpty())
         .orElse("Müsait");

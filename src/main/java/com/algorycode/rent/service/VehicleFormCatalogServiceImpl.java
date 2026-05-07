@@ -7,7 +7,7 @@ import com.algorycode.rent.api.dto.VehicleFormCatalogDto;
 import com.algorycode.rent.api.dto.VehicleModelCatalogDto;
 import com.algorycode.rent.domain.location.HandoverLocationKind;
 import com.algorycode.rent.repository.VehicleBrandRepository;
-import com.algorycode.rent.repository.VehicleStatusDefinitionRepository;
+import com.algorycode.rent.repository.VehicleStatusCatalogRepository;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Sort;
@@ -19,7 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class VehicleFormCatalogServiceImpl implements VehicleFormCatalogService {
 
   private final VehicleBrandRepository vehicleBrandRepository;
-  private final VehicleStatusDefinitionRepository vehicleStatusDefinitionRepository;
+  private final VehicleStatusCatalogRepository vehicleStatusCatalogRepository;
   private final CountryService countryService;
   private final HandoverLocationService handoverLocationService;
   private final VehicleOptionTemplateService vehicleOptionTemplateService;
@@ -44,7 +44,7 @@ public class VehicleFormCatalogServiceImpl implements VehicleFormCatalogService 
             .toList();
 
     List<VehicleCatalogEntryDto> statuses =
-        vehicleStatusDefinitionRepository.findAll(Sort.by(Sort.Direction.ASC, "sortOrder")).stream()
+        vehicleStatusCatalogRepository.findAll(Sort.by(Sort.Direction.ASC, "sortOrder")).stream()
             .map(
                 e ->
                     new VehicleCatalogEntryDto(

@@ -26,8 +26,11 @@ public class VehicleModel {
   @Column(name = "id", nullable = false, updatable = false)
   private Long id;
 
+  @Column(name = "brand_id", nullable = false)
+  private Long brandId;
+
   @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "brand_id", nullable = false)
+  @JoinColumn(name = "brand_id", nullable = false, insertable = false, updatable = false)
   private VehicleBrand brand;
 
   @Column(nullable = false, length = 255)

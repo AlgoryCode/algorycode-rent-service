@@ -35,20 +35,40 @@ public final class VehicleMapper {
     HandoverLocationRefDto firstReturn = returnRefs.isEmpty() ? null : returnRefs.get(0);
 
     String statusCode =
-        v.getStatusDefinition().getCode() == null || v.getStatusDefinition().getCode().isBlank()
-            ? v.getStatus().name()
-            : v.getStatusDefinition().getCode().trim().toLowerCase(Locale.ROOT);
-    Long modelId = v.getVehicleModel() != null ? v.getVehicleModel().getId() : null;
+        v.getVehicleStatus() != null
+                && v.getVehicleStatus().getCode() != null
+                && !v.getVehicleStatus().getCode().isBlank()
+            ? v.getVehicleStatus().getCode().trim().toLowerCase(Locale.ROOT)
+            : v.getStatus().name();
+    Long modelId =
+        v.getVehicleModelId() != null
+            ? v.getVehicleModelId()
+            : (v.getVehicleModel() != null ? v.getVehicleModel().getId() : null);
     Long transmissionTypeId =
-        v.getTransmissionTypeRef() != null ? v.getTransmissionTypeRef().getId() : null;
-    Long bodyStyleId = v.getBodyStyleRef() != null ? v.getBodyStyleRef().getId() : null;
+        v.getTransmissionTypeId() != null
+            ? v.getTransmissionTypeId()
+            : (v.getTransmissionTypeRef() != null ? v.getTransmissionTypeRef().getId() : null);
+    Long bodyStyleId =
+        v.getBodyStyleId() != null
+            ? v.getBodyStyleId()
+            : (v.getBodyStyleRef() != null ? v.getBodyStyleRef().getId() : null);
+    Long fuelTypeId =
+        v.getFuelTypeId() != null
+            ? v.getFuelTypeId()
+            : (v.getFuelTypeRef() != null ? v.getFuelTypeRef().getId() : null);
+
+    Long vehicleCatalogStatusId =
+        v.getVehicleStatusId() != null
+            ? v.getVehicleStatusId()
+            : (v.getVehicleStatus() != null ? v.getVehicleStatus().getId() : null);
 
     return new VehicleDto(
         v.getId(),
         modelId,
-        v.getStatusDefinition().getId(),
+        vehicleCatalogStatusId,
         transmissionTypeId,
         bodyStyleId,
+        fuelTypeId,
         v.getPlate(),
         v.getBrand(),
         v.getModel(),

@@ -4,7 +4,7 @@ import com.algorycode.rent.domain.vehicle.Vehicle;
 import com.algorycode.rent.domain.vehicle.VehicleBrand;
 import com.algorycode.rent.domain.vehicle.VehicleModel;
 import com.algorycode.rent.domain.vehicle.VehicleStatus;
-import com.algorycode.rent.domain.vehicle.VehicleStatusDefinition;
+import com.algorycode.rent.domain.vehicle.VehicleStatusCatalog;
 
 public final class VehicleTestFixtures {
 
@@ -16,13 +16,19 @@ public final class VehicleTestFixtures {
       v.setPlate("34 TEST 01");
     }
     VehicleBrand b = new VehicleBrand();
+    b.setId(901L);
     b.setName(brand);
     VehicleModel m = new VehicleModel();
+    m.setId(902L);
+    m.setBrandId(b.getId());
     m.setBrand(b);
     m.setName(model);
+    v.setVehicleModelId(m.getId());
     v.setVehicleModel(m);
-    VehicleStatusDefinition d = new VehicleStatusDefinition();
+    VehicleStatusCatalog d = new VehicleStatusCatalog();
+    d.setId(903L);
     d.setCode(status.name());
-    v.setStatusDefinition(d);
+    v.setVehicleStatusId(d.getId());
+    v.setVehicleStatus(d);
   }
 }

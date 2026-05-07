@@ -17,6 +17,9 @@ public final class RentalTestFixtures {
   }
 
   public static void attachRentalStatus(Rental rental, RentalStatus status) {
-    rental.setStatusDefinition(rentalStatusDefinition(status.name()));
+    RentalStatusDefinition d = rentalStatusDefinition(status.name());
+    d.setId((long) status.ordinal() + 900L);
+    rental.setRentalStatusId(d.getId());
+    rental.setStatusDefinition(d);
   }
 }

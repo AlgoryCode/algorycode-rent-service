@@ -5,4 +5,4 @@ import jakarta.persistence.Table;
 
 @Entity
 @Table(name = "vehicle_statuses")
-public class VehicleStatusDefinition extends AbstractVehicleCatalogRow {}
+public class VehicleStatusCatalog extends AbstractVehicleCatalogRow {}

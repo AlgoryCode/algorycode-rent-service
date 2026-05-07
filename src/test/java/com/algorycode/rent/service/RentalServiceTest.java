@@ -27,7 +27,6 @@ import com.algorycode.rent.repository.RentalStatusDefinitionRepository;
 import com.algorycode.rent.repository.ReservationExtraOptionTemplateRepository;
 import com.algorycode.rent.repository.VehicleOptionDefinitionRepository;
 import com.algorycode.rent.repository.VehicleRepository;
-import com.algorycode.rent.repository.VehicleStatusDefinitionRepository;
 import com.algorycode.rent.service.readmodel.FeFleetSnapshotBuilder;
 import com.algorycode.rent.service.support.RentalTestFixtures;
 import com.algorycode.rent.service.support.VehicleTestFixtures;
@@ -56,7 +55,6 @@ class RentalServiceTest {
   @Mock private HandoverLocationService handoverLocationService;
   @Mock private VehicleOptionDefinitionRepository vehicleOptionDefinitionRepository;
   @Mock private ReservationExtraOptionTemplateRepository reservationExtraOptionTemplateRepository;
-  @Mock private VehicleStatusDefinitionRepository vehicleStatusDefinitionRepository;
   @Mock private RentalStatusDefinitionRepository rentalStatusDefinitionRepository;
   @Mock private FeFleetSnapshotBuilder feFleetSnapshotBuilder;
   @Mock private AuditLog auditLog;
@@ -165,7 +163,8 @@ class RentalServiceTest {
     Vehicle vehicle = new Vehicle();
     vehicle.setId(vehicleId);
     vehicle.setPlate("34 T 1");
-    VehicleTestFixtures.attachBrandModelStatus(vehicle, "Toyota", "Corolla", VehicleStatus.active);
+    VehicleTestFixtures.attachBrandModelStatus(
+        vehicle, "Toyota", "Corolla", VehicleStatus.active);
     vehicle.setYear(2023);
     vehicle.setDefaultPickupHandoverLocation(oldDefaultPickup);
     vehicle.setCreatedAt(Instant.now());
@@ -200,7 +199,8 @@ class RentalServiceTest {
         .thenAnswer(invocation -> invocation.getArgument(0));
 
     UpdateRentalRequest req =
-        new UpdateRentalRequest(null, null, null, null, null, null, "completed", null, null);
+        new UpdateRentalRequest(
+            null, null, null, null, null, null, "completed", null, null);
 
     rentalService.update(rentalId, req);
 
@@ -250,7 +250,8 @@ class RentalServiceTest {
 
     rentalService.update(
         rentalId,
-        new UpdateRentalRequest(null, null, null, null, null, null, "completed", null, null));
+        new UpdateRentalRequest(
+            null, null, null, null, null, null, "completed", null, null));
 
     verify(vehicleRepository, never()).save(any());
   }
@@ -359,4 +360,5 @@ class RentalServiceTest {
     rental.setUpdatedAt(Instant.parse("2026-03-01T10:00:00Z"));
     return rental;
   }
+
 }

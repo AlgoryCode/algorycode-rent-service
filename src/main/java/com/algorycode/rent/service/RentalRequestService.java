@@ -100,7 +100,7 @@ public class RentalRequestService {
     RentalRequest entity = new RentalRequest();
     entity.setReferenceNo(generateReferenceNo());
     entity.setStatus(RentalRequestStatus.pending);
-    entity.setVehicle(vehicle);
+    entity.setVehicleId(vehicle != null ? vehicle.getId() : null);
     entity.setUserId(req.userId());
     entity.setStartDate(req.startDate());
     entity.setEndDate(req.endDate());

@@ -134,13 +134,15 @@ public class VehicleAvailabilitySlotAnalyzer {
       Long vehicleId, List<Rental> rentals, List<RentalRequest> requests) {
     List<InclusiveLocalDateRange> out = new ArrayList<>();
     for (Rental r : rentals) {
-      if (!r.getVehicle().getId().equals(vehicleId)) {
+      Long vid = rentalVehicleId(r);
+      if (vid == null || !vid.equals(vehicleId)) {
         continue;
       }
       out.add(new InclusiveLocalDateRange(r.getStartDate(), r.getEndDate()));
     }
     for (RentalRequest rr : requests) {
-      if (rr.getVehicle() == null || !rr.getVehicle().getId().equals(vehicleId)) {
+      Long vid = requestVehicleId(rr);
+      if (vid == null || !vid.equals(vehicleId)) {
         continue;
       }
       out.add(new InclusiveLocalDateRange(rr.getStartDate(), rr.getEndDate()));
@@ -158,7 +160,8 @@ public class VehicleAvailabilitySlotAnalyzer {
     }
     LocalDate dayAfterTrip = tripEnd.plusDays(1);
     for (Rental r : rentalCandidates) {
-      if (!r.getVehicle().getId().equals(vehicleId)) {
+      Long vid = rentalVehicleId(r);
+      if (vid == null || !vid.equals(vehicleId)) {
         continue;
       }
       if (RentalAvailabilityRules.dateRangesOverlap(
@@ -167,7 +170,8 @@ public class VehicleAvailabilitySlotAnalyzer {
       }
     }
     for (RentalRequest rr : requestCandidates) {
-      if (rr.getVehicle() == null || !rr.getVehicle().getId().equals(vehicleId)) {
+      Long vid = requestVehicleId(rr);
+      if (vid == null || !vid.equals(vehicleId)) {
         continue;
       }
       if (RentalAvailabilityRules.dateRangesOverlap(
@@ -176,6 +180,20 @@ public class VehicleAvailabilitySlotAnalyzer {
       }
     }
     return false;
+  }
+
+  private static Long rentalVehicleId(Rental r) {
+    if (r.getVehicleId() != null) {
+      return r.getVehicleId();
+    }
+    return r.getVehicle() != null ? r.getVehicle().getId() : null;
+  }
+
+  private static Long requestVehicleId(RentalRequest rr) {
+    if (rr.getVehicleId() != null) {
+      return rr.getVehicleId();
+    }
+    return rr.getVehicle() != null ? rr.getVehicle().getId() : null;
   }
 
   private static LocalDate max(LocalDate a, LocalDate b) {
