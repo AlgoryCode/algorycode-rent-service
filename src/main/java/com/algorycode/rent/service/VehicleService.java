@@ -94,7 +94,7 @@ public class VehicleService {
     Vehicle v = new Vehicle();
     v.setPlate(req.plate().trim().replaceAll("\\s+", " "));
     v.setVehicleModelId(req.vehicleModelId());
-    v.setVehicleStatusId(req.vehicleStatusId());
+    v.setVehicleStatusId(1L);
     v.setYear(req.year());
     v.setExternal(Boolean.TRUE.equals(req.external()));
     v.setExternalCompany(req.externalCompany());

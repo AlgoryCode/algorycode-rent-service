@@ -19,19 +19,28 @@ spring:
     username: postgres
     password: algorycode1.
     driver-class-name: org.postgresql.Driver
+    hikari:
+      connection-init-sql: SET search_path TO public
   flyway:
-    enabled: false
+    enabled: ${APP_FLYWAY_ENABLED:false}
+    baseline-on-migrate: true
+    default-schema: public
+    schemas: public
     locations: classpath:db/migration
   jpa:
     show-sql: false
+    defer-datasource-initialization: true
     hibernate:
-      ddl-auto: none
+      ddl-auto: update
     open-in-view: false
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
         jdbc:
           time_zone: UTC
+  sql:
+    init:
+      mode: none
   # AuthService / mail-service ile aynı broker (DNS: rabbitmq.algorycode.com veya küme içi servis)
   rabbitmq:
     host: localhost
