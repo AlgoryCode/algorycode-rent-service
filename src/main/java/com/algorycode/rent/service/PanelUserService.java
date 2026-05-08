@@ -1,8 +1,8 @@
 package com.algorycode.rent.service;
 
-import com.algorycode.rent.api.dto.PanelUserDto;
-import com.algorycode.rent.api.error.ResourceNotFoundException;
-import com.algorycode.rent.api.mapper.PanelUserMapper;
+import com.algorycode.rent.dto.PanelUserDto;
+import com.algorycode.rent.exception.ResourceNotFoundException;
+import com.algorycode.rent.mapper.PanelUserMapper;
 import com.algorycode.rent.repository.PanelUserRepository;
 import java.util.List;
 import lombok.RequiredArgsConstructor;

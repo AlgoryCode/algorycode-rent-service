@@ -1,6 +1,6 @@
 package com.algorycode.rent.repository;
 
-import com.algorycode.rent.domain.vehicle.VehicleStatusCatalog;
+import com.algorycode.rent.entity.VehicleStatusCatalog;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 

@@ -1,6 +1,6 @@
 package com.algorycode.rent.repository;
 
-import com.algorycode.rent.domain.location.City;
+import com.algorycode.rent.entity.City;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;

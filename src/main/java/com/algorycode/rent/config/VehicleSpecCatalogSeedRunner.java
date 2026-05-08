@@ -1,8 +1,8 @@
 package com.algorycode.rent.config;
 
-import com.algorycode.rent.domain.vehicle.VehicleBodyStyleKind;
-import com.algorycode.rent.domain.vehicle.VehicleFuelKind;
-import com.algorycode.rent.domain.vehicle.VehicleTransmissionKind;
+import com.algorycode.rent.entity.VehicleBodyStyleKind;
+import com.algorycode.rent.entity.VehicleFuelKind;
+import com.algorycode.rent.entity.VehicleTransmissionKind;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;

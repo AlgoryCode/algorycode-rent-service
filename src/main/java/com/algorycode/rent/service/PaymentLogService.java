@@ -1,15 +1,15 @@
 package com.algorycode.rent.service;
 
-import com.algorycode.rent.api.dto.CreatePaymentLogRequest;
-import com.algorycode.rent.api.dto.PaymentLogDto;
-import com.algorycode.rent.api.error.BadRequestException;
-import com.algorycode.rent.api.mapper.PaymentMapper;
-import com.algorycode.rent.domain.payment.PaymentLog;
-import com.algorycode.rent.domain.payment.PaymentLogStatus;
-import com.algorycode.rent.domain.payment.PaymentMoneyFlow;
-import com.algorycode.rent.domain.rental.Rental;
-import com.algorycode.rent.domain.rental.RentalStatus;
-import com.algorycode.rent.domain.vehicle.Vehicle;
+import com.algorycode.rent.dto.CreatePaymentLogRequest;
+import com.algorycode.rent.dto.PaymentLogDto;
+import com.algorycode.rent.exception.BadRequestException;
+import com.algorycode.rent.mapper.PaymentMapper;
+import com.algorycode.rent.entity.PaymentLog;
+import com.algorycode.rent.entity.PaymentLogStatus;
+import com.algorycode.rent.entity.PaymentMoneyFlow;
+import com.algorycode.rent.entity.Rental;
+import com.algorycode.rent.entity.RentalStatus;
+import com.algorycode.rent.entity.Vehicle;
 import com.algorycode.rent.repository.PaymentLogRepository;
 import com.algorycode.rent.repository.RentalRepository;
 import com.algorycode.rent.service.support.RentalRevenueEur;

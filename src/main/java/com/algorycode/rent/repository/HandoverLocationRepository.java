@@ -1,7 +1,7 @@
 package com.algorycode.rent.repository;
 
-import com.algorycode.rent.domain.location.HandoverLocation;
-import com.algorycode.rent.domain.location.HandoverLocationKind;
+import com.algorycode.rent.entity.HandoverLocation;
+import com.algorycode.rent.entity.HandoverLocationKind;
 import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
 

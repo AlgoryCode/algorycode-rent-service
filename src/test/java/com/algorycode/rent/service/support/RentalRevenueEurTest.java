@@ -2,9 +2,9 @@ package com.algorycode.rent.service.support;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.algorycode.rent.domain.rental.Rental;
-import com.algorycode.rent.domain.rental.RentalOption;
-import com.algorycode.rent.domain.vehicle.Vehicle;
+import com.algorycode.rent.entity.Rental;
+import com.algorycode.rent.entity.RentalOption;
+import com.algorycode.rent.entity.Vehicle;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.ArrayList;

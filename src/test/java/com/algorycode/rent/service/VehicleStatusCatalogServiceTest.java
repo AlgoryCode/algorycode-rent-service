@@ -7,9 +7,9 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.algorycode.rent.api.dto.VehicleLookupCreateRequest;
-import com.algorycode.rent.api.error.ConflictException;
-import com.algorycode.rent.domain.vehicle.VehicleStatusCatalog;
+import com.algorycode.rent.dto.VehicleLookupCreateRequest;
+import com.algorycode.rent.exception.ConflictException;
+import com.algorycode.rent.entity.VehicleStatusCatalog;
 import com.algorycode.rent.repository.VehicleRepository;
 import com.algorycode.rent.repository.VehicleStatusCatalogRepository;
 import java.util.Optional;

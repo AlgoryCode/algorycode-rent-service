@@ -3,9 +3,9 @@ package com.algorycode.rent.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
-import com.algorycode.rent.api.dto.HandoverPricingQuoteDto;
-import com.algorycode.rent.domain.location.HandoverLocation;
-import com.algorycode.rent.domain.location.HandoverLocationKind;
+import com.algorycode.rent.dto.HandoverPricingQuoteDto;
+import com.algorycode.rent.entity.HandoverLocation;
+import com.algorycode.rent.entity.HandoverLocationKind;
 import com.algorycode.rent.repository.HandoverLocationRepository;
 import java.math.BigDecimal;
 import java.util.Optional;

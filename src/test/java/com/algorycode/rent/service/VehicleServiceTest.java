@@ -12,17 +12,17 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.algorycode.rent.api.dto.CreateVehicleRequest;
-import com.algorycode.rent.api.error.BadRequestException;
-import com.algorycode.rent.api.error.ResourceNotFoundException;
-import com.algorycode.rent.domain.location.HandoverLocation;
-import com.algorycode.rent.domain.rental.CustomerSnapshot;
-import com.algorycode.rent.domain.rental.Rental;
-import com.algorycode.rent.domain.rental.RentalStatus;
-import com.algorycode.rent.domain.request.RentalRequest;
-import com.algorycode.rent.domain.request.RentalRequestStatus;
-import com.algorycode.rent.domain.vehicle.Vehicle;
-import com.algorycode.rent.domain.vehicle.VehicleStatus;
+import com.algorycode.rent.dto.CreateVehicleRequest;
+import com.algorycode.rent.exception.BadRequestException;
+import com.algorycode.rent.exception.ResourceNotFoundException;
+import com.algorycode.rent.entity.HandoverLocation;
+import com.algorycode.rent.entity.Customer;
+import com.algorycode.rent.entity.Rental;
+import com.algorycode.rent.entity.RentalStatus;
+import com.algorycode.rent.entity.RentalRequest;
+import com.algorycode.rent.entity.RentalRequestStatus;
+import com.algorycode.rent.entity.Vehicle;
+import com.algorycode.rent.entity.VehicleStatus;
 import com.algorycode.rent.logging.AuditLog;
 import com.algorycode.rent.repository.HandoverLocationRepository;
 import com.algorycode.rent.repository.RentalRepository;
@@ -93,8 +93,15 @@ class VehicleServiceTest {
     r.setEndDate(LocalDate.of(2026, 6, 16));
     RentalTestFixtures.attachRentalStatus(r, RentalStatus.active);
     r.setVehicleId(vid);
-    CustomerSnapshot c = new CustomerSnapshot();
-    c.setFullName("Ali");
+    Customer c =
+        Customer.builder()
+            .fullName("Ali")
+            .nationalId("1")
+            .passportNo("")
+            .phone("+90")
+            .build();
+    c.setId(1L);
+    r.setCustomerId(1L);
     r.setCustomer(c);
     when(rentalRepository.findPotentiallyBlockingForAvailability(
             LocalDate.of(2026, 6, 14), LocalDate.of(2026, 6, 15)))
@@ -198,8 +205,15 @@ class VehicleServiceTest {
     r.setEndDate(LocalDate.of(2026, 6, 22));
     RentalTestFixtures.attachRentalStatus(r, RentalStatus.active);
     r.setVehicleId(vid);
-    CustomerSnapshot c = new CustomerSnapshot();
-    c.setFullName("Ali");
+    Customer c =
+        Customer.builder()
+            .fullName("Ali")
+            .nationalId("1")
+            .passportNo("")
+            .phone("+90")
+            .build();
+    c.setId(1L);
+    r.setCustomerId(1L);
     r.setCustomer(c);
     when(rentalRepository.findPotentiallyBlockingForAvailability(
             LocalDate.of(2026, 6, 14), LocalDate.of(2026, 7, 1)))

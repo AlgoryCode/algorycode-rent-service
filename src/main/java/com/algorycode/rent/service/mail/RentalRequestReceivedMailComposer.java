@@ -1,7 +1,7 @@
 package com.algorycode.rent.service.mail;
 
-import com.algorycode.rent.domain.request.RentalRequest;
-import com.algorycode.rent.domain.vehicle.Vehicle;
+import com.algorycode.rent.entity.RentalRequest;
+import com.algorycode.rent.entity.Vehicle;
 import com.algorycode.rent.messaging.QueuedMailMessage;
 import java.time.format.DateTimeFormatter;
 import java.util.Locale;

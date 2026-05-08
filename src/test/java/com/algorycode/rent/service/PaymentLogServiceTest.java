@@ -3,9 +3,9 @@ package com.algorycode.rent.service;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
 
-import com.algorycode.rent.domain.payment.PaymentLog;
-import com.algorycode.rent.domain.payment.PaymentLogStatus;
-import com.algorycode.rent.domain.payment.PaymentMoneyFlow;
+import com.algorycode.rent.entity.PaymentLog;
+import com.algorycode.rent.entity.PaymentLogStatus;
+import com.algorycode.rent.entity.PaymentMoneyFlow;
 import com.algorycode.rent.repository.PaymentLogRepository;
 import com.algorycode.rent.repository.RentalRepository;
 import java.math.BigDecimal;

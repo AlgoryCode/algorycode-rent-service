@@ -5,7 +5,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
-import com.algorycode.rent.domain.location.HandoverLocationKind;
+import com.algorycode.rent.entity.HandoverLocationKind;
 import com.algorycode.rent.repository.VehicleBrandRepository;
 import com.algorycode.rent.repository.VehicleStatusCatalogRepository;
 import java.util.List;

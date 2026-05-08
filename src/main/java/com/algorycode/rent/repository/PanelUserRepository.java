@@ -1,6 +1,6 @@
 package com.algorycode.rent.repository;
 
-import com.algorycode.rent.domain.user.PanelUser;
+import com.algorycode.rent.entity.PanelUser;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;

@@ -1,11 +1,11 @@
 package com.algorycode.rent.service;
 
-import com.algorycode.rent.api.dto.CityDto;
-import com.algorycode.rent.api.dto.CreateCityRequest;
-import com.algorycode.rent.api.error.ConflictException;
-import com.algorycode.rent.api.error.ResourceNotFoundException;
-import com.algorycode.rent.api.mapper.CityMapper;
-import com.algorycode.rent.domain.location.City;
+import com.algorycode.rent.dto.CityDto;
+import com.algorycode.rent.dto.CreateCityRequest;
+import com.algorycode.rent.exception.ConflictException;
+import com.algorycode.rent.exception.ResourceNotFoundException;
+import com.algorycode.rent.mapper.CityMapper;
+import com.algorycode.rent.entity.City;
 import com.algorycode.rent.repository.CityRepository;
 import com.algorycode.rent.repository.CountryRepository;
 import java.util.List;

@@ -1,12 +1,12 @@
 package com.algorycode.rent.service;
 
-import com.algorycode.rent.api.dto.CreateCouponRequest;
-import com.algorycode.rent.api.dto.DiscountCouponDto;
-import com.algorycode.rent.api.dto.UpdateCouponRequest;
-import com.algorycode.rent.api.dto.ValidateCouponResponse;
-import com.algorycode.rent.api.error.BadRequestException;
-import com.algorycode.rent.api.error.ResourceNotFoundException;
-import com.algorycode.rent.domain.coupon.DiscountCoupon;
+import com.algorycode.rent.dto.CreateCouponRequest;
+import com.algorycode.rent.dto.DiscountCouponDto;
+import com.algorycode.rent.dto.UpdateCouponRequest;
+import com.algorycode.rent.dto.ValidateCouponResponse;
+import com.algorycode.rent.exception.BadRequestException;
+import com.algorycode.rent.exception.ResourceNotFoundException;
+import com.algorycode.rent.entity.DiscountCoupon;
 import com.algorycode.rent.repository.DiscountCouponRepository;
 import java.math.RoundingMode;
 import java.time.Instant;

@@ -1,13 +1,13 @@
 package com.algorycode.rent.service;
 
-import com.algorycode.rent.api.dto.CreateHandoverLocationRequest;
-import com.algorycode.rent.api.dto.HandoverLocationDto;
-import com.algorycode.rent.api.dto.UpdateHandoverLocationRequest;
-import com.algorycode.rent.api.error.BadRequestException;
-import com.algorycode.rent.api.error.ResourceNotFoundException;
-import com.algorycode.rent.api.mapper.HandoverLocationMapper;
-import com.algorycode.rent.domain.location.HandoverLocation;
-import com.algorycode.rent.domain.location.HandoverLocationKind;
+import com.algorycode.rent.dto.CreateHandoverLocationRequest;
+import com.algorycode.rent.dto.HandoverLocationDto;
+import com.algorycode.rent.dto.UpdateHandoverLocationRequest;
+import com.algorycode.rent.exception.BadRequestException;
+import com.algorycode.rent.exception.ResourceNotFoundException;
+import com.algorycode.rent.mapper.HandoverLocationMapper;
+import com.algorycode.rent.entity.HandoverLocation;
+import com.algorycode.rent.entity.HandoverLocationKind;
 import com.algorycode.rent.repository.HandoverLocationRepository;
 import com.algorycode.rent.service.readmodel.FeHandoverSnapshotJson;
 import com.algorycode.rent.service.support.Text;

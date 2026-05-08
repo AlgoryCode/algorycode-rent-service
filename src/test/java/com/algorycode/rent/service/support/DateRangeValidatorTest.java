@@ -3,7 +3,7 @@ package com.algorycode.rent.service.support;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
-import com.algorycode.rent.api.error.BadRequestException;
+import com.algorycode.rent.exception.BadRequestException;
 import java.time.LocalDate;
 import org.junit.jupiter.api.Test;
 

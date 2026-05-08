@@ -1,11 +1,11 @@
 package com.algorycode.rent.service;
 
-import com.algorycode.rent.api.dto.CreateVehicleOptionTemplateRequest;
-import com.algorycode.rent.api.dto.UpdateVehicleOptionTemplateRequest;
-import com.algorycode.rent.api.dto.VehicleOptionTemplateDto;
-import com.algorycode.rent.api.error.BadRequestException;
-import com.algorycode.rent.api.error.ResourceNotFoundException;
-import com.algorycode.rent.domain.vehicle.VehicleOptionTemplate;
+import com.algorycode.rent.dto.CreateVehicleOptionTemplateRequest;
+import com.algorycode.rent.dto.UpdateVehicleOptionTemplateRequest;
+import com.algorycode.rent.dto.VehicleOptionTemplateDto;
+import com.algorycode.rent.exception.BadRequestException;
+import com.algorycode.rent.exception.ResourceNotFoundException;
+import com.algorycode.rent.entity.VehicleOptionTemplate;
 import com.algorycode.rent.repository.VehicleOptionTemplateRepository;
 import java.math.RoundingMode;
 import java.util.List;

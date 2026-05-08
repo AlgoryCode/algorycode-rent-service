@@ -1,7 +1,7 @@
 package com.algorycode.rent.service.support;
 
-import com.algorycode.rent.domain.rental.Rental;
-import com.algorycode.rent.domain.request.RentalRequest;
+import com.algorycode.rent.entity.Rental;
+import com.algorycode.rent.entity.RentalRequest;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Comparator;

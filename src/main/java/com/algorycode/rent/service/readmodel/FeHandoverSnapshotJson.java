@@ -1,6 +1,6 @@
 package com.algorycode.rent.service.readmodel;
 
-import com.algorycode.rent.domain.location.HandoverLocation;
+import com.algorycode.rent.entity.HandoverLocation;
 import com.fasterxml.jackson.databind.node.JsonNodeFactory;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 

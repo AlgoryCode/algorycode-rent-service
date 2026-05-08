@@ -1,10 +1,10 @@
 package com.algorycode.rent.service.support;
 
-import com.algorycode.rent.domain.vehicle.Vehicle;
-import com.algorycode.rent.domain.vehicle.VehicleBrand;
-import com.algorycode.rent.domain.vehicle.VehicleModel;
-import com.algorycode.rent.domain.vehicle.VehicleStatus;
-import com.algorycode.rent.domain.vehicle.VehicleStatusCatalog;
+import com.algorycode.rent.entity.Vehicle;
+import com.algorycode.rent.entity.VehicleBrand;
+import com.algorycode.rent.entity.VehicleModel;
+import com.algorycode.rent.entity.VehicleStatus;
+import com.algorycode.rent.entity.VehicleStatusCatalog;
 
 public final class VehicleTestFixtures {
 

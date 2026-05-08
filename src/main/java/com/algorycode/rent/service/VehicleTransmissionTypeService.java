@@ -1,12 +1,12 @@
 package com.algorycode.rent.service;
 
-import com.algorycode.rent.api.dto.VehicleCatalogEntryDto;
-import com.algorycode.rent.api.dto.VehicleLookupCreateRequest;
-import com.algorycode.rent.api.dto.VehicleLookupUpdateRequest;
-import com.algorycode.rent.api.error.BadRequestException;
-import com.algorycode.rent.api.error.ConflictException;
-import com.algorycode.rent.api.error.ResourceNotFoundException;
-import com.algorycode.rent.domain.vehicle.VehicleTransmissionType;
+import com.algorycode.rent.dto.VehicleCatalogEntryDto;
+import com.algorycode.rent.dto.VehicleLookupCreateRequest;
+import com.algorycode.rent.dto.VehicleLookupUpdateRequest;
+import com.algorycode.rent.exception.BadRequestException;
+import com.algorycode.rent.exception.ConflictException;
+import com.algorycode.rent.exception.ResourceNotFoundException;
+import com.algorycode.rent.entity.VehicleTransmissionType;
 import com.algorycode.rent.repository.VehicleRepository;
 import com.algorycode.rent.repository.VehicleTransmissionTypeRepository;
 import com.algorycode.rent.service.support.Text;

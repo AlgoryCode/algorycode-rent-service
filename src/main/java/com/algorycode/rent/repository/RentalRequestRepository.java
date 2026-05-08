@@ -1,7 +1,7 @@
 package com.algorycode.rent.repository;
 
-import com.algorycode.rent.domain.request.RentalRequest;
-import com.algorycode.rent.domain.request.RentalRequestStatus;
+import com.algorycode.rent.entity.RentalRequest;
+import com.algorycode.rent.entity.RentalRequestStatus;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;

@@ -1,11 +1,11 @@
 package com.algorycode.rent.service;
 
-import com.algorycode.rent.api.error.BadRequestException;
-import com.algorycode.rent.domain.rental.Rental;
-import com.algorycode.rent.domain.request.RentalRequest;
-import com.algorycode.rent.domain.request.RentalRequestStatus;
-import com.algorycode.rent.domain.vehicle.Vehicle;
-import com.algorycode.rent.domain.vehicle.VehicleStatus;
+import com.algorycode.rent.exception.BadRequestException;
+import com.algorycode.rent.entity.Rental;
+import com.algorycode.rent.entity.RentalRequest;
+import com.algorycode.rent.entity.RentalRequestStatus;
+import com.algorycode.rent.entity.Vehicle;
+import com.algorycode.rent.entity.VehicleStatus;
 import com.algorycode.rent.repository.RentalRepository;
 import com.algorycode.rent.repository.RentalRequestRepository;
 import com.algorycode.rent.repository.VehicleRepository;
@@ -20,7 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 /**
  * Filo listesinde tarih + handover uygunluk süzmesi (VehicleService orchestration dışı). İptal
  * olmayan {@link Rental} ile birlikte pending/approved {@link
- * com.algorycode.rent.domain.request.RentalRequest} kayıtları aynı çakışma + tampon günü
+ * com.algorycode.rent.entity.RentalRequest} kayıtları aynı çakışma + tampon günü
  * kurallarıyla değerlendirilir.
  */
 @Service

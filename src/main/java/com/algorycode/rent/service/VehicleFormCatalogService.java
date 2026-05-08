@@ -1,6 +1,6 @@
 package com.algorycode.rent.service;
 
-import com.algorycode.rent.api.dto.VehicleFormCatalogDto;
+import com.algorycode.rent.dto.VehicleFormCatalogDto;
 
 public interface VehicleFormCatalogService {
 

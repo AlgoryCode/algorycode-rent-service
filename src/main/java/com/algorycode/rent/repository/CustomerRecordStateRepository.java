@@ -1,6 +1,6 @@
 package com.algorycode.rent.repository;
 
-import com.algorycode.rent.domain.customer.CustomerRecordState;
+import com.algorycode.rent.entity.CustomerRecordState;
 import java.util.List;
 import org.springframework.data.jpa.repository.JpaRepository;
 

@@ -1,13 +1,13 @@
 package com.algorycode.rent.contract;
 
-import com.algorycode.rent.api.error.BadRequestException;
+import com.algorycode.rent.exception.BadRequestException;
 import com.algorycode.rent.config.AppContractProperties;
 import com.algorycode.rent.config.AppContractProperties.AuthorizationLetter;
-import com.algorycode.rent.domain.request.RentalRequest;
-import com.algorycode.rent.domain.request.RentalRequestAdditionalDriver;
-import com.algorycode.rent.domain.request.RentalRequestCustomerSnapshot;
-import com.algorycode.rent.domain.request.RentalRequestOption;
-import com.algorycode.rent.domain.vehicle.Vehicle;
+import com.algorycode.rent.entity.RentalRequest;
+import com.algorycode.rent.entity.RentalRequestAdditionalDriver;
+import com.algorycode.rent.entity.RentalRequestCustomerSnapshot;
+import com.algorycode.rent.entity.RentalRequestOption;
+import com.algorycode.rent.entity.Vehicle;
 import com.algorycode.rent.service.ObjectStorageService;
 import java.io.IOException;
 import java.math.BigDecimal;

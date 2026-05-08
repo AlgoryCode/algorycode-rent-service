@@ -1,6 +1,6 @@
 package com.algorycode.rent.service;
 
-import com.algorycode.rent.domain.request.RentalRequest;
+import com.algorycode.rent.entity.RentalRequest;
 import com.algorycode.rent.messaging.MailNotificationPublisher;
 import com.algorycode.rent.service.mail.RentalRequestContractCustomerMailComposer;
 import com.algorycode.rent.service.mail.RentalRequestReceivedMailComposer;

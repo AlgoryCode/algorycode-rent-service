@@ -1,11 +1,11 @@
 package com.algorycode.rent.service;
 
-import com.algorycode.rent.api.dto.HandoverLocationDto;
-import com.algorycode.rent.api.dto.VehicleBrandCatalogDto;
-import com.algorycode.rent.api.dto.VehicleCatalogEntryDto;
-import com.algorycode.rent.api.dto.VehicleFormCatalogDto;
-import com.algorycode.rent.api.dto.VehicleModelCatalogDto;
-import com.algorycode.rent.domain.location.HandoverLocationKind;
+import com.algorycode.rent.dto.HandoverLocationDto;
+import com.algorycode.rent.dto.VehicleBrandCatalogDto;
+import com.algorycode.rent.dto.VehicleCatalogEntryDto;
+import com.algorycode.rent.dto.VehicleFormCatalogDto;
+import com.algorycode.rent.dto.VehicleModelCatalogDto;
+import com.algorycode.rent.entity.HandoverLocationKind;
 import com.algorycode.rent.repository.VehicleBrandRepository;
 import com.algorycode.rent.repository.VehicleStatusCatalogRepository;
 import java.util.List;

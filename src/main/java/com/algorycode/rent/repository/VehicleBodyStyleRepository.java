@@ -1,6 +1,6 @@
 package com.algorycode.rent.repository;
 
-import com.algorycode.rent.domain.vehicle.VehicleBodyStyle;
+import com.algorycode.rent.entity.VehicleBodyStyle;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;

@@ -1,26 +1,27 @@
 package com.algorycode.rent.service;
 
-import com.algorycode.rent.api.dto.CreateRentalRequest;
-import com.algorycode.rent.api.dto.RentalDto;
-import com.algorycode.rent.api.dto.RentalOptionRequest;
-import com.algorycode.rent.api.dto.UpdateRentalRequest;
-import com.algorycode.rent.api.error.BadRequestException;
-import com.algorycode.rent.api.error.ConflictException;
-import com.algorycode.rent.api.error.ResourceNotFoundException;
-import com.algorycode.rent.api.mapper.RentalMapper;
-import com.algorycode.rent.domain.location.HandoverLocation;
-import com.algorycode.rent.domain.location.HandoverLocationKind;
-import com.algorycode.rent.domain.rental.CustomerSnapshot;
-import com.algorycode.rent.domain.rental.Rental;
-import com.algorycode.rent.domain.rental.RentalAdditionalDriver;
-import com.algorycode.rent.domain.rental.RentalCommissionFlow;
-import com.algorycode.rent.domain.rental.RentalOption;
-import com.algorycode.rent.domain.rental.RentalStatus;
-import com.algorycode.rent.domain.rental.RentalStatusDefinition;
-import com.algorycode.rent.domain.vehicle.Vehicle;
-import com.algorycode.rent.domain.vehicle.VehicleStatus;
+import com.algorycode.rent.dto.CreateRentalRequest;
+import com.algorycode.rent.dto.RentalDto;
+import com.algorycode.rent.dto.RentalOptionRequest;
+import com.algorycode.rent.dto.UpdateRentalRequest;
+import com.algorycode.rent.exception.BadRequestException;
+import com.algorycode.rent.exception.ConflictException;
+import com.algorycode.rent.exception.ResourceNotFoundException;
+import com.algorycode.rent.mapper.RentalMapper;
+import com.algorycode.rent.entity.HandoverLocation;
+import com.algorycode.rent.entity.HandoverLocationKind;
+import com.algorycode.rent.entity.Customer;
+import com.algorycode.rent.entity.Rental;
+import com.algorycode.rent.entity.RentalAdditionalDriver;
+import com.algorycode.rent.entity.RentalCommissionFlow;
+import com.algorycode.rent.entity.RentalOption;
+import com.algorycode.rent.entity.RentalStatus;
+import com.algorycode.rent.entity.RentalStatusDefinition;
+import com.algorycode.rent.entity.Vehicle;
+import com.algorycode.rent.entity.VehicleStatus;
 import com.algorycode.rent.logging.AuditLog;
 import com.algorycode.rent.logging.SafeReasonCodes;
+import com.algorycode.rent.repository.CustomerRepository;
 import com.algorycode.rent.repository.RentalRepository;
 import com.algorycode.rent.repository.RentalStatusDefinitionRepository;
 import com.algorycode.rent.repository.ReservationExtraOptionTemplateRepository;
@@ -29,13 +30,13 @@ import com.algorycode.rent.repository.VehicleRepository;
 import com.algorycode.rent.service.support.DateRangeValidator;
 import com.algorycode.rent.service.support.RentalCommissionFromVehicle;
 import com.algorycode.rent.service.support.RentalOptionLineResolution;
-import com.algorycode.rent.service.support.Text;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.MessageSource;
 import org.springframework.context.i18n.LocaleContextHolder;
@@ -49,8 +50,10 @@ public class RentalService {
   private final RentalRepository rentalRepository;
   private final RentalStatusDefinitionRepository rentalStatusDefinitionRepository;
   private final VehicleRepository vehicleRepository;
+  private final CustomerRepository customerRepository;
   private final ObjectStorageService objectStorageService;
   private final CustomerRecordService customerRecordService;
+  private final CustomerService customerService;
   private final HandoverLocationService handoverLocationService;
   private final VehicleOptionDefinitionRepository vehicleOptionDefinitionRepository;
   private final ReservationExtraOptionTemplateRepository reservationExtraOptionTemplateRepository;
@@ -121,25 +124,9 @@ public class RentalService {
     rental.setCommissionAmount(BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP));
     rental.setCommissionFlow(RentalCommissionFlow.collect);
     rental.setCommissionCompany(null);
-    CustomerSnapshot c = new CustomerSnapshot();
-    c.setFullName(req.customer().fullName().trim());
-    c.setNationalId(req.customer().nationalId() != null ? req.customer().nationalId().trim() : "");
-    c.setPassportNo(req.customer().passportNo() != null ? req.customer().passportNo().trim() : "");
-    c.setPhone(req.customer().phone().trim());
-    c.setEmail(req.customer().email() != null ? req.customer().email().trim() : null);
-    c.setBirthDate(req.customer().birthDate());
-    c.setDriverLicenseNo(
-        req.customer().driverLicenseNo() != null ? req.customer().driverLicenseNo().trim() : null);
-    c.setDriverLicenseImageDataUrl(
-        req.customer().driverLicenseImageDataUrl() != null
-            ? req.customer().driverLicenseImageDataUrl().trim()
-            : null);
-    c.setPassportImageDataUrl(
-        req.customer().passportImageDataUrl() != null
-            ? req.customer().passportImageDataUrl().trim()
-            : null);
-    rental.setCustomer(c);
-    customerRecordService.assertCustomerActive(c);
+    Customer customer = customerService.createCustomer(req.customer());
+    customerRecordService.assertCustomerActive(customer);
+    rental.setCustomer(customer);
     if (req.additionalDrivers() != null) {
       for (var d : req.additionalDrivers()) {
         RentalAdditionalDriver ad = new RentalAdditionalDriver();
@@ -164,7 +151,7 @@ public class RentalService {
         "rental_created",
         Map.of(
             "rentalId", rental.getId().toString(),
-            "vehicleId", rental.getVehicle().getId().toString(),
+            "vehicleId", Objects.toString(rental.getVehicleId(), ""),
             "status", rental.getStatus().name()));
     return RentalMapper.toDto(rental, objectStorageService::resolvePublicUrl);
   }
@@ -174,14 +161,14 @@ public class RentalService {
     RentalStatus status = parseRentalStatusRequired(statusRaw);
     Rental rental =
         rentalRepository
-            .findById(id)
+            .findDetailById(id)
             .orElseThrow(() -> new ResourceNotFoundException("Rental not found: " + id));
     if (rental.getStatus() == status) {
       return RentalMapper.toDto(rental, objectStorageService::resolvePublicUrl);
     }
     if (status != RentalStatus.cancelled) {
       List<Rental> sameVehicle =
-          rentalRepository.findByVehicle_IdOrderByCreatedAtDesc(rental.getVehicle().getId());
+          rentalRepository.findByVehicle_IdOrderByCreatedAtDesc(rental.getVehicleId());
       ensureNoOverlap(sameVehicle, rental.getStartDate(), rental.getEndDate(), rental.getId());
     }
     RentalStatusDefinition statusDefinition = requireRentalStatusDefinition(status);
@@ -199,9 +186,8 @@ public class RentalService {
   public RentalDto update(Long id, UpdateRentalRequest req) {
     Rental rental =
         rentalRepository
-            .findById(id)
+            .findDetailById(id)
             .orElseThrow(() -> new ResourceNotFoundException("Rental not found: " + id));
-
     LocalDate nextStart = req.startDate() != null ? req.startDate() : rental.getStartDate();
     LocalDate nextEnd = req.endDate() != null ? req.endDate() : rental.getEndDate();
     DateRangeValidator.requireEndNotBeforeStart(nextStart, nextEnd);
@@ -213,7 +199,7 @@ public class RentalService {
 
     if (nextStatus != RentalStatus.cancelled) {
       List<Rental> sameVehicle =
-          rentalRepository.findByVehicle_IdOrderByCreatedAtDesc(rental.getVehicle().getId());
+          rentalRepository.findByVehicle_IdOrderByCreatedAtDesc(rental.getVehicleId());
       ensureNoOverlap(sameVehicle, nextStart, nextEnd, rental.getId());
     }
 
@@ -225,7 +211,7 @@ public class RentalService {
               req.pickupHandoverLocationId(), HandoverLocationKind.PICKUP));
     }
     if (req.returnHandoverLocationId() != null) {
-      Vehicle v = rental.getVehicle();
+      Vehicle v = resolveRentalVehicle(rental);
       List<Long> allowedReturns = v.orderedReturnHandoverLocationIds();
       Long rid = req.returnHandoverLocationId();
       if (!allowedReturns.isEmpty() && !allowedReturns.contains(rid)) {
@@ -250,47 +236,22 @@ public class RentalService {
     }
 
     if (req.customer() != null) {
-      CustomerSnapshot c = rental.getCustomer();
-      if (req.customer().fullName() != null) c.setFullName(req.customer().fullName().trim());
-      if (req.customer().nationalId() != null) c.setNationalId(req.customer().nationalId().trim());
-      if (req.customer().passportNo() != null) c.setPassportNo(req.customer().passportNo().trim());
-      if (req.customer().phone() != null) c.setPhone(req.customer().phone().trim());
-      if (req.customer().email() != null) c.setEmail(Text.cleanOrNull(req.customer().email()));
-      if (req.customer().birthDate() != null) c.setBirthDate(req.customer().birthDate());
-      if (req.customer().driverLicenseNo() != null)
-        c.setDriverLicenseNo(Text.cleanOrNull(req.customer().driverLicenseNo()));
-      if (req.customer().passportImageDataUrl() != null
-          && !req.customer().passportImageDataUrl().isBlank()) {
-        c.setPassportImageDataUrl(
-            objectStorageService.uploadDataUrl(
-                "rentals/" + rental.getId() + "/customer/passport",
-                "passport",
-                req.customer().passportImageDataUrl().trim()));
-      }
-      if (req.customer().driverLicenseImageDataUrl() != null
-          && !req.customer().driverLicenseImageDataUrl().isBlank()) {
-        c.setDriverLicenseImageDataUrl(
-            objectStorageService.uploadDataUrl(
-                "rentals/" + rental.getId() + "/customer/license",
-                "license",
-                req.customer().driverLicenseImageDataUrl().trim()));
-      }
-      rental.setCustomer(c);
-      customerRecordService.assertCustomerActive(c);
+      customerService.updateCustomer(rental.getCustomer(), req.customer(), rental.getId());
+      customerRecordService.assertCustomerActive(rental.getCustomer());
     }
 
     if (req.options() != null) {
       replaceRentalOptions(rental, req.options());
     }
 
-    Vehicle commissionVehicle = rental.getVehicle();
+    Vehicle commissionVehicle = resolveRentalVehicle(rental);
     BigDecimal amendedBase =
         RentalCommissionFromVehicle.baseRentalCharge(
             nextStart, nextEnd, commissionVehicle.getRentalDailyPrice());
     RentalCommissionFromVehicle.validateDerivedOrThrow(
         RentalCommissionFromVehicle.deriveSnapshot(commissionVehicle, amendedBase));
 
-    rental.setNetAmount(computeNetAmount(rental, rental.getVehicle()));
+    rental.setNetAmount(computeNetAmount(rental, commissionVehicle));
     Rental saved = rentalRepository.save(rental);
     syncDefaultPickupHandoverFromCompletedRental(saved);
     return RentalMapper.toDto(saved, objectStorageService::resolvePublicUrl);
@@ -324,7 +285,7 @@ public class RentalService {
   }
 
   private void persistRentalMediaToObjectStorage(Rental rental) {
-    CustomerSnapshot c = rental.getCustomer();
+    Customer c = rental.getCustomer();
     c.setPassportImageDataUrl(
         objectStorageService.uploadDataUrl(
             "rentals/" + rental.getId() + "/customer/passport",
@@ -348,6 +309,7 @@ public class RentalService {
               "license",
               driver.getDriverLicenseImageDataUrl()));
     }
+    customerRepository.save(c);
   }
 
   private static boolean datesOverlap(
@@ -379,18 +341,22 @@ public class RentalService {
             SafeReasonCodes.RENTAL_OVERLAP,
             Map.of(
                 "blockingRentalId", r.getId().toString(),
-                "vehicleId", r.getVehicle().getId().toString(),
+                "vehicleId", Objects.toString(r.getVehicleId(), ""),
                 "overlapStart", r.getStartDate().toString(),
                 "overlapEnd", r.getEndDate().toString(),
                 "requestedStart", startDate.toString(),
                 "requestedEnd", endDate.toString()));
+        String blockingCustomer =
+            r.getCustomer() != null && r.getCustomer().getFullName() != null
+                ? r.getCustomer().getFullName()
+                : "?";
         throw new ConflictException(
             "Bu araç "
                 + r.getStartDate()
                 + " - "
                 + r.getEndDate()
                 + " aralığında kirada ("
-                + r.getCustomer().getFullName()
+                + blockingCustomer
                 + ").");
       }
     }
@@ -401,7 +367,7 @@ public class RentalService {
     if (options == null || options.isEmpty()) {
       return;
     }
-    Vehicle vehicle = rental.getVehicle();
+    Vehicle vehicle = resolveRentalVehicle(rental);
     int i = 0;
     for (RentalOptionRequest o : options) {
       RentalOptionLineResolution.Resolved resolved =
@@ -448,6 +414,19 @@ public class RentalService {
         .add(commissionSigned)
         .subtract(discount)
         .setScale(2, RoundingMode.HALF_UP);
+  }
+
+  private Vehicle resolveRentalVehicle(Rental rental) {
+    if (rental.getVehicle() != null) {
+      return rental.getVehicle();
+    }
+    Long vid = rental.getVehicleId();
+    if (vid == null) {
+      throw new BadRequestException("Kiralama satırında araç kimliği eksik.");
+    }
+    return vehicleRepository
+        .findByIdAndDeletedFalse(vid)
+        .orElseThrow(() -> new ResourceNotFoundException("Vehicle not found: " + vid));
   }
 
   private HandoverLocation resolvePickupHandover(Vehicle vehicle, Long requestPickupId) {

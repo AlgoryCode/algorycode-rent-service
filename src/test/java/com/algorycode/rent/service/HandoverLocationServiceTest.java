@@ -4,10 +4,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.when;
 
-import com.algorycode.rent.api.error.BadRequestException;
-import com.algorycode.rent.api.error.ResourceNotFoundException;
-import com.algorycode.rent.domain.location.HandoverLocation;
-import com.algorycode.rent.domain.location.HandoverLocationKind;
+import com.algorycode.rent.exception.BadRequestException;
+import com.algorycode.rent.exception.ResourceNotFoundException;
+import com.algorycode.rent.entity.HandoverLocation;
+import com.algorycode.rent.entity.HandoverLocationKind;
 import com.algorycode.rent.repository.HandoverLocationRepository;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;

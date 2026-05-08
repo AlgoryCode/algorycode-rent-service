@@ -1,10 +1,10 @@
 package com.algorycode.rent.service;
 
-import com.algorycode.rent.api.dto.VehicleCalendarOccupancyDto;
-import com.algorycode.rent.api.dto.VehicleOccupancyRangeDto;
-import com.algorycode.rent.api.dto.VehicleOccupancySource;
-import com.algorycode.rent.api.error.ResourceNotFoundException;
-import com.algorycode.rent.domain.request.RentalRequestStatus;
+import com.algorycode.rent.dto.VehicleCalendarOccupancyDto;
+import com.algorycode.rent.dto.VehicleOccupancyRangeDto;
+import com.algorycode.rent.dto.VehicleOccupancySource;
+import com.algorycode.rent.exception.ResourceNotFoundException;
+import com.algorycode.rent.entity.RentalRequestStatus;
 import com.algorycode.rent.repository.RentalRepository;
 import com.algorycode.rent.repository.RentalRequestRepository;
 import com.algorycode.rent.repository.VehicleRepository;

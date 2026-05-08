@@ -1,9 +1,9 @@
 package com.algorycode.rent.service.vehiclecatalog;
 
-import com.algorycode.rent.domain.vehicle.VehicleBodyStyle;
-import com.algorycode.rent.domain.vehicle.VehicleFuelType;
-import com.algorycode.rent.domain.vehicle.VehicleStatusCatalog;
-import com.algorycode.rent.domain.vehicle.VehicleTransmissionType;
+import com.algorycode.rent.entity.VehicleBodyStyle;
+import com.algorycode.rent.entity.VehicleFuelType;
+import com.algorycode.rent.entity.VehicleStatusCatalog;
+import com.algorycode.rent.entity.VehicleTransmissionType;
 
 public final class VehicleCatalogEntityFactory {
 

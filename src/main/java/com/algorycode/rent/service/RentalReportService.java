@@ -1,13 +1,13 @@
 package com.algorycode.rent.service;
 
-import com.algorycode.rent.api.dto.report.RentalDashboardReportDto;
-import com.algorycode.rent.api.dto.report.RentalDashboardReportDto.RentalReportSummary;
-import com.algorycode.rent.api.dto.report.RentalDashboardReportDto.TimelineBucket;
-import com.algorycode.rent.api.dto.report.RentalDashboardReportDto.VehicleRentalStatRow;
-import com.algorycode.rent.api.error.BadRequestException;
-import com.algorycode.rent.domain.rental.Rental;
-import com.algorycode.rent.domain.rental.RentalStatus;
-import com.algorycode.rent.domain.vehicle.Vehicle;
+import com.algorycode.rent.dto.report.RentalDashboardReportDto;
+import com.algorycode.rent.dto.report.RentalDashboardReportDto.RentalReportSummary;
+import com.algorycode.rent.dto.report.RentalDashboardReportDto.TimelineBucket;
+import com.algorycode.rent.dto.report.RentalDashboardReportDto.VehicleRentalStatRow;
+import com.algorycode.rent.exception.BadRequestException;
+import com.algorycode.rent.entity.Rental;
+import com.algorycode.rent.entity.RentalStatus;
+import com.algorycode.rent.entity.Vehicle;
 import com.algorycode.rent.repository.RentalRepository;
 import com.algorycode.rent.service.support.RentalRevenueEur;
 import java.math.BigDecimal;

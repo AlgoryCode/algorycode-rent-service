@@ -1,6 +1,6 @@
 package com.algorycode.rent.service;
 
-import com.algorycode.rent.api.error.BadRequestException;
+import com.algorycode.rent.exception.BadRequestException;
 import com.algorycode.rent.config.AppObjectStorageProperties;
 import io.minio.BucketExistsArgs;
 import io.minio.GetObjectArgs;

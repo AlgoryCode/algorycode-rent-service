@@ -1,8 +1,8 @@
 package com.algorycode.rent.service.support;
 
-import com.algorycode.rent.domain.rental.Rental;
-import com.algorycode.rent.domain.rental.RentalCommissionFlow;
-import com.algorycode.rent.domain.vehicle.Vehicle;
+import com.algorycode.rent.entity.Rental;
+import com.algorycode.rent.entity.RentalCommissionFlow;
+import com.algorycode.rent.entity.Vehicle;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;

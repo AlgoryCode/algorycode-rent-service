@@ -1,8 +1,8 @@
 package com.algorycode.rent.service.support;
 
-import com.algorycode.rent.domain.rental.Rental;
-import com.algorycode.rent.domain.rental.RentalStatus;
-import com.algorycode.rent.domain.rental.RentalStatusDefinition;
+import com.algorycode.rent.entity.Rental;
+import com.algorycode.rent.entity.RentalStatus;
+import com.algorycode.rent.entity.RentalStatusDefinition;
 
 public final class RentalTestFixtures {
 

@@ -1,13 +1,13 @@
 package com.algorycode.rent.service.support;
 
-import com.algorycode.rent.api.dto.CreateRentalRequestFormRequest;
-import com.algorycode.rent.api.dto.HandoverPricingQuoteDto;
-import com.algorycode.rent.api.dto.RentalOptionRequest;
+import com.algorycode.rent.dto.CreateRentalRequestFormRequest;
+import com.algorycode.rent.dto.HandoverPricingQuoteDto;
+import com.algorycode.rent.dto.RentalOptionRequest;
 import com.algorycode.rent.config.AppRentalRequestProperties;
-import com.algorycode.rent.domain.request.RentalRequest;
-import com.algorycode.rent.domain.request.RentalRequestPricedLine;
-import com.algorycode.rent.domain.request.RentalRequestPricedLineType;
-import com.algorycode.rent.domain.vehicle.Vehicle;
+import com.algorycode.rent.entity.RentalRequest;
+import com.algorycode.rent.entity.RentalRequestPricedLine;
+import com.algorycode.rent.entity.RentalRequestPricedLineType;
+import com.algorycode.rent.entity.Vehicle;
 import com.algorycode.rent.repository.ReservationExtraOptionTemplateRepository;
 import com.algorycode.rent.repository.VehicleOptionDefinitionRepository;
 import java.math.BigDecimal;

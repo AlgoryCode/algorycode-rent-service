@@ -2,12 +2,12 @@ package com.algorycode.rent.service.support;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-import com.algorycode.rent.domain.rental.CustomerSnapshot;
-import com.algorycode.rent.domain.rental.Rental;
-import com.algorycode.rent.domain.rental.RentalStatus;
-import com.algorycode.rent.domain.request.RentalRequest;
-import com.algorycode.rent.domain.request.RentalRequestStatus;
-import com.algorycode.rent.domain.vehicle.Vehicle;
+import com.algorycode.rent.entity.Customer;
+import com.algorycode.rent.entity.Rental;
+import com.algorycode.rent.entity.RentalStatus;
+import com.algorycode.rent.entity.RentalRequest;
+import com.algorycode.rent.entity.RentalRequestStatus;
+import com.algorycode.rent.entity.Vehicle;
 import java.time.LocalDate;
 import java.util.List;
 import org.junit.jupiter.api.BeforeEach;
@@ -106,8 +106,10 @@ class VehicleAvailabilitySlotAnalyzerTest {
     v.setId(vehicleId);
     v.setPlate("34 AVA 2");
     r.setVehicle(v);
-    CustomerSnapshot c = new CustomerSnapshot();
-    c.setFullName("Test");
+    Customer c =
+        Customer.builder().fullName("Test").nationalId("").passportNo("").phone("1").build();
+    c.setId(1L);
+    r.setCustomerId(1L);
     r.setCustomer(c);
     return r;
   }

@@ -1,7 +1,7 @@
 package com.algorycode.rent.service.support;
 
-import com.algorycode.rent.api.error.BadRequestException;
-import com.algorycode.rent.api.error.ConflictException;
+import com.algorycode.rent.exception.BadRequestException;
+import com.algorycode.rent.exception.ConflictException;
 import java.text.Normalizer;
 import java.util.Locale;
 import java.util.function.Predicate;

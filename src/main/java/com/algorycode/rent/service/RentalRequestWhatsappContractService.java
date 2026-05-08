@@ -1,7 +1,7 @@
 package com.algorycode.rent.service;
 
 import com.algorycode.rent.config.AppWhatsappProperties;
-import com.algorycode.rent.domain.request.RentalRequest;
+import com.algorycode.rent.entity.RentalRequest;
 import com.algorycode.rent.repository.RentalRequestRepository;
 import java.io.IOException;
 import java.net.URI;

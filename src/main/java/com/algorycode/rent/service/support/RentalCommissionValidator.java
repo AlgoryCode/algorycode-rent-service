@@ -1,7 +1,7 @@
 package com.algorycode.rent.service.support;
 
-import com.algorycode.rent.api.error.BadRequestException;
-import com.algorycode.rent.domain.rental.RentalCommissionFlow;
+import com.algorycode.rent.exception.BadRequestException;
+import com.algorycode.rent.entity.RentalCommissionFlow;
 import java.math.BigDecimal;
 
 /** Kiralama komisyon tutarı ve {@code pay} akışında firma adı kuralları. */

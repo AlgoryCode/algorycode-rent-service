@@ -1,6 +1,6 @@
 package com.algorycode.rent.service.support;
 
-import com.algorycode.rent.api.error.BadRequestException;
+import com.algorycode.rent.exception.BadRequestException;
 import java.time.LocalDate;
 
 /** Kiralama / liste filtreleri için başlangıç–bitiş tarih sırası doğrulaması. */

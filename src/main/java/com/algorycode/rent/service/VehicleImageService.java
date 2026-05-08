@@ -1,10 +1,10 @@
 package com.algorycode.rent.service;
 
-import com.algorycode.rent.api.error.BadRequestException;
-import com.algorycode.rent.api.error.ResourceNotFoundException;
-import com.algorycode.rent.domain.vehicle.Vehicle;
-import com.algorycode.rent.domain.vehicle.VehicleImage;
-import com.algorycode.rent.domain.vehicle.VehicleImageSlot;
+import com.algorycode.rent.exception.BadRequestException;
+import com.algorycode.rent.exception.ResourceNotFoundException;
+import com.algorycode.rent.entity.Vehicle;
+import com.algorycode.rent.entity.VehicleImage;
+import com.algorycode.rent.entity.VehicleImageSlot;
 import com.algorycode.rent.repository.VehicleImageRepository;
 import com.algorycode.rent.repository.VehicleRepository;
 import java.util.ArrayList;

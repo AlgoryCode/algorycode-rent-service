@@ -1,6 +1,6 @@
 package com.algorycode.rent.repository;
 
-import com.algorycode.rent.domain.rental.Rental;
+import com.algorycode.rent.entity.Rental;
 import java.time.LocalDate;
 import java.util.Collection;
 import java.util.List;
@@ -14,16 +14,18 @@ import org.springframework.data.repository.query.Param;
 public interface RentalRepository
     extends JpaRepository<Rental, Long>, JpaSpecificationExecutor<Rental> {
 
-  @EntityGraph(attributePaths = {"vehicle", "statusDefinition"})
+  long countByCustomerId(Long customerId);
+
+  @EntityGraph(attributePaths = {"vehicle", "statusDefinition", "customer"})
   List<Rental> findAllByOrderByCreatedAtDesc();
 
-  @EntityGraph(attributePaths = {"vehicle", "statusDefinition"})
+  @EntityGraph(attributePaths = {"vehicle", "statusDefinition", "customer"})
   List<Rental> findByStatusDefinition_CodeOrderByCreatedAtDesc(String code);
 
-  @EntityGraph(attributePaths = {"vehicle", "statusDefinition"})
+  @EntityGraph(attributePaths = {"vehicle", "statusDefinition", "customer"})
   List<Rental> findByVehicle_IdOrderByCreatedAtDesc(Long vehicleId);
 
-  @EntityGraph(attributePaths = {"vehicle", "statusDefinition"})
+  @EntityGraph(attributePaths = {"vehicle", "statusDefinition", "customer"})
   List<Rental> findByVehicle_IdAndStatusDefinition_CodeOrderByCreatedAtDesc(
       Long vehicleId, String code);
 
@@ -43,7 +45,8 @@ public interface RentalRepository
         "vehicle.vehicleModel.brand",
         "pickupHandoverLocation",
         "returnHandoverLocation",
-        "feedback"
+        "feedback",
+        "customer"
       })
   @Query("select r from Rental r where r.id = :id")
   Optional<Rental> findDetailById(@Param("id") Long id);
@@ -56,7 +59,7 @@ public interface RentalRepository
       """)
   List<Long> findIdsByCustomerRecordKey(@Param("recordKey") String recordKey);
 
-  @EntityGraph(attributePaths = {"vehicle", "statusDefinition", "options"})
+  @EntityGraph(attributePaths = {"vehicle", "statusDefinition", "customer", "options"})
   @Query(
       """
       select distinct r from Rental r join r.vehicle v
@@ -68,7 +71,7 @@ public interface RentalRepository
   List<Rental> findForRevenueReport(
       @Param("from") LocalDate from, @Param("to") LocalDate to, @Param("vehicleId") Long vehicleId);
 
-  @EntityGraph(attributePaths = {"vehicle", "statusDefinition"})
+  @EntityGraph(attributePaths = {"vehicle", "statusDefinition", "customer"})
   @Query(
       """
       select r from Rental r join r.vehicle v
@@ -80,7 +83,7 @@ public interface RentalRepository
   List<Rental> findPotentiallyBlockingForAvailability(
       @Param("from") LocalDate from, @Param("toOrDayAfter") LocalDate toOrDayAfter);
 
-  @EntityGraph(attributePaths = {"vehicle", "statusDefinition"})
+  @EntityGraph(attributePaths = {"vehicle", "statusDefinition", "customer"})
   @Query(
       """
       select r from Rental r join r.vehicle v

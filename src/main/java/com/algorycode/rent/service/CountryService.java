@@ -1,12 +1,12 @@
 package com.algorycode.rent.service;
 
-import com.algorycode.rent.api.dto.CountryDto;
-import com.algorycode.rent.api.dto.CreateCountryRequest;
-import com.algorycode.rent.api.dto.UpdateCountryColorRequest;
-import com.algorycode.rent.api.error.ConflictException;
-import com.algorycode.rent.api.error.ResourceNotFoundException;
-import com.algorycode.rent.api.mapper.CountryMapper;
-import com.algorycode.rent.domain.country.Country;
+import com.algorycode.rent.dto.CountryDto;
+import com.algorycode.rent.dto.CreateCountryRequest;
+import com.algorycode.rent.dto.UpdateCountryColorRequest;
+import com.algorycode.rent.exception.ConflictException;
+import com.algorycode.rent.exception.ResourceNotFoundException;
+import com.algorycode.rent.mapper.CountryMapper;
+import com.algorycode.rent.entity.Country;
 import com.algorycode.rent.repository.CountryRepository;
 import java.util.List;
 import lombok.RequiredArgsConstructor;

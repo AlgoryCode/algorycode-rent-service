@@ -39,6 +39,19 @@ Her projede aşağıdaki starter'lar bulunur:
 - `spring-boot-starter-actuator` — Health & metrics
 - `spring-boot-devtools` (scope: runtime, optional: true) — Geliştirme ortamı
 
+### 1.3 Kök Paket ve Dizin Yapısı
+- Proje kök paketi altında dizin yapısı aşağıdaki gibi tutulur:
+  - `controller/`
+  - `service/`
+  - `repository/`
+  - `entity/`
+  - `dto/`
+  - `mapper/`
+  - `exception/`
+  - `config/`
+- Uygulama ana sınıfı (`*Application.java`) kök pakette bulunur.
+- `api.*` ve `domain.*` gibi alternatif katman adları yerine yukarıdaki sabit katman adları kullanılır.
+
 ---
 
 ## 2. SOLID PRENSİPLERİ
@@ -62,10 +75,11 @@ Her projede aşağıdaki starter'lar bulunur:
 ### I — Interface Segregation Principle
 - Interface'ler küçük ve odaklı tutulur; bir interface maksimum 5–7 metot içerir.
 - Kullanılmayan metotları `UnsupportedOperationException` ile implement etmek yasaktır; bunun yerine interface bölünür.
-- `*Repository`, `*Service`, `*Gateway` interface'leri ayrı ayrı tanımlanır.
+- `*Repository` ve `*Gateway` interface'leri Spring Data ve dış sistem sınırları için tanımlanır.
+- Uygulama servisi için tek bir `@Service` sınıfı (`OrderService`) varsayılan tasarımdır; `OrderService` + `OrderServiceImpl` yalnızca birden fazla implementasyon veya sahte/mock stratejisi gerektiğinde kullanılır.
 
 ### D — Dependency Inversion Principle
-- Sınıflar **concrete sınıflara değil interface'lere** bağımlıdır.
+- Kalıcı veri ve dış entegrasyonlar için sınıflar **somut repository/gateway yerine interface'lere** bağımlıdır.
 - Tüm bağımlılıklar **constructor injection** ile alınır; `@Autowired` alan veya setter injection kullanılmaz.
   ```java
   // DOĞRU
@@ -79,6 +93,7 @@ Her projede aşağıdaki starter'lar bulunur:
   private UserService userService;
   ```
 - `new` ile nesne oluşturma yalnızca Value Object ve DTO'larda kabul edilir.
+- Tek Bean ile yetinen domain servisi doğrudan concrete `@Service` sınıfı olabilir; Controller bu sınıfa constructor ile bağlanır.
 
 ---
 
@@ -86,9 +101,9 @@ Her projede aşağıdaki starter'lar bulunur:
 
 - Aynı mantık ikiden fazla yerde tekrarlanırsa **ortak bir metot/sınıfa** taşınır.
 - String sabitleri `final static` ile tanımlanır veya `enum` kullanılır; "magic string" ve "magic number" yasaktır.
-- Validation kuralları `@Valid` + özel `@Constraint` annotation'ları ile merkezi tutulur.
+- Validation kuralları `@Valid` + DTO üzerinde Jakarta annotation'ları ile merkezi tutulur; **`@RestControllerAdvice`** ile alan hataları global yanıta dönüştürülür. HTTP’ten gelen aynı kısıtlar için service içinde tekrarlayan null/boş kontrolleri yazılmaz.
 - Hata mesajları `messages.properties` dosyasından okunur; kod içine gömülmez.
-- Mapping işlemleri (Entity ↔ DTO) `*Mapper` arayüzü + MapStruct ile yapılır; elle mapping tekrarlanmaz.
+- Mapping (Entity ↔ DTO): tekrar çoksa MapStruct `*Mapper`; tek yerde ve küçükse `final` sınıfta `static` yardımcı metotlar (`CustomerMapper.applyCreate`) kabul edilir.
 - Spring `@Configuration` sınıfları modüler tutulur; aynı Bean farklı yerlerde tanımlanmaz.
 
 ---
@@ -153,18 +168,30 @@ Her projede aşağıdaki starter'lar bulunur:
 ## 6. KATMAN MİMARİSİ KURALLARI
 
 ```
-Controller  →  Service (Interface)  →  Repository (Interface)  →  Database
+Controller  →  Service (@Service)  →  Repository (Interface)  →  Database
                    ↓
               Domain Model / Entity
                    ↓
               DTO / Request / Response
 ```
 
-- **Controller:** `@RestController`, HTTP statü kodları, `@Valid` annotation, DTO kullanımı. Domain/Entity nesnesini direkt dönmez.
-- **Service:** `@Service`, iş mantığı, transaction yönetimi (`@Transactional`). Repository'ye doğrudan `@Autowired` ile değil, interface üzerinden erişir.
+- **Controller:** `@RestController`, HTTP statü kodları, **`@Valid`** ile request body / nested DTO doğrulama, DTO kullanımı. Domain/Entity nesnesini direkt dönmez.
+- **Service:** `@Service`, iş mantığı, transaction yönetimi (`@Transactional`). Kayıt erişimi Spring Data repository interface üzerinden (constructor injection).
 - **Repository:** `JpaRepository` veya `CrudRepository` extend eder. Custom query'ler `@Query` ile yazılır; Native SQL mümkün olduğunca kaçınılır.
 - **DTO:** Record (`record` keyword) veya immutable sınıf olarak tanımlanır. Lombok `@Value` kabul edilir.
 - **Exception Handling:** `@ControllerAdvice` + `@ExceptionHandler` merkezi hata yönetimi. Her katman kendi exception'ını fırlatır; üst katman catch eder.
+
+#### Jakarta Bean Validation (global)
+- Zorunlu string alanlar için DTO’da **`@NotBlank`** / **`@NotNull`** / **`@Email`** (ve gerekirse **`@Size`**); HTTP girişi için controller’da **`@Valid @RequestBody`** veya iç içe DTO’da **`@Valid`** kullan.
+- **`MethodArgumentNotValidException`** (ve gerekirse **`ConstraintViolationException`**) **`@RestControllerAdvice`** içinde tek yerde işlenir; alan hataları **400** ve tutarlı gövde (ör. `ProblemDetail` / field listesi) ile döner.
+- Controller’dan geçen istekler için aynı kuralları service’te **tekrar** kontrol etme (ör. `if (email == null) throw …`); iş kuralı gereği doğrulama (mükerrer kayıt, yetki vb.) service’te kalır.
+
+#### Kayıt öncesi benzersizlik
+- **Create** işleminde (`POST`, müşteri/kullanıcı kaydı vb.) kalıcı yazmadan önce iş kurallarına göre benzersiz alan(lar) ile sorgula (`exists…`, `findFirst…`).
+- Çift kayıt oluşturma; kayıt varsa **`ConflictException`** (409) ve anlaşılır mesaj (tercihen `messages.properties`).
+- Alan bazlı örnekler: kullanıcı adı, e-posta, müşteri kodu — domain’e göre seçilir.
+- **Customer:** E-posta gönderilmişse önce e-posta ile mükerrer kontrol; başka müşteride kayıtlıysa oluşturma yapılmaz. Kimlik eşlemesi (TC/telefon) ile güncellenen kayıtla aynı müşteri ise e-posta çakışması oluşturulmaz.
+- Mükerrer kontrolü için repository **`existsByEmailIgnoreCase`**, **`existsByEmailIgnoreCaseAndIdNot`** gibi sorgular kullanılır; private yardımcı metot adı **`assert*`** olmaz (`rejectDuplicate*`, `ensureUnique*` vb.).
 
 ---
 

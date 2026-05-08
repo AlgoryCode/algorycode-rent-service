@@ -1,12 +1,12 @@
 package com.algorycode.rent.service;
 
-import com.algorycode.rent.api.dto.CustomerRecordDeletionDto;
-import com.algorycode.rent.api.dto.CustomerRecordStateDto;
-import com.algorycode.rent.api.error.BadRequestException;
-import com.algorycode.rent.domain.customer.CustomerRecordKeys;
-import com.algorycode.rent.domain.customer.CustomerRecordState;
-import com.algorycode.rent.domain.rental.CustomerSnapshot;
-import com.algorycode.rent.domain.request.RentalRequestCustomerSnapshot;
+import com.algorycode.rent.dto.CustomerRecordDeletionDto;
+import com.algorycode.rent.dto.CustomerRecordStateDto;
+import com.algorycode.rent.exception.BadRequestException;
+import com.algorycode.rent.entity.Customer;
+import com.algorycode.rent.entity.CustomerRecordKeys;
+import com.algorycode.rent.entity.CustomerRecordState;
+import com.algorycode.rent.entity.RentalRequestCustomerSnapshot;
 import com.algorycode.rent.repository.CustomerRecordStateRepository;
 import com.algorycode.rent.repository.RentalRepository;
 import com.algorycode.rent.repository.RentalRequestRepository;
@@ -65,8 +65,8 @@ public class CustomerRecordService {
             });
   }
 
-  public void assertCustomerActive(CustomerSnapshot snapshot) {
-    assertCustomerActive(CustomerRecordKeys.fromRentalCustomer(snapshot));
+  public void assertCustomerActive(Customer customer) {
+    assertCustomerActive(CustomerRecordKeys.fromCustomer(customer));
   }
 
   public void assertCustomerActive(RentalRequestCustomerSnapshot snapshot) {

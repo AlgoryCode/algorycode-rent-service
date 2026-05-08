@@ -1,7 +1,7 @@
 package com.algorycode.rent.service.mail;
 
-import com.algorycode.rent.domain.request.RentalRequest;
-import com.algorycode.rent.domain.request.RentalRequestStatus;
+import com.algorycode.rent.entity.RentalRequest;
+import com.algorycode.rent.entity.RentalRequestStatus;
 import com.algorycode.rent.messaging.QueuedMailMessage;
 import java.util.Locale;
 import lombok.RequiredArgsConstructor;

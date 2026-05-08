@@ -5,9 +5,9 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.algorycode.rent.api.error.ResourceNotFoundException;
-import com.algorycode.rent.domain.user.PanelUser;
-import com.algorycode.rent.domain.user.PanelUserRole;
+import com.algorycode.rent.exception.ResourceNotFoundException;
+import com.algorycode.rent.entity.PanelUser;
+import com.algorycode.rent.entity.PanelUserRole;
 import com.algorycode.rent.repository.PanelUserRepository;
 import java.time.Instant;
 import java.util.List;

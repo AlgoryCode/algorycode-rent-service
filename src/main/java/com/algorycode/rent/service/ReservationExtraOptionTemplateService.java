@@ -1,11 +1,11 @@
 package com.algorycode.rent.service;
 
-import com.algorycode.rent.api.dto.CreateReservationExtraOptionTemplateRequest;
-import com.algorycode.rent.api.dto.ReservationExtraOptionTemplateDto;
-import com.algorycode.rent.api.dto.UpdateReservationExtraOptionTemplateRequest;
-import com.algorycode.rent.api.error.BadRequestException;
-import com.algorycode.rent.api.error.ResourceNotFoundException;
-import com.algorycode.rent.domain.catalog.ReservationExtraOptionTemplate;
+import com.algorycode.rent.dto.CreateReservationExtraOptionTemplateRequest;
+import com.algorycode.rent.dto.ReservationExtraOptionTemplateDto;
+import com.algorycode.rent.dto.UpdateReservationExtraOptionTemplateRequest;
+import com.algorycode.rent.exception.BadRequestException;
+import com.algorycode.rent.exception.ResourceNotFoundException;
+import com.algorycode.rent.entity.ReservationExtraOptionTemplate;
 import com.algorycode.rent.repository.ReservationExtraOptionTemplateRepository;
 import java.math.RoundingMode;
 import java.util.List;

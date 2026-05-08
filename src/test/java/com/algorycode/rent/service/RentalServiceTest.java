@@ -9,19 +9,21 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-import com.algorycode.rent.api.dto.CreateRentalRequest;
-import com.algorycode.rent.api.dto.UpdateRentalRequest;
-import com.algorycode.rent.api.error.ConflictException;
-import com.algorycode.rent.api.error.ResourceNotFoundException;
-import com.algorycode.rent.domain.location.HandoverLocation;
-import com.algorycode.rent.domain.location.HandoverLocationKind;
-import com.algorycode.rent.domain.rental.CustomerSnapshot;
-import com.algorycode.rent.domain.rental.Rental;
-import com.algorycode.rent.domain.rental.RentalCommissionFlow;
-import com.algorycode.rent.domain.rental.RentalStatus;
-import com.algorycode.rent.domain.vehicle.Vehicle;
-import com.algorycode.rent.domain.vehicle.VehicleStatus;
+import com.algorycode.rent.dto.CreateRentalRequest;
+import com.algorycode.rent.dto.CustomerRequest;
+import com.algorycode.rent.dto.UpdateRentalRequest;
+import com.algorycode.rent.exception.ConflictException;
+import com.algorycode.rent.exception.ResourceNotFoundException;
+import com.algorycode.rent.entity.HandoverLocation;
+import com.algorycode.rent.entity.HandoverLocationKind;
+import com.algorycode.rent.entity.Customer;
+import com.algorycode.rent.entity.Rental;
+import com.algorycode.rent.entity.RentalCommissionFlow;
+import com.algorycode.rent.entity.RentalStatus;
+import com.algorycode.rent.entity.Vehicle;
+import com.algorycode.rent.entity.VehicleStatus;
 import com.algorycode.rent.logging.AuditLog;
+import com.algorycode.rent.repository.CustomerRepository;
 import com.algorycode.rent.repository.RentalRepository;
 import com.algorycode.rent.repository.RentalStatusDefinitionRepository;
 import com.algorycode.rent.repository.ReservationExtraOptionTemplateRepository;
@@ -51,6 +53,8 @@ class RentalServiceTest {
   @Mock private VehicleRepository vehicleRepository;
   @Mock private ObjectStorageService objectStorageService;
   @Mock private CustomerRecordService customerRecordService;
+  @Mock private CustomerRepository customerRepository;
+  @Mock private CustomerService customerService;
   @Mock private HandoverLocationService handoverLocationService;
   @Mock private VehicleOptionDefinitionRepository vehicleOptionDefinitionRepository;
   @Mock private ReservationExtraOptionTemplateRepository reservationExtraOptionTemplateRepository;
@@ -62,6 +66,9 @@ class RentalServiceTest {
 
   @BeforeEach
   void stubRentalStatusDefinitions() {
+    lenient()
+        .when(customerRepository.save(any(Customer.class)))
+        .thenAnswer(invocation -> invocation.getArgument(0));
     lenient()
         .when(messageSource.getMessage(anyString(), any(), any(Locale.class)))
         .thenAnswer(invocation -> invocation.getArgument(0));
@@ -180,16 +187,18 @@ class RentalServiceTest {
     rental.setCreatedAt(Instant.parse("2026-03-01T10:00:00Z"));
     rental.setUpdatedAt(Instant.parse("2026-03-01T10:00:00Z"));
 
-    var customer = new CustomerSnapshot();
-    customer.setFullName("Ali Veli");
-    customer.setNationalId("11111111111");
-    customer.setPassportNo("P1");
-    customer.setPhone("+90");
-    customer.setDriverLicenseImageDataUrl("dl");
-    customer.setPassportImageDataUrl("pp");
+    var customer =
+        Customer.builder()
+            .fullName("Ali Veli")
+            .nationalId("11111111111")
+            .passportNo("P1")
+            .phone("+90")
+            .build();
+    customer.setId(1L);
+    rental.setCustomerId(1L);
     rental.setCustomer(customer);
 
-    when(rentalRepository.findById(rentalId)).thenReturn(Optional.of(rental));
+    when(rentalRepository.findDetailById(rentalId)).thenReturn(Optional.of(rental));
     when(rentalRepository.findByVehicle_IdOrderByCreatedAtDesc(vehicleId)).thenReturn(List.of());
     when(rentalRepository.save(any(Rental.class)))
         .thenAnswer(invocation -> invocation.getArgument(0));
@@ -230,16 +239,15 @@ class RentalServiceTest {
     rental.setCommissionFlow(RentalCommissionFlow.collect);
     rental.setCreatedAt(Instant.now());
     rental.setUpdatedAt(Instant.now());
-    var customer = new CustomerSnapshot();
-    customer.setFullName("A");
-    customer.setNationalId("1");
-    customer.setPassportNo("P");
-    customer.setPhone("+90");
+    var customer =
+        Customer.builder().fullName("A").nationalId("1").passportNo("P").phone("+90").build();
+    customer.setId(1L);
+    rental.setCustomerId(1L);
+    rental.setCustomer(customer);
     customer.setDriverLicenseImageDataUrl("d");
     customer.setPassportImageDataUrl("p");
-    rental.setCustomer(customer);
 
-    when(rentalRepository.findById(rentalId)).thenReturn(Optional.of(rental));
+    when(rentalRepository.findDetailById(rentalId)).thenReturn(Optional.of(rental));
     when(rentalRepository.findByVehicle_IdOrderByCreatedAtDesc(vehicleId)).thenReturn(List.of());
     when(rentalRepository.save(any(Rental.class)))
         .thenAnswer(invocation -> invocation.getArgument(0));
@@ -258,7 +266,7 @@ class RentalServiceTest {
   void updateStatus_whenCancelled_setsCancelled() {
     Rental rental = sampleRental(1L);
     rental.setId(9L);
-    when(rentalRepository.findById(9L)).thenReturn(Optional.of(rental));
+    when(rentalRepository.findDetailById(9L)).thenReturn(Optional.of(rental));
     when(rentalRepository.save(any(Rental.class)))
         .thenAnswer(invocation -> invocation.getArgument(0));
     when(objectStorageService.resolvePublicUrl(any()))
@@ -276,7 +284,7 @@ class RentalServiceTest {
     Rental rental = sampleRental(1L);
     rental.setId(11L);
     RentalTestFixtures.attachRentalStatus(rental, RentalStatus.active);
-    when(rentalRepository.findById(11L)).thenReturn(Optional.of(rental));
+    when(rentalRepository.findDetailById(11L)).thenReturn(Optional.of(rental));
     when(objectStorageService.resolvePublicUrl(any()))
         .thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -292,7 +300,7 @@ class RentalServiceTest {
     Rental rental = sampleRental(1L);
     rental.setId(21L);
     RentalTestFixtures.attachRentalStatus(rental, RentalStatus.active);
-    when(rentalRepository.findById(21L)).thenReturn(Optional.of(rental));
+    when(rentalRepository.findDetailById(21L)).thenReturn(Optional.of(rental));
     when(rentalRepository.findByVehicle_IdOrderByCreatedAtDesc(1L)).thenReturn(List.of());
     when(rentalRepository.save(any(Rental.class)))
         .thenAnswer(invocation -> invocation.getArgument(0));
@@ -320,8 +328,8 @@ class RentalServiceTest {
             LocalDate.of(2026, 7, 5),
             null,
             null,
-            new CreateRentalRequest.CustomerBody(
-                "Ali", "", "P", "+90", null, null, null, null, null),
+            new CustomerRequest(
+                "Ali", "", "P", "+90", "ali@test.com", null, null, null, null),
             null,
             null,
             null);
@@ -342,17 +350,22 @@ class RentalServiceTest {
     v.setCreatedAt(Instant.now());
     v.setUpdatedAt(Instant.now());
 
-    CustomerSnapshot customer = new CustomerSnapshot();
-    customer.setFullName("Test User");
-    customer.setNationalId("11111111111");
-    customer.setPassportNo("P1");
-    customer.setPhone("+90");
+    Customer customer =
+        Customer.builder()
+            .fullName("Test User")
+            .nationalId("11111111111")
+            .passportNo("P1")
+            .phone("+90")
+            .build();
+    customer.setId(1L);
 
     Rental rental = new Rental();
+    rental.setVehicleId(vehicleIdParam);
     rental.setVehicle(v);
     rental.setStartDate(LocalDate.of(2026, 4, 1));
     rental.setEndDate(LocalDate.of(2026, 4, 10));
     RentalTestFixtures.attachRentalStatus(rental, RentalStatus.active);
+    rental.setCustomerId(1L);
     rental.setCustomer(customer);
     rental.setCreatedAt(Instant.parse("2026-03-01T10:00:00Z"));
     rental.setUpdatedAt(Instant.parse("2026-03-01T10:00:00Z"));

@@ -1,10 +1,10 @@
 package com.algorycode.rent.service.support;
 
-import com.algorycode.rent.api.dto.RentalOptionRequest;
-import com.algorycode.rent.api.error.BadRequestException;
-import com.algorycode.rent.domain.catalog.ReservationExtraOptionTemplate;
-import com.algorycode.rent.domain.vehicle.Vehicle;
-import com.algorycode.rent.domain.vehicle.VehicleOptionDefinition;
+import com.algorycode.rent.dto.RentalOptionRequest;
+import com.algorycode.rent.exception.BadRequestException;
+import com.algorycode.rent.entity.ReservationExtraOptionTemplate;
+import com.algorycode.rent.entity.Vehicle;
+import com.algorycode.rent.entity.VehicleOptionDefinition;
 import com.algorycode.rent.repository.ReservationExtraOptionTemplateRepository;
 import com.algorycode.rent.repository.VehicleOptionDefinitionRepository;
 import java.math.BigDecimal;

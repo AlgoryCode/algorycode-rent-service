@@ -1,6 +1,6 @@
 package com.algorycode.rent.repository;
 
-import com.algorycode.rent.domain.coupon.DiscountCoupon;
+import com.algorycode.rent.entity.DiscountCoupon;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 

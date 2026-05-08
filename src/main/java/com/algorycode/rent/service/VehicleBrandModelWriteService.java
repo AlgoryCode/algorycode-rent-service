@@ -1,10 +1,10 @@
 package com.algorycode.rent.service;
 
-import com.algorycode.rent.api.dto.VehicleBrandCatalogDto;
-import com.algorycode.rent.api.dto.VehicleModelCatalogDto;
-import com.algorycode.rent.api.error.ResourceNotFoundException;
-import com.algorycode.rent.domain.vehicle.VehicleBrand;
-import com.algorycode.rent.domain.vehicle.VehicleModel;
+import com.algorycode.rent.dto.VehicleBrandCatalogDto;
+import com.algorycode.rent.dto.VehicleModelCatalogDto;
+import com.algorycode.rent.exception.ResourceNotFoundException;
+import com.algorycode.rent.entity.VehicleBrand;
+import com.algorycode.rent.entity.VehicleModel;
 import com.algorycode.rent.repository.VehicleBrandRepository;
 import com.algorycode.rent.repository.VehicleModelRepository;
 import java.util.List;
