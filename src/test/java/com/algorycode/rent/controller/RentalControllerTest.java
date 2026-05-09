@@ -55,8 +55,8 @@ class RentalControllerTest {
             null,
             null,
             Instant.parse("2025-12-01T10:00:00Z"),
-            RentalStatus.pending,
-            "pending",
+            RentalStatus.PENDING,
+            "PENDING",
             java.math.BigDecimal.valueOf(100),
             RentalCommissionFlow.collect,
             null,
@@ -75,7 +75,7 @@ class RentalControllerTest {
     mockMvc
         .perform(get("/rentals").param("status", "pending").accept(MediaType.APPLICATION_JSON))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$[0].status").value("pending"));
+        .andExpect(jsonPath("$[0].status").value("PENDING"));
   }
 
   @Test
@@ -97,8 +97,8 @@ class RentalControllerTest {
             null,
             null,
             Instant.parse("2025-12-01T10:00:00Z"),
-            RentalStatus.cancelled,
-            "cancelled",
+            RentalStatus.CANCELLED,
+            "CANCELLED",
             java.math.BigDecimal.valueOf(100),
             RentalCommissionFlow.collect,
             null,
@@ -119,7 +119,7 @@ class RentalControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("{\"status\":\"cancelled\"}"))
         .andExpect(status().isOk())
-        .andExpect(jsonPath("$.status").value("cancelled"));
+        .andExpect(jsonPath("$.status").value("CANCELLED"));
 
     verify(rentalService).updateStatus(1L, "cancelled");
   }

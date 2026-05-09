@@ -14,8 +14,8 @@ class VehicleBodyStyleKindTest {
 
   @Test
   void stableId_matchesCatalogSeedOrder() {
-    assertThat(VehicleBodyStyleKind.sedan.getStableId()).isEqualTo(1L);
-    assertThat(VehicleBodyStyleKind.roadster.getStableId()).isEqualTo(10L);
+    assertThat(VehicleBodyStyleKind.sedan.getStableId()).isEqualTo(1);
+    assertThat(VehicleBodyStyleKind.roadster.getStableId()).isEqualTo(10);
   }
 
   @Test

@@ -1,6 +1,7 @@
 package com.algorycode.rent.repository;
 
 import com.algorycode.rent.entity.Rental;
+import com.algorycode.rent.entity.RentalStatus;
 import java.time.LocalDate;
 import java.util.Collection;
 import java.util.List;
@@ -16,31 +17,29 @@ public interface RentalRepository
 
   long countByCustomerId(Long customerId);
 
-  @EntityGraph(attributePaths = {"vehicle", "statusDefinition", "customer"})
+  @EntityGraph(attributePaths = {"vehicle", "customer"})
   List<Rental> findAllByOrderByCreatedAtDesc();
 
-  @EntityGraph(attributePaths = {"vehicle", "statusDefinition", "customer"})
-  List<Rental> findByStatusDefinition_CodeOrderByCreatedAtDesc(String code);
+  @EntityGraph(attributePaths = {"vehicle", "customer"})
+  List<Rental> findByRentalStatusOrderByCreatedAtDesc(RentalStatus rentalStatus);
 
-  @EntityGraph(attributePaths = {"vehicle", "statusDefinition", "customer"})
+  @EntityGraph(attributePaths = {"vehicle", "customer"})
   List<Rental> findByVehicle_IdOrderByCreatedAtDesc(Long vehicleId);
 
-  @EntityGraph(attributePaths = {"vehicle", "statusDefinition", "customer"})
-  List<Rental> findByVehicle_IdAndStatusDefinition_CodeOrderByCreatedAtDesc(
-      Long vehicleId, String code);
+  @EntityGraph(attributePaths = {"vehicle", "customer"})
+  List<Rental> findByVehicle_IdAndRentalStatusOrderByCreatedAtDesc(
+      Long vehicleId, RentalStatus rentalStatus);
 
   boolean existsByVehicle_Id(Long vehicleId);
 
-  boolean existsByVehicle_IdAndStatusDefinition_CodeIn(Long vehicleId, Collection<String> codes);
+  boolean existsByVehicle_IdAndRentalStatusIn(Long vehicleId, Collection<RentalStatus> statuses);
 
-  boolean existsByVehicle_IdAndStatusDefinition_CodeInAndIdNot(
-      Long vehicleId, Collection<String> codes, Long id);
+  boolean existsByVehicle_IdAndRentalStatusInAndIdNot(
+      Long vehicleId, Collection<RentalStatus> statuses, Long id);
 
   @EntityGraph(
       attributePaths = {
-        "statusDefinition",
         "vehicle",
-        "vehicle.vehicleStatus",
         "vehicle.vehicleModel",
         "vehicle.vehicleModel.brand",
         "pickupHandoverLocation",
@@ -65,7 +64,6 @@ public interface RentalRepository
   @EntityGraph(
       attributePaths = {
         "vehicle",
-        "statusDefinition",
         "customer",
         "options",
         "options.vehicleOptionDefinition",
@@ -74,37 +72,45 @@ public interface RentalRepository
   @Query(
       """
       select distinct r from Rental r join r.vehicle v
-      where r.statusDefinition.code <> 'cancelled'
+      where r.rentalStatus <> :cancelled
         and r.endDate >= :from
         and r.startDate <= :to
         and (:vehicleId is null or v.id = :vehicleId)
       """)
   List<Rental> findForRevenueReport(
-      @Param("from") LocalDate from, @Param("to") LocalDate to, @Param("vehicleId") Long vehicleId);
+      @Param("from") LocalDate from,
+      @Param("to") LocalDate to,
+      @Param("vehicleId") Long vehicleId,
+      @Param("cancelled") RentalStatus cancelled);
 
-  @EntityGraph(attributePaths = {"vehicle", "statusDefinition", "customer"})
+  @EntityGraph(attributePaths = {"vehicle", "customer"})
   @Query(
       """
       select r from Rental r join r.vehicle v
-      where r.statusDefinition.code <> 'cancelled'
+      where r.rentalStatus <> :cancelled
         and v.deleted = false
         and r.endDate >= :from
         and r.startDate <= :toOrDayAfter
       """)
   List<Rental> findPotentiallyBlockingForAvailability(
-      @Param("from") LocalDate from, @Param("toOrDayAfter") LocalDate toOrDayAfter);
+      @Param("from") LocalDate from,
+      @Param("toOrDayAfter") LocalDate toOrDayAfter,
+      @Param("cancelled") RentalStatus cancelled);
 
-  @EntityGraph(attributePaths = {"vehicle", "statusDefinition", "customer"})
+  @EntityGraph(attributePaths = {"vehicle", "customer"})
   @Query(
       """
       select r from Rental r join r.vehicle v
       where v.id = :vehicleId
         and v.deleted = false
-        and r.statusDefinition.code = 'active'
+        and r.rentalStatus = :active
         and r.endDate >= :from
         and r.startDate <= :to
       order by r.startDate asc, r.endDate asc
       """)
   List<Rental> findCalendarBlockingRentals(
-      @Param("vehicleId") Long vehicleId, @Param("from") LocalDate from, @Param("to") LocalDate to);
+      @Param("vehicleId") Long vehicleId,
+      @Param("from") LocalDate from,
+      @Param("to") LocalDate to,
+      @Param("active") RentalStatus active);
 }

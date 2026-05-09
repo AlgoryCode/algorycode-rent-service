@@ -5,6 +5,8 @@ import com.algorycode.rent.entity.HandoverLocation;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
@@ -42,12 +44,9 @@ public class Vehicle extends AbstractAuditableLongEntity {
 
   private Integer year;
 
-  @Column(name = "vehicle_status_id", nullable = false)
-  private Long vehicleStatusId;
-
-  @ManyToOne(fetch = FetchType.LAZY)
-  @JoinColumn(name = "vehicle_status_id", nullable = false, insertable = false, updatable = false)
-  private VehicleStatusCatalog vehicleStatus;
+  @Enumerated(EnumType.STRING)
+  @Column(name = "vehicle_status", nullable = false, length = 32)
+  private VehicleStatus vehicleStatus = VehicleStatus.ACTIVE;
 
   @Column(name = "vehicle_model_id")
   private Long vehicleModelId;
@@ -151,10 +150,7 @@ public class Vehicle extends AbstractAuditableLongEntity {
   private List<VehicleHighlight> highlights = new ArrayList<>();
 
   public VehicleStatus getStatus() {
-    if (vehicleStatus == null) {
-      return VehicleStatus.active;
-    }
-    return VehicleStatus.fromDbCode(vehicleStatus.getCode());
+    return vehicleStatus != null ? vehicleStatus : VehicleStatus.ACTIVE;
   }
 
   public String getTransmissionTypeCode() {

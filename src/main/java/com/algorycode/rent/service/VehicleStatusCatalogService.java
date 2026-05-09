@@ -6,6 +6,7 @@ import com.algorycode.rent.dto.VehicleLookupUpdateRequest;
 import com.algorycode.rent.exception.BadRequestException;
 import com.algorycode.rent.exception.ConflictException;
 import com.algorycode.rent.exception.ResourceNotFoundException;
+import com.algorycode.rent.entity.VehicleStatus;
 import com.algorycode.rent.entity.VehicleStatusCatalog;
 import com.algorycode.rent.repository.VehicleRepository;
 import com.algorycode.rent.repository.VehicleStatusCatalogRepository;
@@ -76,7 +77,9 @@ public class VehicleStatusCatalogService {
         vehicleStatusCatalogRepository
             .findById(id)
             .orElseThrow(() -> new ResourceNotFoundException("Araç statüsü bulunamadı."));
-    long used = vehicleRepository.countByVehicleStatusIdAndDeletedFalse(e.getId());
+    long used =
+        vehicleRepository.countByVehicleStatusAndDeletedFalse(
+            VehicleStatus.fromCatalogCode(e.getCode()));
     if (used > 0) {
       throw new ConflictException("Bu araç statüsü " + used + " araçta kullanılıyor; silinemez.");
     }

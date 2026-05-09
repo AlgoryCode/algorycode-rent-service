@@ -62,12 +62,9 @@ public class Rental extends AbstractAuditableLongEntity {
   @JoinColumn(name = "return_handover_location_id", insertable = false, updatable = false)
   private HandoverLocation returnHandoverLocation;
 
-  @Column(name = "rental_status_id", nullable = false)
-  private Long rentalStatusId;
-
-  @ManyToOne(fetch = FetchType.LAZY, optional = false)
-  @JoinColumn(name = "rental_status_id", nullable = false, insertable = false, updatable = false)
-  private RentalStatusDefinition statusDefinition;
+  @Enumerated(EnumType.STRING)
+  @Column(name = "rental_status", nullable = false, length = 32)
+  private RentalStatus rentalStatus = RentalStatus.ACTIVE;
 
   @Column(name = "customer_id", nullable = false)
   private Long customerId;
@@ -127,10 +124,7 @@ public class Rental extends AbstractAuditableLongEntity {
   private List<RentalOption> options = new ArrayList<>();
 
   public RentalStatus getStatus() {
-    if (statusDefinition == null) {
-      return RentalStatus.active;
-    }
-    return RentalStatus.fromDbCode(statusDefinition.getCode());
+    return rentalStatus != null ? rentalStatus : RentalStatus.ACTIVE;
   }
 
   @PrePersist
@@ -144,9 +138,6 @@ public class Rental extends AbstractAuditableLongEntity {
     }
     if (returnHandoverLocation != null) {
       returnHandoverLocationId = returnHandoverLocation.getId();
-    }
-    if (statusDefinition != null) {
-      rentalStatusId = statusDefinition.getId();
     }
     if (customer != null) {
       customerId = customer.getId();

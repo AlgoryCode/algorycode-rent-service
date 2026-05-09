@@ -1,6 +1,7 @@
 package com.algorycode.rent.repository;
 
 import com.algorycode.rent.entity.Vehicle;
+import com.algorycode.rent.entity.VehicleStatus;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.EntityGraph;
@@ -14,7 +15,6 @@ public interface VehicleRepository extends JpaRepository<Vehicle, Long> {
 
   @EntityGraph(
       attributePaths = {
-        "vehicleStatus",
         "vehicleModel",
         "vehicleModel.brand",
         "transmissionTypeRef",
@@ -28,7 +28,6 @@ public interface VehicleRepository extends JpaRepository<Vehicle, Long> {
 
   @EntityGraph(
       attributePaths = {
-        "vehicleStatus",
         "vehicleModel",
         "vehicleModel.brand",
         "transmissionTypeRef",
@@ -50,5 +49,5 @@ public interface VehicleRepository extends JpaRepository<Vehicle, Long> {
 
   long countByTransmissionTypeIdAndDeletedFalse(Long transmissionTypeId);
 
-  long countByVehicleStatusIdAndDeletedFalse(Long vehicleStatusId);
+  long countByVehicleStatusAndDeletedFalse(VehicleStatus vehicleStatus);
 }

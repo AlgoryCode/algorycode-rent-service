@@ -45,7 +45,8 @@ class RentalReportServiceTest {
   void rentalDashboard_usesDayGranularityForShortRange() {
     LocalDate from = LocalDate.of(2026, 1, 1);
     LocalDate to = LocalDate.of(2026, 1, 10);
-    when(rentalRepository.findForRevenueReport(from, to, null)).thenReturn(List.of());
+    when(rentalRepository.findForRevenueReport(from, to, null, RentalStatus.CANCELLED))
+        .thenReturn(List.of());
 
     RentalDashboardReportDto dto = rentalReportService.rentalDashboard(from, to, null);
 
@@ -59,7 +60,8 @@ class RentalReportServiceTest {
   void rentalDashboard_usesMonthGranularityWhenRangeExceedsDailyCap() {
     LocalDate from = LocalDate.of(2026, 1, 1);
     LocalDate to = from.plusDays(93);
-    when(rentalRepository.findForRevenueReport(from, to, null)).thenReturn(List.of());
+    when(rentalRepository.findForRevenueReport(from, to, null, RentalStatus.CANCELLED))
+        .thenReturn(List.of());
 
     RentalDashboardReportDto dto = rentalReportService.rentalDashboard(from, to, null);
 
@@ -76,7 +78,7 @@ class RentalReportServiceTest {
     Vehicle v = new Vehicle();
     v.setId(vehicleId);
     v.setPlate("34 X 1");
-    VehicleTestFixtures.attachBrandModelStatus(v, "Test", "Car", VehicleStatus.active);
+    VehicleTestFixtures.attachBrandModelStatus(v, "Test", "Car", VehicleStatus.ACTIVE);
     v.setRentalDailyPrice(new BigDecimal("100.00"));
 
     RentalOption opt = new RentalOption();
@@ -86,11 +88,12 @@ class RentalReportServiceTest {
     r.setVehicle(v);
     r.setStartDate(LocalDate.of(2026, 1, 5));
     r.setEndDate(LocalDate.of(2026, 1, 7));
-    RentalTestFixtures.attachRentalStatus(r, RentalStatus.active);
+    RentalTestFixtures.attachRentalStatus(r, RentalStatus.ACTIVE);
     r.setCommissionAmount(new BigDecimal("12.34"));
     r.setOptions(List.of(opt));
 
-    when(rentalRepository.findForRevenueReport(from, to, null)).thenReturn(List.of(r));
+    when(rentalRepository.findForRevenueReport(from, to, null, RentalStatus.CANCELLED))
+        .thenReturn(List.of(r));
 
     RentalDashboardReportDto dto = rentalReportService.rentalDashboard(from, to, null);
 
@@ -114,7 +117,7 @@ class RentalReportServiceTest {
     LocalDate to = LocalDate.of(2026, 2, 28);
 
     Rental cancelled = new Rental();
-    RentalTestFixtures.attachRentalStatus(cancelled, RentalStatus.cancelled);
+    RentalTestFixtures.attachRentalStatus(cancelled, RentalStatus.CANCELLED);
     cancelled.setVehicle(new Vehicle());
     cancelled.getVehicle().setId(1L);
     cancelled.getVehicle().setPlate("34 OFF 1");
@@ -122,7 +125,8 @@ class RentalReportServiceTest {
     cancelled.setStartDate(from);
     cancelled.setEndDate(from);
 
-    when(rentalRepository.findForRevenueReport(eq(from), eq(to), any()))
+    when(rentalRepository.findForRevenueReport(
+            eq(from), eq(to), any(), eq(RentalStatus.CANCELLED)))
         .thenReturn(List.of(cancelled));
 
     RentalDashboardReportDto dto = rentalReportService.rentalDashboard(from, to, null);

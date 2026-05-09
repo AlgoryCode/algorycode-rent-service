@@ -15,13 +15,12 @@ import com.algorycode.rent.entity.RentalAdditionalDriver;
 import com.algorycode.rent.entity.RentalCommissionFlow;
 import com.algorycode.rent.entity.RentalOption;
 import com.algorycode.rent.entity.RentalStatus;
-import com.algorycode.rent.entity.RentalStatusDefinition;
 import com.algorycode.rent.entity.Vehicle;
+import com.algorycode.rent.entity.VehicleStatus;
 import com.algorycode.rent.logging.AuditLog;
 import com.algorycode.rent.logging.SafeReasonCodes;
 import com.algorycode.rent.repository.CustomerRepository;
 import com.algorycode.rent.repository.RentalRepository;
-import com.algorycode.rent.repository.RentalStatusDefinitionRepository;
 import com.algorycode.rent.repository.ReservationExtraOptionTemplateRepository;
 import com.algorycode.rent.repository.VehicleOptionDefinitionRepository;
 import com.algorycode.rent.repository.VehicleRepository;
@@ -45,7 +44,6 @@ import org.springframework.transaction.annotation.Transactional;
 public class RentalService {
 
   private final RentalRepository rentalRepository;
-  private final RentalStatusDefinitionRepository rentalStatusDefinitionRepository;
   private final VehicleRepository vehicleRepository;
   private final CustomerRepository customerRepository;
   private final ObjectStorageService objectStorageService;
@@ -56,6 +54,7 @@ public class RentalService {
   private final ReservationExtraOptionTemplateRepository reservationExtraOptionTemplateRepository;
   private final AuditLog auditLog;
   private final MessageSource messageSource;
+  private final VehicleCatalogStatusService vehicleCatalogStatusService;
 
   @Transactional(readOnly = true)
   public List<RentalDto> list(
@@ -91,6 +90,7 @@ public class RentalService {
             .findByIdAndDeletedFalse(req.vehicleId())
             .orElseThrow(
                 () -> new ResourceNotFoundException("Vehicle not found: " + req.vehicleId()));
+    rejectMaintenanceVehicle(vehicle);
     BigDecimal draftBase =
         RentalCommissionFromVehicle.baseRentalCharge(
             req.startDate(), req.endDate(), vehicle.getRentalDailyPrice());
@@ -99,7 +99,7 @@ public class RentalService {
     RentalStatus status =
         (req.status() != null && !req.status().isBlank())
             ? parseRentalStatusRequired(req.status())
-            : RentalStatus.active;
+            : RentalStatus.ACTIVE;
     List<Rental> sameVehicle =
         rentalRepository.findByVehicle_IdOrderByCreatedAtDesc(req.vehicleId());
     ensureNoOverlap(sameVehicle, req.startDate(), req.endDate(), null);
@@ -112,9 +112,7 @@ public class RentalService {
         resolvePickupHandover(vehicle, req.pickupHandoverLocationId()));
     rental.setReturnHandoverLocation(
         resolveReturnHandover(vehicle, req.returnHandoverLocationId()));
-    RentalStatusDefinition statusDefinition = requireRentalStatusDefinition(status);
-    rental.setRentalStatusId(statusDefinition.getId());
-    rental.setStatusDefinition(statusDefinition);
+    rental.setRentalStatus(status);
     rental.setCommissionAmount(BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP));
     rental.setCommissionFlow(RentalCommissionFlow.collect);
     rental.setCommissionCompany(null);
@@ -150,6 +148,10 @@ public class RentalService {
             "rentalId", rental.getId().toString(),
             "vehicleId", Objects.toString(rental.getVehicleId(), ""),
             "status", rental.getStatus().name()));
+    syncVehicleForRentalState(
+        rental.getVehicleId(),
+        vehicleCatalogStatusService.vehicleStatusForRental(rental.getStatus()));
+    applyCompletedReturnAsDefaultPickup(rental, vehicle);
     return RentalMapper.toDto(rental, objectStorageService::resolvePublicUrl);
   }
 
@@ -163,16 +165,17 @@ public class RentalService {
     if (rental.getStatus() == status) {
       return RentalMapper.toDto(rental, objectStorageService::resolvePublicUrl);
     }
-    if (status != RentalStatus.cancelled) {
+    if (status != RentalStatus.CANCELLED) {
       List<Rental> sameVehicle =
           rentalRepository.findByVehicle_IdOrderByCreatedAtDesc(rental.getVehicleId());
       ensureNoOverlap(sameVehicle, rental.getStartDate(), rental.getEndDate(), rental.getId());
     }
-    RentalStatusDefinition statusDefinition = requireRentalStatusDefinition(status);
-    rental.setRentalStatusId(statusDefinition.getId());
-    rental.setStatusDefinition(statusDefinition);
+    rental.setRentalStatus(status);
     Rental saved = rentalRepository.save(rental);
-    syncDefaultPickupHandoverFromCompletedRental(saved);
+    syncVehicleForRentalState(
+        saved.getVehicleId(),
+        vehicleCatalogStatusService.vehicleStatusForRental(saved.getStatus()));
+    applyCompletedReturnAsDefaultPickup(saved, null);
     auditLog.infoEvent(
         "rental_status_updated",
         Map.of("rentalId", saved.getId().toString(), "status", status.name()));
@@ -194,7 +197,7 @@ public class RentalService {
             ? parseRentalStatusRequired(req.status())
             : rental.getStatus();
 
-    if (nextStatus != RentalStatus.cancelled) {
+    if (nextStatus != RentalStatus.CANCELLED) {
       List<Rental> sameVehicle =
           rentalRepository.findByVehicle_IdOrderByCreatedAtDesc(rental.getVehicleId());
       ensureNoOverlap(sameVehicle, nextStart, nextEnd, rental.getId());
@@ -217,9 +220,7 @@ public class RentalService {
       rental.setReturnHandoverLocation(
           handoverLocationService.requireForAssignment(rid, HandoverLocationKind.RETURN));
     }
-    RentalStatusDefinition statusDefinition = requireRentalStatusDefinition(nextStatus);
-    rental.setRentalStatusId(statusDefinition.getId());
-    rental.setStatusDefinition(statusDefinition);
+    rental.setRentalStatus(nextStatus);
     rental.setCommissionAmount(BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP));
     rental.setCommissionFlow(RentalCommissionFlow.collect);
     rental.setCommissionCompany(null);
@@ -258,35 +259,25 @@ public class RentalService {
 
     rental.setNetAmount(computeNetAmount(rental, commissionVehicle));
     Rental saved = rentalRepository.save(rental);
-    syncDefaultPickupHandoverFromCompletedRental(saved);
+    syncVehicleForRentalState(
+        saved.getVehicleId(),
+        vehicleCatalogStatusService.vehicleStatusForRental(saved.getStatus()));
+    applyCompletedReturnAsDefaultPickup(saved, null);
     return RentalMapper.toDto(saved, objectStorageService::resolvePublicUrl);
   }
 
   private List<Rental> findRentalsForListFilter(Long vehicleId, RentalStatus status) {
     if (vehicleId != null && status != null) {
-      return rentalRepository.findByVehicle_IdAndStatusDefinition_CodeOrderByCreatedAtDesc(
-          vehicleId, status.persistenceCode());
+      return rentalRepository.findByVehicle_IdAndRentalStatusOrderByCreatedAtDesc(
+          vehicleId, status);
     }
     if (vehicleId != null) {
       return rentalRepository.findByVehicle_IdOrderByCreatedAtDesc(vehicleId);
     }
     if (status != null) {
-      return rentalRepository.findByStatusDefinition_CodeOrderByCreatedAtDesc(
-          status.persistenceCode());
+      return rentalRepository.findByRentalStatusOrderByCreatedAtDesc(status);
     }
     return rentalRepository.findAllByOrderByCreatedAtDesc();
-  }
-
-  private void syncDefaultPickupHandoverFromCompletedRental(Rental saved) {
-    if (saved.getStatus() != RentalStatus.completed) {
-      return;
-    }
-    Vehicle v = saved.getVehicle();
-    if (v == null || saved.getReturnHandoverLocation() == null) {
-      return;
-    }
-    v.setDefaultPickupHandoverLocation(saved.getReturnHandoverLocation());
-    vehicleRepository.save(v);
   }
 
   private void persistRentalMediaToObjectStorage(Rental rental) {
@@ -338,7 +329,7 @@ public class RentalService {
       if (skipRentalId != null && skipRentalId.equals(r.getId())) {
         continue;
       }
-      if (r.getStatus() == RentalStatus.cancelled) {
+      if (r.getStatus() == RentalStatus.CANCELLED) {
         continue;
       }
       if (datesOverlap(r.getStartDate(), r.getEndDate(), startDate, endDate)) {
@@ -489,6 +480,32 @@ public class RentalService {
     return BigDecimal.ZERO;
   }
 
+  private static void rejectMaintenanceVehicle(Vehicle vehicle) {
+    if (vehicle.getStatus() == VehicleStatus.MAINTENANCE) {
+      throw new BadRequestException("Bakımdaki araç için kiralama başlatılamaz.");
+    }
+  }
+
+  private void syncVehicleForRentalState(Long vehicleId, VehicleStatus status) {
+    vehicleCatalogStatusService.updateVehicleStatus(vehicleId, status);
+  }
+
+  private void applyCompletedReturnAsDefaultPickup(Rental rental, Vehicle vehicleIfKnown) {
+    if (rental.getStatus() != RentalStatus.COMPLETED || rental.getReturnHandoverLocation() == null) {
+      return;
+    }
+    Vehicle vehicle = vehicleIfKnown != null ? vehicleIfKnown : resolveRentalVehicle(rental);
+    Long nextPickupId = rental.getReturnHandoverLocation().getId();
+    Long currentDefaultId =
+        vehicle.getDefaultPickupHandoverLocation() != null
+            ? vehicle.getDefaultPickupHandoverLocation().getId()
+            : null;
+    if (!Objects.equals(currentDefaultId, nextPickupId)) {
+      vehicle.setDefaultPickupHandoverLocation(rental.getReturnHandoverLocation());
+      vehicleRepository.save(vehicle);
+    }
+  }
+
   private Vehicle resolveRentalVehicle(Rental rental) {
     if (rental.getVehicle() != null) {
       return rental.getVehicle();
@@ -531,20 +548,6 @@ public class RentalService {
     return inferred
         ? handoverLocationService.requireActive(returnId)
         : handoverLocationService.requireForAssignment(returnId, HandoverLocationKind.RETURN);
-  }
-
-  private RentalStatusDefinition requireRentalStatusDefinition(RentalStatus status) {
-    for (String code : status.dbLookupCodes()) {
-      var row = rentalStatusDefinitionRepository.findByCodeIgnoreCase(code);
-      if (row.isPresent()) {
-        return row.get();
-      }
-    }
-    throw new BadRequestException(
-        messageSource.getMessage(
-            "rental.error.statusNotFound",
-            new Object[] {status.persistenceCode()},
-            LocaleContextHolder.getLocale()));
   }
 
   private RentalStatus parseRentalStatusRequired(String raw) {

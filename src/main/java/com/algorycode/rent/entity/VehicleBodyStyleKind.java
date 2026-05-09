@@ -6,30 +6,30 @@ import java.util.Map;
 import java.util.Optional;
 
 public enum VehicleBodyStyleKind {
-  sedan(1L, 1, "Sedan", "sedan"),
-  hatchback(2L, 2, "Hatchback", "hatchback"),
-  station_wagon(3L, 3, "Station wagon", "station_wagon", "wagon", "estate"),
-  suv(4L, 4, "SUV / crossover", "suv", "crossover"),
-  coupe(5L, 5, "Coupe", "coupe"),
-  convertible(6L, 6, "Cabrio / convertible", "convertible", "cabrio"),
-  mpv(7L, 7, "MPV / minivan", "mpv", "minivan"),
-  van(8L, 8, "Van / panelvan", "van", "panelvan"),
-  pickup(9L, 9, "Pick-up", "pickup", "pick-up"),
-  roadster(10L, 10, "Roadster", "roadster");
+  sedan(1, 1, "Sedan", "sedan"),
+  hatchback(2, 2, "Hatchback", "hatchback"),
+  station_wagon(3, 3, "Station wagon", "station_wagon", "wagon", "estate"),
+  suv(4, 4, "SUV / crossover", "suv", "crossover"),
+  coupe(5, 5, "Coupe", "coupe"),
+  convertible(6, 6, "Cabrio / convertible", "convertible", "cabrio"),
+  mpv(7, 7, "MPV / minivan", "mpv", "minivan"),
+  van(8, 8, "Van / panelvan", "van", "panelvan"),
+  pickup(9, 9, "Pick-up", "pickup", "pick-up"),
+  roadster(10, 10, "Roadster", "roadster");
 
-  private final long stableId;
+  private final int stableId;
   private final int sortOrder;
   private final String labelTr;
   private final String[] dbLookupCodes;
 
-  VehicleBodyStyleKind(long stableId, int sortOrder, String labelTr, String... dbLookupCodes) {
+  VehicleBodyStyleKind(int stableId, int sortOrder, String labelTr, String... dbLookupCodes) {
     this.stableId = stableId;
     this.sortOrder = sortOrder;
     this.labelTr = labelTr;
     this.dbLookupCodes = dbLookupCodes;
   }
 
-  public long getStableId() {
+  public int getStableId() {
     return stableId;
   }
 

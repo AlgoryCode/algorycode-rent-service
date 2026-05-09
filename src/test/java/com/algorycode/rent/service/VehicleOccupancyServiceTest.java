@@ -48,8 +48,9 @@ class VehicleOccupancyServiceTest {
     rental.setId(rid);
     rental.setStartDate(LocalDate.of(2026, 4, 19));
     rental.setEndDate(LocalDate.of(2026, 4, 21));
-    RentalTestFixtures.attachRentalStatus(rental, RentalStatus.active);
-    when(rentalRepository.findCalendarBlockingRentals(eq(vid), any(), any()))
+    RentalTestFixtures.attachRentalStatus(rental, RentalStatus.ACTIVE);
+    when(rentalRepository.findCalendarBlockingRentals(
+            eq(vid), any(), any(), eq(RentalStatus.ACTIVE)))
         .thenReturn(List.of(rental));
 
     Long qid = 1L;

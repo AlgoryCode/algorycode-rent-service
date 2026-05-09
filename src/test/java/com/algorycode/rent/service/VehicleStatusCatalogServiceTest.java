@@ -9,6 +9,7 @@ import static org.mockito.Mockito.when;
 
 import com.algorycode.rent.dto.VehicleLookupCreateRequest;
 import com.algorycode.rent.exception.ConflictException;
+import com.algorycode.rent.entity.VehicleStatus;
 import com.algorycode.rent.entity.VehicleStatusCatalog;
 import com.algorycode.rent.repository.VehicleRepository;
 import com.algorycode.rent.repository.VehicleStatusCatalogRepository;
@@ -36,7 +37,8 @@ class VehicleStatusCatalogServiceTest {
     row.setSortOrder(5);
 
     when(vehicleStatusCatalogRepository.findById(9L)).thenReturn(Optional.of(row));
-    when(vehicleRepository.countByVehicleStatusIdAndDeletedFalse(9L)).thenReturn(3L);
+    when(vehicleRepository.countByVehicleStatusAndDeletedFalse(VehicleStatus.fromCatalogCode("custom")))
+        .thenReturn(3L);
 
     assertThatThrownBy(() -> vehicleStatusCatalogService.delete(9L))
         .isInstanceOf(ConflictException.class)
@@ -54,7 +56,8 @@ class VehicleStatusCatalogServiceTest {
     row.setSortOrder(99);
 
     when(vehicleStatusCatalogRepository.findById(2L)).thenReturn(Optional.of(row));
-    when(vehicleRepository.countByVehicleStatusIdAndDeletedFalse(2L)).thenReturn(0L);
+    when(vehicleRepository.countByVehicleStatusAndDeletedFalse(VehicleStatus.fromCatalogCode("orphan")))
+        .thenReturn(0L);
 
     vehicleStatusCatalogService.delete(2L);
 

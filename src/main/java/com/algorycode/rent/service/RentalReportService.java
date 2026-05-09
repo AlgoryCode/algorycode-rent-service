@@ -43,8 +43,10 @@ public class RentalReportService {
     }
 
     List<Rental> rentals =
-        rentalRepository.findForRevenueReport(fromEff, toEff, vehicleId).stream()
-            .filter(r -> r.getStatus() != RentalStatus.cancelled)
+        rentalRepository
+            .findForRevenueReport(fromEff, toEff, vehicleId, RentalStatus.CANCELLED)
+            .stream()
+            .filter(r -> r.getStatus() != RentalStatus.CANCELLED)
             .toList();
 
     long daysInRange = ChronoUnit.DAYS.between(fromEff, toEff) + 1;
@@ -80,9 +82,9 @@ public class RentalReportService {
       totalComm = totalComm.add(comm);
       rentalDaySum += incDays;
 
-      if (r.getStatus() == RentalStatus.completed) {
+      if (r.getStatus() == RentalStatus.COMPLETED) {
         completed++;
-      } else if (r.getStatus() == RentalStatus.active || r.getStatus() == RentalStatus.pending) {
+      } else if (r.getStatus() == RentalStatus.ACTIVE || r.getStatus() == RentalStatus.PENDING) {
         activePending++;
       }
 

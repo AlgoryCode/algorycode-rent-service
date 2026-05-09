@@ -4,7 +4,6 @@ import com.algorycode.rent.entity.Vehicle;
 import com.algorycode.rent.entity.VehicleBrand;
 import com.algorycode.rent.entity.VehicleModel;
 import com.algorycode.rent.entity.VehicleStatus;
-import com.algorycode.rent.entity.VehicleStatusCatalog;
 
 public final class VehicleTestFixtures {
 
@@ -25,10 +24,6 @@ public final class VehicleTestFixtures {
     m.setName(model);
     v.setVehicleModelId(m.getId());
     v.setVehicleModel(m);
-    VehicleStatusCatalog d = new VehicleStatusCatalog();
-    d.setId(903L);
-    d.setCode(status.name());
-    v.setVehicleStatusId(d.getId());
-    v.setVehicleStatus(d);
+    v.setVehicleStatus(status);
   }
 }

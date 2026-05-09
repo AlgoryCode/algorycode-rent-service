@@ -7,21 +7,28 @@ import org.junit.jupiter.api.Test;
 class VehicleStatusTest {
 
   @Test
-  void fromDbCode_whenUnknownCode_thenReturnsActive() {
-    assertThat(VehicleStatus.fromDbCode("custom_status")).isEqualTo(VehicleStatus.active);
+  void fromCatalogCode_blank_thenActive() {
+    assertThat(VehicleStatus.fromCatalogCode(null)).isEqualTo(VehicleStatus.ACTIVE);
+    assertThat(VehicleStatus.fromCatalogCode("   ")).isEqualTo(VehicleStatus.ACTIVE);
   }
 
   @Test
-  void fromDbCode_whenKnownCode_thenReturnsMatchingEnum() {
-    assertThat(VehicleStatus.fromDbCode("MAINTENANCE")).isEqualTo(VehicleStatus.maintenance);
-    assertThat(VehicleStatus.fromDbCode("rented")).isEqualTo(VehicleStatus.rented);
-    assertThat(VehicleStatus.fromDbCode("available")).isEqualTo(VehicleStatus.active);
+  void fromCatalogCode_catalogSynonyms() {
+    assertThat(VehicleStatus.fromCatalogCode("rented")).isEqualTo(VehicleStatus.RENTED);
+    assertThat(VehicleStatus.fromCatalogCode("available")).isEqualTo(VehicleStatus.ACTIVE);
+    assertThat(VehicleStatus.fromCatalogCode("active")).isEqualTo(VehicleStatus.ACTIVE);
+    assertThat(VehicleStatus.fromCatalogCode("maintenance")).isEqualTo(VehicleStatus.MAINTENANCE);
+    assertThat(VehicleStatus.fromCatalogCode("pending")).isEqualTo(VehicleStatus.PENDING);
   }
 
   @Test
-  void tryParse_acceptsFeAliases() {
-    assertThat(VehicleStatus.tryParse("Active")).contains(VehicleStatus.active);
-    assertThat(VehicleStatus.tryParse("Tamirde")).contains(VehicleStatus.maintenance);
-    assertThat(VehicleStatus.tryParse("pending")).contains(VehicleStatus.pending);
+  void fromCatalogCode_strictEnumName() {
+    assertThat(VehicleStatus.fromCatalogCode("RENTED")).isEqualTo(VehicleStatus.RENTED);
+    assertThat(VehicleStatus.fromCatalogCode("ACTIVE")).isEqualTo(VehicleStatus.ACTIVE);
+  }
+
+  @Test
+  void fromCatalogCode_unknown_thenActive() {
+    assertThat(VehicleStatus.fromCatalogCode("no_such_status")).isEqualTo(VehicleStatus.ACTIVE);
   }
 }

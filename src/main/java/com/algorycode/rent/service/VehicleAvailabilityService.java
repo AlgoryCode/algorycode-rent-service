@@ -2,6 +2,7 @@ package com.algorycode.rent.service;
 
 import com.algorycode.rent.exception.BadRequestException;
 import com.algorycode.rent.entity.Rental;
+import com.algorycode.rent.entity.RentalStatus;
 import com.algorycode.rent.entity.RentalRequest;
 import com.algorycode.rent.entity.RentalRequestStatus;
 import com.algorycode.rent.entity.Vehicle;
@@ -49,13 +50,14 @@ public class VehicleAvailabilityService {
     DateRangeValidator.requireEndNotBeforeStart(availableFrom, availableTo);
     LocalDate windowEnd = availableTo.equals(LocalDate.MAX) ? availableTo : availableTo.plusDays(1);
     List<Rental> rentalCandidates =
-        rentalRepository.findPotentiallyBlockingForAvailability(availableFrom, windowEnd);
+        rentalRepository.findPotentiallyBlockingForAvailability(
+            availableFrom, windowEnd, RentalStatus.CANCELLED);
     List<RentalRequest> requestCandidates =
         rentalRequestRepository.findPotentiallyBlockingRequestsForAvailability(
             availableFrom, windowEnd, BLOCKING_REQUEST_STATUSES);
 
     return vehicleRepository.findAllByDeletedFalse().stream()
-        .filter(v -> v.getStatus() != VehicleStatus.maintenance)
+        .filter(v -> v.getStatus() != VehicleStatus.MAINTENANCE)
         .filter(v -> matchesHandoverFilters(v, pickupHandoverLocationId, returnHandoverLocationId))
         .filter(
             v ->

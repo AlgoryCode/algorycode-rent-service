@@ -6,59 +6,38 @@ import java.util.Map;
 import java.util.Optional;
 
 public enum RentalStatus {
-  active(1L, "active"),
-  pending(2L, "pending"),
-  cancelled(3L, "cancelled"),
-  completed(4L, "completed");
+  ACTIVE,
+  PENDING,
+  CANCELLED,
+  COMPLETED;
 
-  private final long stableId;
-  private final String[] dbLookupCodes;
-
-  RentalStatus(long stableId, String... dbLookupCodes) {
-    this.stableId = stableId;
-    this.dbLookupCodes = dbLookupCodes;
-  }
-
-  public long getStableId() {
-    return stableId;
-  }
-
-  public String persistenceCode() {
-    return dbLookupCodes[0];
-  }
-
-  public String[] dbLookupCodes() {
-    return dbLookupCodes.clone();
-  }
-
-  private static final Map<String, RentalStatus> PARSE_INDEX = new HashMap<>();
+  private static final Map<String, RentalStatus> SYNONYMS = new HashMap<>();
 
   static {
-    for (RentalStatus s : values()) {
-      register(s.name(), s);
-      for (String code : s.dbLookupCodes) {
-        register(code, s);
-      }
-    }
-    register("aktif", active);
-    register("onay bekliyor", pending);
-    register("onaybekliyor", pending);
-    register("beklemede", pending);
-    register("iptal", cancelled);
-    register("tamamlandı", completed);
-    register("tamamlandi", completed);
-    register("bitti", completed);
+    putSynonyms("active", ACTIVE);
+    putSynonyms("pending", PENDING);
+    putSynonyms("cancelled", CANCELLED);
+    putSynonyms("canceled", CANCELLED);
+    putSynonyms("completed", COMPLETED);
+    putSynonyms("aktif", ACTIVE);
+    putSynonyms("beklemede", PENDING);
+    putSynonyms("onay bekliyor", PENDING);
+    putSynonyms("onaybekliyor", PENDING);
+    putSynonyms("iptal", CANCELLED);
+    putSynonyms("tamamlandı", COMPLETED);
+    putSynonyms("tamamlandi", COMPLETED);
+    putSynonyms("bitti", COMPLETED);
   }
 
-  private static void register(String key, RentalStatus s) {
+  private static void putSynonyms(String key, RentalStatus status) {
     if (key == null || key.isBlank()) {
       return;
     }
     String collapsed = key.trim().replaceAll("\\s+", " ");
     for (Locale loc : new Locale[] {Locale.forLanguageTag("tr"), Locale.ROOT}) {
       String n = collapsed.toLowerCase(loc);
-      PARSE_INDEX.putIfAbsent(n, s);
-      PARSE_INDEX.putIfAbsent(n.replace(" ", ""), s);
+      SYNONYMS.putIfAbsent(n, status);
+      SYNONYMS.putIfAbsent(n.replace(" ", ""), status);
     }
   }
 
@@ -67,18 +46,22 @@ public enum RentalStatus {
       return Optional.empty();
     }
     String collapsed = raw.trim().replaceAll("\\s+", " ");
-    for (Locale loc : new Locale[] {Locale.forLanguageTag("tr"), Locale.ROOT}) {
-      String n = collapsed.toLowerCase(loc);
-      RentalStatus s = PARSE_INDEX.get(n);
-      if (s != null) {
-        return Optional.of(s);
+    try {
+      return Optional.of(valueOf(collapsed.toUpperCase(Locale.ROOT)));
+    } catch (IllegalArgumentException ex) {
+      for (Locale loc : new Locale[] {Locale.forLanguageTag("tr"), Locale.ROOT}) {
+        String n = collapsed.toLowerCase(loc);
+        RentalStatus s = SYNONYMS.get(n);
+        if (s != null) {
+          return Optional.of(s);
+        }
+        s = SYNONYMS.get(n.replace(" ", ""));
+        if (s != null) {
+          return Optional.of(s);
+        }
       }
-      s = PARSE_INDEX.get(n.replace(" ", ""));
-      if (s != null) {
-        return Optional.of(s);
-      }
+      return Optional.empty();
     }
-    return Optional.empty();
   }
 
   public static RentalStatus parseRequired(String raw) {
@@ -87,11 +70,6 @@ public enum RentalStatus {
   }
 
   public static RentalStatus fromDbCode(String code) {
-    return tryParse(code).orElse(active);
-  }
-
-  @Deprecated
-  public static RentalStatus fromCode(String code) {
-    return fromDbCode(code);
+    return tryParse(code).orElse(ACTIVE);
   }
 }

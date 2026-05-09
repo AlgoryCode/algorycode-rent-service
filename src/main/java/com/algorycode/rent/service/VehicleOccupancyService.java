@@ -4,6 +4,7 @@ import com.algorycode.rent.dto.VehicleCalendarOccupancyDto;
 import com.algorycode.rent.dto.VehicleOccupancyRangeDto;
 import com.algorycode.rent.dto.VehicleOccupancySource;
 import com.algorycode.rent.exception.ResourceNotFoundException;
+import com.algorycode.rent.entity.RentalStatus;
 import com.algorycode.rent.entity.RentalRequestStatus;
 import com.algorycode.rent.repository.RentalRepository;
 import com.algorycode.rent.repository.RentalRequestRepository;
@@ -40,7 +41,9 @@ public class VehicleOccupancyService {
         .orElseThrow(() -> new ResourceNotFoundException("Vehicle not found: " + vehicleId));
 
     List<VehicleOccupancyRangeDto> ranges = new ArrayList<>();
-    for (var r : rentalRepository.findCalendarBlockingRentals(vehicleId, from, to)) {
+    for (var r :
+        rentalRepository.findCalendarBlockingRentals(
+            vehicleId, from, to, RentalStatus.ACTIVE)) {
       ranges.add(
           new VehicleOccupancyRangeDto(
               r.getId(), VehicleOccupancySource.rental, r.getStartDate(), r.getEndDate()));

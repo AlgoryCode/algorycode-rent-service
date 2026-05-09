@@ -89,10 +89,10 @@ public class RentalRequestService {
               .findByIdAndDeletedFalse(req.vehicleId())
               .orElseThrow(
                   () -> new ResourceNotFoundException("Vehicle not found: " + req.vehicleId()));
-      if (vehicle.getStatus() == VehicleStatus.maintenance) {
+      if (vehicle.getStatus() == VehicleStatus.MAINTENANCE) {
         throw new ConflictException("Bakımdaki araç için talep oluşturulamaz.");
       }
-      if (vehicle.getStatus() == VehicleStatus.rented) {
+      if (vehicle.getStatus() == VehicleStatus.RENTED) {
         throw new ConflictException("Kirada olan araç için talep oluşturulamaz.");
       }
     }

@@ -9,7 +9,6 @@ import java.util.Map;
 public record VehicleDto(
     Long id,
     Long vehicleModelId,
-    Long vehicleStatusId,
     Long transmissionTypeId,
     Long bodyStyleId,
     Long fuelTypeId,

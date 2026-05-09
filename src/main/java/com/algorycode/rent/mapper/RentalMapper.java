@@ -79,9 +79,6 @@ public final class RentalMapper {
   }
 
   private static String rentalStatusCode(Rental r) {
-    if (r.getStatusDefinition() != null) {
-      return r.getStatusDefinition().getCode();
-    }
     return r.getStatus().name();
   }
 

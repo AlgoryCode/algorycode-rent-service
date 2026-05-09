@@ -8,7 +8,6 @@ import com.algorycode.rent.entity.VehicleImage;
 import com.algorycode.rent.entity.VehicleImageSlot;
 import com.algorycode.rent.entity.VehicleModel;
 import com.algorycode.rent.entity.VehicleStatus;
-import com.algorycode.rent.entity.VehicleStatusCatalog;
 import java.time.Instant;
 import org.junit.jupiter.api.Test;
 
@@ -29,11 +28,7 @@ class VehicleMapperTest {
     model.setName("M");
     v.setVehicleModelId(model.getId());
     v.setVehicleModel(model);
-    VehicleStatusCatalog sd = new VehicleStatusCatalog();
-    sd.setId(13L);
-    sd.setCode("maintenance");
-    v.setVehicleStatusId(sd.getId());
-    v.setVehicleStatus(sd);
+    v.setVehicleStatus(VehicleStatus.MAINTENANCE);
     v.setYear(2024);
     v.setCreatedAt(Instant.now());
     v.setUpdatedAt(Instant.now());
@@ -50,8 +45,8 @@ class VehicleMapperTest {
     var dto = VehicleMapper.toDto(v);
 
     assertThat(dto.images()).containsEntry("front", "https://example.com/a.jpg");
-    assertThat(dto.status()).isEqualTo(VehicleStatus.maintenance);
-    assertThat(dto.statusCode()).isEqualTo("maintenance");
+    assertThat(dto.status()).isEqualTo(VehicleStatus.MAINTENANCE);
+    assertThat(dto.statusCode()).isEqualTo("MAINTENANCE");
     assertThat(dto.defaultPickupHandoverLocation()).isNull();
     assertThat(dto.defaultReturnHandoverLocation()).isNull();
     assertThat(dto.returnHandoverLocations()).isEmpty();
@@ -64,11 +59,7 @@ class VehicleMapperTest {
     var v = new Vehicle();
     v.setId(2L);
     v.setPlate(null);
-    VehicleStatusCatalog sd = new VehicleStatusCatalog();
-    sd.setId(21L);
-    sd.setCode("available");
-    v.setVehicleStatusId(sd.getId());
-    v.setVehicleStatus(sd);
+    v.setVehicleStatus(VehicleStatus.ACTIVE);
     v.setYear(2023);
     v.setCreatedAt(Instant.now());
     v.setUpdatedAt(Instant.now());

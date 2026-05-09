@@ -41,7 +41,7 @@ public class PaymentLogService {
         rentalRepository
             .findDetailById(req.rentalId())
             .orElseThrow(() -> new BadRequestException("Kiralama bulunamadı."));
-    if (rental.getStatus() == RentalStatus.cancelled) {
+    if (rental.getStatus() == RentalStatus.CANCELLED) {
       throw new BadRequestException("İptal edilmiş kiralama için ödeme eklenemez.");
     }
 

@@ -8,6 +8,7 @@ import com.algorycode.rent.dto.VehicleDto;
 import com.algorycode.rent.dto.VehicleFormCatalogDto;
 import com.algorycode.rent.exception.BadRequestException;
 import com.algorycode.rent.entity.VehicleImageSlot;
+import com.algorycode.rent.entity.VehicleStatus;
 import com.algorycode.rent.service.VehicleFormCatalogService;
 import com.algorycode.rent.service.VehicleOccupancyService;
 import com.algorycode.rent.service.VehicleService;
@@ -95,6 +96,12 @@ public class VehicleController {
       @PathVariable Long id, @Valid @RequestBody UpdateVehicleRequest body) {
     vehicleService.update(id, body);
     return ResponseEntity.ok("Updated Successfully");
+  }
+
+  @PatchMapping("/{id:\\d+}/status")
+  public VehicleDto updateVehicleStatus(
+      @PathVariable Long id, @RequestParam VehicleStatus status) {
+    return vehicleService.updateVehicleStatus(id, status);
   }
 
   @DeleteMapping("/{id:\\d+}")

@@ -19,9 +19,9 @@ class VehicleTransmissionKindTest {
 
   @Test
   void stableId_matchesCatalogSeedOrder() {
-    assertThat(VehicleTransmissionKind.manual.getStableId()).isEqualTo(1L);
-    assertThat(VehicleTransmissionKind.automatic.getStableId()).isEqualTo(2L);
-    assertThat(VehicleTransmissionKind.semi_automatic.getStableId()).isEqualTo(3L);
+    assertThat(VehicleTransmissionKind.manual.getStableId()).isEqualTo(1);
+    assertThat(VehicleTransmissionKind.automatic.getStableId()).isEqualTo(2);
+    assertThat(VehicleTransmissionKind.semi_automatic.getStableId()).isEqualTo(3);
   }
 
   @Test

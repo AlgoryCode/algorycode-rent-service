@@ -8,8 +8,8 @@ class RentalStatusTest {
 
   @Test
   void tryParse_acceptsTurkishLabels() {
-    assertThat(RentalStatus.tryParse("İptal")).contains(RentalStatus.cancelled);
-    assertThat(RentalStatus.tryParse("Onay Bekliyor")).contains(RentalStatus.pending);
-    assertThat(RentalStatus.tryParse("aktif")).contains(RentalStatus.active);
+    assertThat(RentalStatus.tryParse("İptal")).contains(RentalStatus.CANCELLED);
+    assertThat(RentalStatus.tryParse("Onay Bekliyor")).contains(RentalStatus.PENDING);
+    assertThat(RentalStatus.tryParse("aktif")).contains(RentalStatus.ACTIVE);
   }
 }

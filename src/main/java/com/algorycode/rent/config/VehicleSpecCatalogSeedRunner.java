@@ -40,11 +40,11 @@ public class VehicleSpecCatalogSeedRunner implements ApplicationRunner {
             + "SELECT ?, ?, ?, ? WHERE NOT EXISTS (SELECT 1 FROM vehicle_transmission_types WHERE id = ? OR lower(code) = lower(?))";
     try (PreparedStatement ps = c.prepareStatement(sql)) {
       for (VehicleTransmissionKind k : VehicleTransmissionKind.values()) {
-        ps.setLong(1, k.getStableId());
+        ps.setInt(1, k.getStableId());
         ps.setString(2, k.persistenceCode());
         ps.setString(3, k.getLabelTr());
         ps.setInt(4, k.getSortOrder());
-        ps.setLong(5, k.getStableId());
+        ps.setInt(5, k.getStableId());
         ps.setString(6, k.persistenceCode());
         ps.executeUpdate();
       }
@@ -57,11 +57,11 @@ public class VehicleSpecCatalogSeedRunner implements ApplicationRunner {
             + "SELECT ?, ?, ?, ? WHERE NOT EXISTS (SELECT 1 FROM vehicle_fuel_types WHERE id = ? OR lower(code) = lower(?))";
     try (PreparedStatement ps = c.prepareStatement(sql)) {
       for (VehicleFuelKind k : VehicleFuelKind.values()) {
-        ps.setLong(1, k.getStableId());
+        ps.setInt(1, k.getStableId());
         ps.setString(2, k.persistenceCode());
         ps.setString(3, k.getLabelTr());
         ps.setInt(4, k.getSortOrder());
-        ps.setLong(5, k.getStableId());
+        ps.setInt(5, k.getStableId());
         ps.setString(6, k.persistenceCode());
         ps.executeUpdate();
       }
@@ -74,11 +74,11 @@ public class VehicleSpecCatalogSeedRunner implements ApplicationRunner {
             + "SELECT ?, ?, ?, ? WHERE NOT EXISTS (SELECT 1 FROM vehicle_body_styles WHERE id = ? OR lower(code) = lower(?))";
     try (PreparedStatement ps = c.prepareStatement(sql)) {
       for (VehicleBodyStyleKind k : VehicleBodyStyleKind.values()) {
-        ps.setLong(1, k.getStableId());
+        ps.setInt(1, k.getStableId());
         ps.setString(2, k.persistenceCode());
         ps.setString(3, k.getLabelTr());
         ps.setInt(4, k.getSortOrder());
-        ps.setLong(5, k.getStableId());
+        ps.setInt(5, k.getStableId());
         ps.setString(6, k.persistenceCode());
         ps.executeUpdate();
       }

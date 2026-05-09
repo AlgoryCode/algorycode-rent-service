@@ -3,6 +3,7 @@ package com.algorycode.rent.controller;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
@@ -63,7 +64,6 @@ class VehicleControllerTest {
                 new VehicleDto(
                     id,
                     9L,
-                    1L,
                     null,
                     null,
                     null,
@@ -71,8 +71,8 @@ class VehicleControllerTest {
                     "Toyota",
                     "Corolla",
                     2023,
-                    VehicleStatus.active,
-                    "active",
+                    VehicleStatus.ACTIVE,
+                    "ACTIVE",
                     false,
                     null,
                     null,
@@ -176,10 +176,61 @@ class VehicleControllerTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(
                     """
-                    {"plate":"34 X 9","vehicleStatusId":1}
+                    {"plate":"34 X 9","vehicleStatus":"ACTIVE"}
                     """))
         .andExpect(status().isOk())
         .andExpect(content().string("Updated Successfully"));
+  }
+
+  @Test
+  void patchVehicleStatus_returnsVehicleJson() throws Exception {
+    when(vehicleService.updateVehicleStatus(7L, VehicleStatus.RENTED))
+        .thenReturn(
+            new VehicleDto(
+                7L,
+                9L,
+                null,
+                null,
+                null,
+                "34 A 1",
+                "Toyota",
+                "Corolla",
+                2023,
+                VehicleStatus.RENTED,
+                "RENTED",
+                false,
+                null,
+                null,
+                false,
+                null,
+                null,
+                "TR",
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                null,
+                Collections.emptyList(),
+                Collections.emptyList(),
+                Collections.emptyList(),
+                Map.of()));
+
+    mockMvc
+        .perform(
+            patch("/vehicles/{id}/status", 7L)
+                .param("status", "RENTED")
+                .accept(MediaType.APPLICATION_JSON))
+        .andExpect(status().isOk())
+        .andExpect(jsonPath("$.id").value(7))
+        .andExpect(jsonPath("$.statusCode").value("RENTED"));
+
+    verify(vehicleService).updateVehicleStatus(7L, VehicleStatus.RENTED);
   }
 
   @Test

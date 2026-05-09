@@ -17,6 +17,7 @@ import com.algorycode.rent.entity.VehicleHighlight;
 import com.algorycode.rent.entity.VehicleImage;
 import com.algorycode.rent.entity.VehicleImageSlot;
 import com.algorycode.rent.entity.VehicleOptionDefinition;
+import com.algorycode.rent.entity.VehicleStatus;
 import com.algorycode.rent.entity.VehicleOptionTemplate;
 import com.algorycode.rent.events.VehicleCreatedImagesEvent;
 import com.algorycode.rent.logging.AuditLog;
@@ -39,8 +40,6 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 @RequiredArgsConstructor
 public class VehicleService {
-  private static final long ACTIVE_VEHICLE_STATUS_ID = 1L;
-
   private final VehicleRepository vehicleRepository;
   private final HandoverLocationRepository handoverLocationRepository;
   private final VehicleOptionTemplateRepository vehicleOptionTemplateRepository;
@@ -49,6 +48,7 @@ public class VehicleService {
   private final VehicleImageService vehicleImageService;
   private final AuditLog auditLog;
   private final ApplicationEventPublisher applicationEventPublisher;
+  private final VehicleCatalogStatusService vehicleCatalogStatusService;
 
   @Transactional(readOnly = true)
   public List<VehicleDto> listAll() {
@@ -84,6 +84,12 @@ public class VehicleService {
   }
 
   @Transactional
+  public VehicleDto updateVehicleStatus(Long id, VehicleStatus status) {
+    vehicleCatalogStatusService.updateVehicleStatus(id, status);
+    return getById(id);
+  }
+
+  @Transactional
   public Long create(CreateVehicleRequest req) {
     String normalizedPlate = normalizePlate(req.plate());
     if (vehicleRepository.existsByPlateIgnoreCaseAndDeletedFalse(normalizedPlate)) {
@@ -92,7 +98,7 @@ public class VehicleService {
     Vehicle v = new Vehicle();
     v.setPlate(normalizedPlate);
     v.setVehicleModelId(req.vehicleModelId());
-    v.setVehicleStatusId(ACTIVE_VEHICLE_STATUS_ID);
+    v.setVehicleStatus(VehicleStatus.ACTIVE);
     v.setYear(req.year());
     v.setExternal(Boolean.TRUE.equals(req.external()));
     v.setExternalCompany(req.externalCompany());
@@ -140,7 +146,9 @@ public class VehicleService {
     }
     v.setPlate(normalizedPlate);
     v.setVehicleModelId(req.vehicleModelId());
-    v.setVehicleStatusId(req.vehicleStatusId());
+    if (req.vehicleStatus() != null) {
+      v.setVehicleStatus(req.vehicleStatus());
+    }
     v.setYear(req.year());
     v.setExternal(Boolean.TRUE.equals(req.external()));
     v.setExternalCompany(req.externalCompany());
@@ -312,12 +320,7 @@ public class VehicleService {
 
     String bodyStyleLabel = v.getBodyStyleRef() != null ? v.getBodyStyleRef().getLabelTr() : null;
 
-    String statusCode =
-        v.getVehicleStatus() != null
-                && v.getVehicleStatus().getCode() != null
-                && !v.getVehicleStatus().getCode().isBlank()
-            ? v.getVehicleStatus().getCode().trim().toLowerCase(java.util.Locale.ROOT)
-            : v.getStatus().name();
+    String statusCode = v.getStatus().name();
 
     Long modelId = v.getVehicleModel() != null ? v.getVehicleModel().getId() : null;
     Long transmissionTypeId =
@@ -328,9 +331,6 @@ public class VehicleService {
     return new VehicleDto(
         v.getId(),
         modelId,
-        v.getVehicleStatusId() != null
-            ? v.getVehicleStatusId()
-            : (v.getVehicleStatus() != null ? v.getVehicleStatus().getId() : null),
         transmissionTypeId,
         bodyStyleId,
         fuelTypeId,

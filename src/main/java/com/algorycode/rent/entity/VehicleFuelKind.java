@@ -6,28 +6,28 @@ import java.util.Map;
 import java.util.Optional;
 
 public enum VehicleFuelKind {
-  gasoline(1L, 1, "Benzin", "gasoline", "petrol"),
-  diesel(2L, 2, "Dizel", "diesel"),
-  electric(3L, 3, "Elektrik (BEV)", "electric", "ev", "bev"),
-  hybrid(4L, 4, "Hibrit (HEV)", "hybrid", "hev"),
+  gasoline(1, 1, "Benzin", "gasoline", "petrol"),
+  diesel(2, 2, "Dizel", "diesel"),
+  electric(3, 3, "Elektrik (BEV)", "electric", "ev", "bev"),
+  hybrid(4, 4, "Hibrit (HEV)", "hybrid", "hev"),
   plug_in_hybrid(
-      5L, 5, "Takılabilir hibrit (PHEV)", "plug_in_hybrid", "pluginhybrid", "phev", "plug-in hybrid"),
-  lpg(6L, 6, "LPG", "lpg"),
-  cng(7L, 7, "CNG", "cng");
+      5, 5, "Takılabilir hibrit (PHEV)", "plug_in_hybrid", "pluginhybrid", "phev", "plug-in hybrid"),
+  lpg(6, 6, "LPG", "lpg"),
+  cng(7, 7, "CNG", "cng");
 
-  private final long stableId;
+  private final int stableId;
   private final int sortOrder;
   private final String labelTr;
   private final String[] dbLookupCodes;
 
-  VehicleFuelKind(long stableId, int sortOrder, String labelTr, String... dbLookupCodes) {
+  VehicleFuelKind(int stableId, int sortOrder, String labelTr, String... dbLookupCodes) {
     this.stableId = stableId;
     this.sortOrder = sortOrder;
     this.labelTr = labelTr;
     this.dbLookupCodes = dbLookupCodes;
   }
 
-  public long getStableId() {
+  public int getStableId() {
     return stableId;
   }
 

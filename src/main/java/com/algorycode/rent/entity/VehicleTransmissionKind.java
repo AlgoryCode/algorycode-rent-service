@@ -6,23 +6,23 @@ import java.util.Map;
 import java.util.Optional;
 
 public enum VehicleTransmissionKind {
-  manual(1L, 1, "Manuel", "manual"),
-  automatic(2L, 2, "Otomatik", "automatic"),
-  semi_automatic(3L, 3, "Yarı otomatik", "semi_automatic", "semi-automatic", "semi automatic");
+  manual(1, 1, "Manuel", "manual"),
+  automatic(2, 2, "Otomatik", "automatic"),
+  semi_automatic(3, 3, "Yarı otomatik", "semi_automatic", "semi-automatic", "semi automatic");
 
-  private final long stableId;
+  private final int stableId;
   private final int sortOrder;
   private final String labelTr;
   private final String[] dbLookupCodes;
 
-  VehicleTransmissionKind(long stableId, int sortOrder, String labelTr, String... dbLookupCodes) {
+  VehicleTransmissionKind(int stableId, int sortOrder, String labelTr, String... dbLookupCodes) {
     this.stableId = stableId;
     this.sortOrder = sortOrder;
     this.labelTr = labelTr;
     this.dbLookupCodes = dbLookupCodes;
   }
 
-  public long getStableId() {
+  public int getStableId() {
     return stableId;
   }
 

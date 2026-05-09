@@ -10,7 +10,6 @@ import com.algorycode.rent.entity.VehicleImage;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 
 public final class VehicleMapper {
@@ -34,12 +33,7 @@ public final class VehicleMapper {
             .toList();
     HandoverLocationRefDto firstReturn = returnRefs.isEmpty() ? null : returnRefs.get(0);
 
-    String statusCode =
-        v.getVehicleStatus() != null
-                && v.getVehicleStatus().getCode() != null
-                && !v.getVehicleStatus().getCode().isBlank()
-            ? v.getVehicleStatus().getCode().trim().toLowerCase(Locale.ROOT)
-            : v.getStatus().name();
+    String statusCode = v.getStatus().name();
     Long modelId =
         v.getVehicleModelId() != null
             ? v.getVehicleModelId()
@@ -57,15 +51,9 @@ public final class VehicleMapper {
             ? v.getFuelTypeId()
             : (v.getFuelTypeRef() != null ? v.getFuelTypeRef().getId() : null);
 
-    Long vehicleCatalogStatusId =
-        v.getVehicleStatusId() != null
-            ? v.getVehicleStatusId()
-            : (v.getVehicleStatus() != null ? v.getVehicleStatus().getId() : null);
-
     return new VehicleDto(
         v.getId(),
         modelId,
-        vehicleCatalogStatusId,
         transmissionTypeId,
         bodyStyleId,
         fuelTypeId,

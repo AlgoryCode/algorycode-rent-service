@@ -9,6 +9,7 @@ import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -57,6 +58,7 @@ class VehicleServiceTest {
   @Mock private RentalRequestRepository rentalRequestRepository;
   @Mock private VehicleImageService vehicleImageService;
   @Mock private ApplicationEventPublisher applicationEventPublisher;
+  @Mock private VehicleCatalogStatusService vehicleCatalogStatusService;
 
   private VehicleService vehicleService;
 
@@ -80,7 +82,8 @@ class VehicleServiceTest {
                 new VehicleAvailabilitySlotAnalyzer()),
             vehicleImageService,
             mock(AuditLog.class),
-            applicationEventPublisher);
+            applicationEventPublisher,
+            vehicleCatalogStatusService);
   }
 
   @Test
@@ -91,7 +94,7 @@ class VehicleServiceTest {
     Rental r = new Rental();
     r.setStartDate(LocalDate.of(2026, 6, 15));
     r.setEndDate(LocalDate.of(2026, 6, 16));
-    RentalTestFixtures.attachRentalStatus(r, RentalStatus.active);
+    RentalTestFixtures.attachRentalStatus(r, RentalStatus.ACTIVE);
     r.setVehicleId(vid);
     Customer c =
         Customer.builder()
@@ -104,7 +107,9 @@ class VehicleServiceTest {
     r.setCustomerId(1L);
     r.setCustomer(c);
     when(rentalRepository.findPotentiallyBlockingForAvailability(
-            LocalDate.of(2026, 6, 14), LocalDate.of(2026, 6, 15)))
+            LocalDate.of(2026, 6, 14),
+            LocalDate.of(2026, 6, 15),
+            RentalStatus.CANCELLED))
         .thenReturn(List.of(r));
 
     var rows =
@@ -119,7 +124,9 @@ class VehicleServiceTest {
     var v = sampleVehicle();
     when(vehicleRepository.findAllByDeletedFalse()).thenReturn(List.of(v));
     when(rentalRepository.findPotentiallyBlockingForAvailability(
-            LocalDate.of(2026, 6, 14), LocalDate.of(2026, 6, 15)))
+            LocalDate.of(2026, 6, 14),
+            LocalDate.of(2026, 6, 15),
+            RentalStatus.CANCELLED))
         .thenReturn(Collections.emptyList());
 
     var rows =
@@ -135,7 +142,9 @@ class VehicleServiceTest {
     Long vid = v.getId();
     when(vehicleRepository.findAllByDeletedFalse()).thenReturn(List.of(v));
     when(rentalRepository.findPotentiallyBlockingForAvailability(
-            LocalDate.of(2026, 8, 10), LocalDate.of(2026, 8, 12)))
+            LocalDate.of(2026, 8, 10),
+            LocalDate.of(2026, 8, 12),
+            RentalStatus.CANCELLED))
         .thenReturn(Collections.emptyList());
 
     RentalRequest req = new RentalRequest();
@@ -169,7 +178,9 @@ class VehicleServiceTest {
 
     when(vehicleRepository.findAllByDeletedFalse()).thenReturn(List.of(v));
     when(rentalRepository.findPotentiallyBlockingForAvailability(
-            LocalDate.of(2026, 6, 14), LocalDate.of(2026, 6, 16)))
+            LocalDate.of(2026, 6, 14),
+            LocalDate.of(2026, 6, 16),
+            RentalStatus.CANCELLED))
         .thenReturn(Collections.emptyList());
 
     Long anyReturn = 200L;
@@ -203,7 +214,7 @@ class VehicleServiceTest {
     Rental r = new Rental();
     r.setStartDate(LocalDate.of(2026, 6, 20));
     r.setEndDate(LocalDate.of(2026, 6, 22));
-    RentalTestFixtures.attachRentalStatus(r, RentalStatus.active);
+    RentalTestFixtures.attachRentalStatus(r, RentalStatus.ACTIVE);
     r.setVehicleId(vid);
     Customer c =
         Customer.builder()
@@ -216,7 +227,9 @@ class VehicleServiceTest {
     r.setCustomerId(1L);
     r.setCustomer(c);
     when(rentalRepository.findPotentiallyBlockingForAvailability(
-            LocalDate.of(2026, 6, 14), LocalDate.of(2026, 7, 1)))
+            LocalDate.of(2026, 6, 14),
+            LocalDate.of(2026, 7, 1),
+            RentalStatus.CANCELLED))
         .thenReturn(List.of(r));
 
     var strictOnly =
@@ -305,17 +318,31 @@ class VehicleServiceTest {
             argThat(
                 veh ->
                     Objects.equals(veh.getVehicleModelId(), 1L)
-                        && Objects.equals(veh.getVehicleStatusId(), 1L)
+                        && veh.getStatus() == VehicleStatus.ACTIVE
                         && Objects.equals(veh.getFuelTypeId(), 2L)
                         && Objects.equals(veh.getTransmissionTypeId(), 1L)
                         && Objects.equals(veh.getBodyStyleId(), 1L)));
+  }
+
+  @Test
+  void updateVehicleStatus_delegatesToCatalogAndReturnsDto() {
+    var v = sampleVehicle();
+    doNothing()
+        .when(vehicleCatalogStatusService)
+        .updateVehicleStatus(any(), any(VehicleStatus.class));
+    when(vehicleRepository.findByIdAndDeletedFalse(v.getId())).thenReturn(Optional.of(v));
+
+    var dto = vehicleService.updateVehicleStatus(v.getId(), VehicleStatus.RENTED);
+
+    assertThat(dto.id()).isEqualTo(v.getId());
+    verify(vehicleCatalogStatusService).updateVehicleStatus(v.getId(), VehicleStatus.RENTED);
   }
 
   private static Vehicle sampleVehicle() {
     var v = new Vehicle();
     v.setId(301L);
     v.setPlate("34 ABC 101");
-    VehicleTestFixtures.attachBrandModelStatus(v, "Toyota", "Corolla", VehicleStatus.active);
+    VehicleTestFixtures.attachBrandModelStatus(v, "Toyota", "Corolla", VehicleStatus.ACTIVE);
     v.setYear(2023);
     v.setCreatedAt(Instant.parse("2026-01-01T00:00:00Z"));
     v.setUpdatedAt(Instant.parse("2026-01-01T00:00:00Z"));

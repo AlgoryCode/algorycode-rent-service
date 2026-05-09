@@ -1,5 +1,6 @@
 package com.algorycode.rent.dto;
 
+import com.algorycode.rent.entity.VehicleStatus;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Size;
 import java.math.BigDecimal;
@@ -9,7 +10,7 @@ import java.util.Map;
 public record UpdateVehicleRequest(
     @Size(max = 32) String plate,
     Long vehicleModelId,
-    Long vehicleStatusId,
+    VehicleStatus vehicleStatus,
     Integer year,
     Boolean external,
     @Size(max = 255) String externalCompany,
