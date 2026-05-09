@@ -9,7 +9,6 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.PrePersist;
 import jakarta.persistence.PreUpdate;
 import jakarta.persistence.Table;
-import java.math.BigDecimal;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -26,18 +25,25 @@ public class RentalOption extends AbstractAuditableLongEntity {
   @JoinColumn(name = "rental_id", nullable = false, insertable = false, updatable = false)
   private Rental rental;
 
-  @Column(nullable = false, length = 255)
-  private String title;
+  @Column(name = "vehicle_option_definition_id")
+  private Long vehicleOptionDefinitionId;
 
-  @Column(columnDefinition = "TEXT")
-  private String description;
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(
+      name = "vehicle_option_definition_id",
+      insertable = false,
+      updatable = false)
+  private VehicleOptionDefinition vehicleOptionDefinition;
 
-  @Column(nullable = false, precision = 12, scale = 2)
-  private BigDecimal price = BigDecimal.ZERO;
+  @Column(name = "reservation_extra_template_id")
+  private Long reservationExtraTemplateId;
 
-  /** İkon bilgisi (URL veya kod); null olabilir. */
-  @Column(length = 512)
-  private String icon;
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(
+      name = "reservation_extra_template_id",
+      insertable = false,
+      updatable = false)
+  private ReservationExtraOptionTemplate reservationExtraTemplate;
 
   @Column(name = "line_order", nullable = false)
   private int lineOrder;
@@ -45,8 +51,14 @@ public class RentalOption extends AbstractAuditableLongEntity {
   @PrePersist
   @PreUpdate
   void syncRentalOptionFk() {
-    if (rental != null && rental.getId() != null) {
+    if (rental != null) {
       rentalId = rental.getId();
+    }
+    if (vehicleOptionDefinition != null) {
+      vehicleOptionDefinitionId = vehicleOptionDefinition.getId();
+    }
+    if (reservationExtraTemplate != null) {
+      reservationExtraTemplateId = reservationExtraTemplate.getId();
     }
   }
 }

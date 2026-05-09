@@ -46,7 +46,7 @@ public class RentalFeedback {
   @PrePersist
   @PreUpdate
   void syncRentalFk() {
-    if (rental != null && rental.getId() != null) {
+    if (rental != null) {
       rentalId = rental.getId();
     }
   }

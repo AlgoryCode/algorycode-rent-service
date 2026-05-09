@@ -72,7 +72,7 @@ public class RentalRequestPricedLine extends AbstractAuditableLongEntity {
   @PrePersist
   @PreUpdate
   void syncRentalRequestPricedLineFk() {
-    if (rentalRequest != null && rentalRequest.getId() != null) {
+    if (rentalRequest != null) {
       rentalRequestId = rentalRequest.getId();
     }
   }

@@ -87,7 +87,7 @@ public final class RentalMapper {
 
   private static RentalOptionDto optionDto(RentalOption o) {
     return new RentalOptionDto(
-        o.getId(), o.getTitle(), o.getDescription(), o.getPrice(), o.getIcon());
+        o.getId(), o.getVehicleOptionDefinitionId(), o.getReservationExtraTemplateId());
   }
 
   private static AdditionalDriverDto additionalDriverDto(

@@ -34,7 +34,7 @@ public class RentalPhoto extends AbstractAuditableLongEntity {
   @PrePersist
   @PreUpdate
   void syncRentalPhotoFk() {
-    if (rental != null && rental.getId() != null) {
+    if (rental != null) {
       rentalId = rental.getId();
     }
   }

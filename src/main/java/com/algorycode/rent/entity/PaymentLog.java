@@ -70,10 +70,10 @@ public class PaymentLog extends AbstractAuditableLongEntity {
   @PrePersist
   @PreUpdate
   void syncPaymentLogFks() {
-    if (vehicle != null && vehicle.getId() != null) {
+    if (vehicle != null) {
       vehicleId = vehicle.getId();
     }
-    if (rental != null && rental.getId() != null) {
+    if (rental != null) {
       rentalId = rental.getId();
     }
   }

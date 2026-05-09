@@ -34,7 +34,7 @@ public class VehicleHighlight extends AbstractAuditableLongEntity {
   @PrePersist
   @PreUpdate
   void syncVehicleHighlightFk() {
-    if (vehicle != null && vehicle.getId() != null) {
+    if (vehicle != null) {
       vehicleId = vehicle.getId();
     }
   }

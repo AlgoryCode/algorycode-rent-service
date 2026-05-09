@@ -18,7 +18,8 @@ public record CreateRentalRequest(
     @NotNull @Valid CustomerRequest customer,
     @Size(max = 1) List<@Valid AdditionalDriverBody> additionalDrivers,
     @Size(max = 64) String status,
-    @Size(max = 100) List<@Valid RentalOptionRequest> options) {
+    @Size(max = 100) List<@NotNull Long> vehicleOptionDefinitionIds,
+    @Size(max = 100) List<@NotNull Long> reservationExtraTemplateIds) {
 
   public record AdditionalDriverBody(
       @NotBlank @Size(max = 255) String fullName,

@@ -32,7 +32,7 @@ public class City extends AbstractAuditableLongEntity {
   @PrePersist
   @PreUpdate
   void syncCountryFk() {
-    if (country != null && country.getId() != null) {
+    if (country != null) {
       countryId = country.getId();
     }
   }

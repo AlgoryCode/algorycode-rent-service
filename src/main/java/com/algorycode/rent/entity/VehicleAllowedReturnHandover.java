@@ -49,10 +49,10 @@ public class VehicleAllowedReturnHandover extends AbstractAuditableLongEntity {
   @PrePersist
   @PreUpdate
   void syncAllowedReturnFks() {
-    if (vehicle != null && vehicle.getId() != null) {
+    if (vehicle != null) {
       vehicleId = vehicle.getId();
     }
-    if (handoverLocation != null && handoverLocation.getId() != null) {
+    if (handoverLocation != null) {
       handoverLocationId = handoverLocation.getId();
     }
   }

@@ -44,7 +44,7 @@ public class RentalRequestOption extends AbstractAuditableLongEntity {
   @PrePersist
   @PreUpdate
   void syncRentalRequestOptionFk() {
-    if (rentalRequest != null && rentalRequest.getId() != null) {
+    if (rentalRequest != null) {
       rentalRequestId = rentalRequest.getId();
     }
   }

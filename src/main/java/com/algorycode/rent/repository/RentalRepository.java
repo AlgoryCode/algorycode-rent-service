@@ -46,7 +46,10 @@ public interface RentalRepository
         "pickupHandoverLocation",
         "returnHandoverLocation",
         "feedback",
-        "customer"
+        "customer",
+        "options",
+        "options.vehicleOptionDefinition",
+        "options.reservationExtraTemplate"
       })
   @Query("select r from Rental r where r.id = :id")
   Optional<Rental> findDetailById(@Param("id") Long id);
@@ -59,7 +62,15 @@ public interface RentalRepository
       """)
   List<Long> findIdsByCustomerRecordKey(@Param("recordKey") String recordKey);
 
-  @EntityGraph(attributePaths = {"vehicle", "statusDefinition", "customer", "options"})
+  @EntityGraph(
+      attributePaths = {
+        "vehicle",
+        "statusDefinition",
+        "customer",
+        "options",
+        "options.vehicleOptionDefinition",
+        "options.reservationExtraTemplate"
+      })
   @Query(
       """
       select distinct r from Rental r join r.vehicle v

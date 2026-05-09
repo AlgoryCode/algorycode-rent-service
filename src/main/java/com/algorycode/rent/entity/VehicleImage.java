@@ -43,7 +43,7 @@ public class VehicleImage extends AbstractAuditableLongEntity {
   @PrePersist
   @PreUpdate
   void syncVehicleImageFk() {
-    if (vehicle != null && vehicle.getId() != null) {
+    if (vehicle != null) {
       vehicleId = vehicle.getId();
     }
   }

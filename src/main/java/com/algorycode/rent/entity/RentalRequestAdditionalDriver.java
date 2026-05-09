@@ -47,7 +47,7 @@ public class RentalRequestAdditionalDriver extends AbstractAuditableLongEntity {
   @PrePersist
   @PreUpdate
   void syncRentalRequestAdditionalDriverFk() {
-    if (rentalRequest != null && rentalRequest.getId() != null) {
+    if (rentalRequest != null) {
       rentalRequestId = rentalRequest.getId();
     }
   }

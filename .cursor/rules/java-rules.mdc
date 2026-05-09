@@ -198,7 +198,8 @@ Controller  →  Service (@Service)  →  Repository (Interface)  →  Database
 ## 7. TEST YAZIM KURALLARI
 
 ### 7.1 Genel
-- **Her public metot için en az bir unit test yazılır.** Test coverage hedefi: **%80 line, %70 branch.**
+- Test yazımı **isteğe bağlıdır**; kullanıcı test açıkça istemediyse agent mevcut testleri güncelleyebilir ama yeni test dosyası/metodu eklemez.
+- Kullanıcı test istediğinde coverage hedefi: **%80 line, %70 branch.**
 - Test sınıfı adı: `<SınıfAdı>Test` (unit) veya `<SınıfAdı>IT` (integration).
 - Test metot adı: `methodName_whenCondition_thenExpected` formatı kullanılır.
   ```java
@@ -354,6 +355,7 @@ Controller  →  Service (@Service)  →  Repository (Interface)  →  Database
 
 - Gereksiz `null` kontrolleri ve tekrarlayan `if` blokları yazılmaz; domain sözleşmesi net olan yerlerde `Optional`, guard clause, `switch`/ifadesi, `Map`/strateji ile dallanma azaltılır.
 - Aynı `null` veya varlık kontrolü üst üste tekrarlanmaz; repository `Optional` sonucu service içinde tek yerde ele alınır (`orElseThrow`, `map`, `flatMap`).
+- `x != null && x.getId() != null` gibi zincir kontroller kullanılmaz; `x != null` kontrolü yeterlidir, `id` null ise değer zaten null atanır.
 - Mümkün olduğunda imkansız durumları tiple daralt: `record` ile zorunlu alanlar, `sealed` hiyerarşi, anlamlı alt türler.
 
 ---

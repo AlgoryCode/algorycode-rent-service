@@ -34,7 +34,7 @@ public class AccidentPhoto extends AbstractAuditableLongEntity {
   @PrePersist
   @PreUpdate
   void syncAccidentPhotoFk() {
-    if (accidentReport != null && accidentReport.getId() != null) {
+    if (accidentReport != null) {
       accidentReportId = accidentReport.getId();
     }
   }

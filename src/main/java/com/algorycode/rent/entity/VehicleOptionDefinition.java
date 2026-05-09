@@ -47,7 +47,7 @@ public class VehicleOptionDefinition extends AbstractAuditableLongEntity {
   @PrePersist
   @PreUpdate
   void syncVehicleOptionDefFk() {
-    if (vehicle != null && vehicle.getId() != null) {
+    if (vehicle != null) {
       vehicleId = vehicle.getId();
     }
   }

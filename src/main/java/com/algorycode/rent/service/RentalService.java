@@ -2,7 +2,6 @@ package com.algorycode.rent.service;
 
 import com.algorycode.rent.dto.CreateRentalRequest;
 import com.algorycode.rent.dto.RentalDto;
-import com.algorycode.rent.dto.RentalOptionRequest;
 import com.algorycode.rent.dto.UpdateRentalRequest;
 import com.algorycode.rent.exception.BadRequestException;
 import com.algorycode.rent.exception.ConflictException;
@@ -18,7 +17,6 @@ import com.algorycode.rent.entity.RentalOption;
 import com.algorycode.rent.entity.RentalStatus;
 import com.algorycode.rent.entity.RentalStatusDefinition;
 import com.algorycode.rent.entity.Vehicle;
-import com.algorycode.rent.entity.VehicleStatus;
 import com.algorycode.rent.logging.AuditLog;
 import com.algorycode.rent.logging.SafeReasonCodes;
 import com.algorycode.rent.repository.CustomerRepository;
@@ -29,7 +27,6 @@ import com.algorycode.rent.repository.VehicleOptionDefinitionRepository;
 import com.algorycode.rent.repository.VehicleRepository;
 import com.algorycode.rent.service.support.DateRangeValidator;
 import com.algorycode.rent.service.support.RentalCommissionFromVehicle;
-import com.algorycode.rent.service.support.RentalOptionLineResolution;
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDate;
@@ -94,9 +91,6 @@ public class RentalService {
             .findByIdAndDeletedFalse(req.vehicleId())
             .orElseThrow(
                 () -> new ResourceNotFoundException("Vehicle not found: " + req.vehicleId()));
-    if (vehicle.getStatus() == VehicleStatus.maintenance) {
-      throw new ConflictException("Bakımdaki araç kiralanamaz.");
-    }
     BigDecimal draftBase =
         RentalCommissionFromVehicle.baseRentalCharge(
             req.startDate(), req.endDate(), vehicle.getRentalDailyPrice());
@@ -140,9 +134,8 @@ public class RentalService {
         rental.getAdditionalDrivers().add(ad);
       }
     }
-    if (req.options() != null) {
-      replaceRentalOptions(rental, req.options());
-    }
+    replaceRentalOptions(
+        rental, req.vehicleOptionDefinitionIds(), req.reservationExtraTemplateIds());
     rental = rentalRepository.save(rental);
     persistRentalMediaToObjectStorage(rental);
     rental.setNetAmount(computeNetAmount(rental, vehicle));
@@ -240,8 +233,16 @@ public class RentalService {
       customerRecordService.assertCustomerActive(rental.getCustomer());
     }
 
-    if (req.options() != null) {
-      replaceRentalOptions(rental, req.options());
+    if (req.vehicleOptionDefinitionIds() != null || req.reservationExtraTemplateIds() != null) {
+      List<Long> vehicleIds =
+          req.vehicleOptionDefinitionIds() != null
+              ? req.vehicleOptionDefinitionIds()
+              : existingVehicleOptionDefinitionIds(rental);
+      List<Long> extraIds =
+          req.reservationExtraTemplateIds() != null
+              ? req.reservationExtraTemplateIds()
+              : existingReservationExtraTemplateIds(rental);
+      replaceRentalOptions(rental, vehicleIds, extraIds);
     }
 
     Vehicle commissionVehicle = resolveRentalVehicle(rental);
@@ -362,29 +363,75 @@ public class RentalService {
     }
   }
 
-  private void replaceRentalOptions(Rental rental, List<RentalOptionRequest> options) {
+  private static List<Long> existingVehicleOptionDefinitionIds(Rental rental) {
+    return rental.getOptions().stream()
+        .map(RentalOption::getVehicleOptionDefinitionId)
+        .filter(Objects::nonNull)
+        .toList();
+  }
+
+  private static List<Long> existingReservationExtraTemplateIds(Rental rental) {
+    return rental.getOptions().stream()
+        .map(RentalOption::getReservationExtraTemplateId)
+        .filter(Objects::nonNull)
+        .toList();
+  }
+
+  private void replaceRentalOptions(
+      Rental rental, List<Long> vehicleOptionDefinitionIds, List<Long> reservationExtraTemplateIds) {
     rental.getOptions().clear();
-    if (options == null || options.isEmpty()) {
+    boolean emptyVehicle =
+        vehicleOptionDefinitionIds == null || vehicleOptionDefinitionIds.isEmpty();
+    boolean emptyRental =
+        reservationExtraTemplateIds == null || reservationExtraTemplateIds.isEmpty();
+    if (emptyVehicle && emptyRental) {
       return;
     }
     Vehicle vehicle = resolveRentalVehicle(rental);
     int i = 0;
-    for (RentalOptionRequest o : options) {
-      RentalOptionLineResolution.Resolved resolved =
-          RentalOptionLineResolution.resolve(
-              vehicle,
-              o,
-              vehicleOptionDefinitionRepository,
-              reservationExtraOptionTemplateRepository);
-      RentalOption row = new RentalOption();
-      row.setRental(rental);
-      row.setTitle(resolved.title());
-      row.setDescription(resolved.description());
-      row.setPrice(resolved.price().setScale(2, RoundingMode.HALF_UP));
-      row.setIcon(resolved.icon());
-      row.setLineOrder(i++);
-      rental.getOptions().add(row);
+    if (vehicleOptionDefinitionIds != null) {
+      for (Long definitionId : vehicleOptionDefinitionIds) {
+        RentalOption row = mapVehicleOption(rental, vehicle, definitionId, i++);
+        rental.getOptions().add(row);
+      }
     }
+    if (reservationExtraTemplateIds != null) {
+      for (Long templateId : reservationExtraTemplateIds) {
+        RentalOption row = mapRentalOption(rental, templateId, i++);
+        rental.getOptions().add(row);
+      }
+    }
+  }
+
+  private RentalOption mapVehicleOption(
+      Rental rental, Vehicle vehicle, Long vehicleOptionDefinitionId, int lineOrder) {
+    var def =
+        vehicleOptionDefinitionRepository
+            .findByIdAndVehicle_Id(vehicleOptionDefinitionId, vehicle.getId())
+            .orElseThrow(() -> new BadRequestException("Geçersiz araç seçeneği."));
+    if (!def.isActive()) {
+      throw new BadRequestException("Seçilen araç seçeneği artık kullanılamaz.");
+    }
+    RentalOption row = new RentalOption();
+    row.setRental(rental);
+    row.setVehicleOptionDefinitionId(def.getId());
+    row.setLineOrder(lineOrder);
+    return row;
+  }
+
+  private RentalOption mapRentalOption(Rental rental, Long reservationExtraTemplateId, int lineOrder) {
+    var template =
+        reservationExtraOptionTemplateRepository
+            .findById(reservationExtraTemplateId)
+            .orElseThrow(() -> new BadRequestException("Geçersiz rezervasyon ek seçeneği."));
+    if (!template.isActive()) {
+      throw new BadRequestException("Seçilen rezervasyon ek seçeneği artık kullanılamaz.");
+    }
+    RentalOption row = new RentalOption();
+    row.setRental(rental);
+    row.setReservationExtraTemplateId(template.getId());
+    row.setLineOrder(lineOrder);
+    return row;
   }
 
   private BigDecimal computeNetAmount(Rental rental, Vehicle vehicle) {
@@ -394,7 +441,7 @@ public class RentalService {
     BigDecimal base = dailyPrice.multiply(BigDecimal.valueOf(days));
     BigDecimal optionsSum =
         rental.getOptions().stream()
-            .map(o -> o.getPrice() != null ? o.getPrice() : BigDecimal.ZERO)
+            .map(this::resolveOptionPrice)
             .reduce(BigDecimal.ZERO, BigDecimal::add);
     var commissionSnap = RentalCommissionFromVehicle.deriveSnapshot(vehicle, base);
     BigDecimal commissionSigned =
@@ -414,6 +461,28 @@ public class RentalService {
         .add(commissionSigned)
         .subtract(discount)
         .setScale(2, RoundingMode.HALF_UP);
+  }
+
+  private BigDecimal resolveOptionPrice(RentalOption option) {
+    if (option.getVehicleOptionDefinition() != null) {
+      return option.getVehicleOptionDefinition().getPrice();
+    }
+    if (option.getReservationExtraTemplate() != null) {
+      return option.getReservationExtraTemplate().getPrice();
+    }
+    if (option.getVehicleOptionDefinitionId() != null) {
+      return vehicleOptionDefinitionRepository
+          .findById(option.getVehicleOptionDefinitionId())
+          .map(v -> v.getPrice())
+          .orElse(BigDecimal.ZERO);
+    }
+    if (option.getReservationExtraTemplateId() != null) {
+      return reservationExtraOptionTemplateRepository
+          .findById(option.getReservationExtraTemplateId())
+          .map(t -> t.getPrice())
+          .orElse(BigDecimal.ZERO);
+    }
+    return BigDecimal.ZERO;
   }
 
   private Vehicle resolveRentalVehicle(Rental rental) {

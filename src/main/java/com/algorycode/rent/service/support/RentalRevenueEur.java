@@ -32,8 +32,14 @@ public final class RentalRevenueEur {
     BigDecimal s = BigDecimal.ZERO;
     if (r.getOptions() != null) {
       for (RentalOption o : r.getOptions()) {
-        if (o.getPrice() != null) {
-          s = s.add(o.getPrice());
+        if (o.getVehicleOptionDefinition() != null
+            && o.getVehicleOptionDefinition().getPrice() != null) {
+          s = s.add(o.getVehicleOptionDefinition().getPrice());
+          continue;
+        }
+        if (o.getReservationExtraTemplate() != null
+            && o.getReservationExtraTemplate().getPrice() != null) {
+          s = s.add(o.getReservationExtraTemplate().getPrice());
         }
       }
     }

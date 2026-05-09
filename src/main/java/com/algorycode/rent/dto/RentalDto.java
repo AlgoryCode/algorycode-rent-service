@@ -61,9 +61,6 @@ public record RentalDto(
 
   public record RentalOptionDto(
       Long id,
-      String title,
-      String description,
-      BigDecimal price,
-      /** İkon; null olabilir. */
-      String icon) {}
+      Long vehicleOptionDefinitionId,
+      Long reservationExtraTemplateId) {}
 }

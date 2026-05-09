@@ -136,19 +136,19 @@ public class Rental extends AbstractAuditableLongEntity {
   @PrePersist
   @PreUpdate
   void syncRentalFks() {
-    if (vehicle != null && vehicle.getId() != null) {
+    if (vehicle != null) {
       vehicleId = vehicle.getId();
     }
-    if (pickupHandoverLocation != null && pickupHandoverLocation.getId() != null) {
+    if (pickupHandoverLocation != null) {
       pickupHandoverLocationId = pickupHandoverLocation.getId();
     }
-    if (returnHandoverLocation != null && returnHandoverLocation.getId() != null) {
+    if (returnHandoverLocation != null) {
       returnHandoverLocationId = returnHandoverLocation.getId();
     }
-    if (statusDefinition != null && statusDefinition.getId() != null) {
+    if (statusDefinition != null) {
       rentalStatusId = statusDefinition.getId();
     }
-    if (customer != null && customer.getId() != null) {
+    if (customer != null) {
       customerId = customer.getId();
     }
   }

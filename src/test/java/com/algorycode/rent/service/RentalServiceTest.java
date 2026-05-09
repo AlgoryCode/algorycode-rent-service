@@ -207,7 +207,7 @@ class RentalServiceTest {
 
     UpdateRentalRequest req =
         new UpdateRentalRequest(
-            null, null, null, null, null, null, "completed", null, null);
+            null, null, null, null, null, null, "completed", null, null, null);
 
     rentalService.update(rentalId, req);
 
@@ -257,7 +257,7 @@ class RentalServiceTest {
     rentalService.update(
         rentalId,
         new UpdateRentalRequest(
-            null, null, null, null, null, null, "completed", null, null));
+            null, null, null, null, null, null, "completed", null, null, null));
 
     verify(vehicleRepository, never()).save(any());
   }
@@ -310,34 +310,6 @@ class RentalServiceTest {
     rentalService.updateStatus(21L, "pending");
 
     verify(vehicleRepository, never()).save(any(Vehicle.class));
-  }
-
-  @Test
-  void create_whenVehicleMaintenance_throwsConflict() {
-    Vehicle vehicle = new Vehicle();
-    vehicle.setId(1L);
-    vehicle.setRentalDailyPrice(BigDecimal.valueOf(100));
-    VehicleTestFixtures.attachBrandModelStatus(vehicle, "Fiat", "Egea", VehicleStatus.maintenance);
-    when(vehicleRepository.findByIdAndDeletedFalse(1L)).thenReturn(Optional.of(vehicle));
-
-    CreateRentalRequest req =
-        new CreateRentalRequest(
-            1L,
-            null,
-            LocalDate.of(2026, 7, 1),
-            LocalDate.of(2026, 7, 5),
-            null,
-            null,
-            new CustomerRequest(
-                "Ali", "", "P", "+90", "ali@test.com", null, null, null, null),
-            null,
-            null,
-            null);
-
-    assertThatThrownBy(() -> rentalService.create(req))
-        .isInstanceOf(ConflictException.class)
-        .hasMessageContaining("Bakım");
-    verify(rentalRepository, never()).save(any());
   }
 
   private Rental sampleRental(Long vehicleIdParam) {

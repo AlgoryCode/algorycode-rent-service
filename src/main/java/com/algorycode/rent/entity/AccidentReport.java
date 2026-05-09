@@ -47,7 +47,7 @@ public class AccidentReport extends AbstractAuditableLongEntity {
   @PrePersist
   @PreUpdate
   void syncAccidentReportFk() {
-    if (rental != null && rental.getId() != null) {
+    if (rental != null) {
       rentalId = rental.getId();
     }
   }
