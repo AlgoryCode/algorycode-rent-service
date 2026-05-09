@@ -118,7 +118,11 @@ public class RentalService {
     rental.setCommissionAmount(BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP));
     rental.setCommissionFlow(RentalCommissionFlow.collect);
     rental.setCommissionCompany(null);
-    Customer customer = customerService.createCustomer(req.customer());
+    Customer customer =
+        customerRepository
+            .findById(req.customerId())
+            .orElseThrow(
+                () -> new ResourceNotFoundException("Customer not found: " + req.customerId()));
     customerRecordService.assertCustomerActive(customer);
     rental.setCustomer(customer);
     if (req.additionalDrivers() != null) {

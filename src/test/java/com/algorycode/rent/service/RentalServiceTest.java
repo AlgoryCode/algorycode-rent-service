@@ -12,7 +12,6 @@ import static org.mockito.Mockito.when;
 import com.algorycode.rent.dto.CreateRentalRequest;
 import com.algorycode.rent.dto.CustomerRequest;
 import com.algorycode.rent.dto.UpdateRentalRequest;
-import com.algorycode.rent.exception.ConflictException;
 import com.algorycode.rent.exception.ResourceNotFoundException;
 import com.algorycode.rent.entity.HandoverLocation;
 import com.algorycode.rent.entity.HandoverLocationKind;
@@ -144,6 +143,101 @@ class RentalServiceTest {
     assertThatThrownBy(() -> rentalService.getById(id))
         .isInstanceOf(ResourceNotFoundException.class)
         .hasMessageContaining("Rental not found");
+  }
+
+  @Test
+  void create_whenCustomerExists_loadsCustomerWithoutCreating() {
+    Long vehicleId = 1L;
+    Long customerId = 42L;
+    Vehicle v = new Vehicle();
+    v.setId(vehicleId);
+    v.setRentalDailyPrice(BigDecimal.valueOf(100));
+    VehicleTestFixtures.attachBrandModelStatus(v, "VW", "Golf", VehicleStatus.active);
+    v.setCreatedAt(Instant.now());
+    v.setUpdatedAt(Instant.now());
+
+    Customer customer =
+        Customer.builder()
+            .fullName("Existing")
+            .nationalId("11111111111")
+            .passportNo("P1")
+            .phone("+90")
+            .build();
+    customer.setId(customerId);
+    customer.setPassportImageDataUrl("data:image/png;base64,x");
+    customer.setDriverLicenseImageDataUrl("data:image/png;base64,y");
+
+    when(vehicleRepository.findByIdAndDeletedFalse(vehicleId)).thenReturn(Optional.of(v));
+    when(rentalRepository.findByVehicle_IdOrderByCreatedAtDesc(vehicleId)).thenReturn(List.of());
+    when(customerRepository.findById(customerId)).thenReturn(Optional.of(customer));
+    when(rentalRepository.save(any(Rental.class)))
+        .thenAnswer(
+            invocation -> {
+              Rental r = invocation.getArgument(0);
+              if (r.getId() == null) {
+                r.setId(500L);
+              }
+              return r;
+            });
+    when(objectStorageService.uploadDataUrl(anyString(), anyString(), anyString()))
+        .thenAnswer(invocation -> invocation.getArgument(2));
+    when(objectStorageService.resolvePublicUrl(any()))
+        .thenAnswer(invocation -> invocation.getArgument(0));
+
+    CreateRentalRequest req =
+        new CreateRentalRequest(
+            vehicleId,
+            null,
+            LocalDate.of(2026, 6, 1),
+            LocalDate.of(2026, 6, 5),
+            null,
+            null,
+            customerId,
+            null,
+            null,
+            null,
+            null);
+
+    var dto = rentalService.create(req);
+
+    assertThat(dto.customer().fullName()).isEqualTo("Existing");
+    verify(customerRepository).findById(customerId);
+    verify(customerService, never()).createCustomer(any(CustomerRequest.class));
+  }
+
+  @Test
+  void create_whenCustomerMissing_throws() {
+    Long vehicleId = 3L;
+    Long customerId = 99L;
+    Vehicle v = new Vehicle();
+    v.setId(vehicleId);
+    v.setRentalDailyPrice(BigDecimal.valueOf(50));
+    VehicleTestFixtures.attachBrandModelStatus(v, "Fiat", "Egea", VehicleStatus.active);
+    v.setCreatedAt(Instant.now());
+    v.setUpdatedAt(Instant.now());
+
+    when(vehicleRepository.findByIdAndDeletedFalse(vehicleId)).thenReturn(Optional.of(v));
+    when(rentalRepository.findByVehicle_IdOrderByCreatedAtDesc(vehicleId)).thenReturn(List.of());
+    when(customerRepository.findById(customerId)).thenReturn(Optional.empty());
+
+    CreateRentalRequest req =
+        new CreateRentalRequest(
+            vehicleId,
+            null,
+            LocalDate.of(2026, 7, 1),
+            LocalDate.of(2026, 7, 3),
+            null,
+            null,
+            customerId,
+            null,
+            null,
+            null,
+            null);
+
+    assertThatThrownBy(() -> rentalService.create(req))
+        .isInstanceOf(ResourceNotFoundException.class)
+        .hasMessageContaining("Customer not found");
+    verify(customerService, never()).createCustomer(any(CustomerRequest.class));
   }
 
   @Test

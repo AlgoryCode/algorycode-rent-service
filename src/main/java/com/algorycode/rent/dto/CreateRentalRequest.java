@@ -15,7 +15,7 @@ public record CreateRentalRequest(
     @NotNull LocalDate endDate,
     Long pickupHandoverLocationId,
     Long returnHandoverLocationId,
-    @NotNull @Valid CustomerRequest customer,
+    @NotNull Long customerId,
     @Size(max = 1) List<@Valid AdditionalDriverBody> additionalDrivers,
     @Size(max = 64) String status,
     @Size(max = 100) List<@NotNull Long> vehicleOptionDefinitionIds,
