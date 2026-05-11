@@ -63,7 +63,7 @@ app:
   # Gateway CORS veriyorsa false bırakın; aksi halde çift Access-Control-Allow-Origin (tarayıcı CORS hatası).
   # Tarayıcı doğrudan 8090’a gidiyorsa true + allowed-origin-patterns.
   cors:
-    enabled: true
+    enabled: false
     allowed-origin-patterns: "*"
   mail:
     rabbit:
