@@ -12,6 +12,7 @@ import com.algorycode.rent.entity.Rental;
 import com.algorycode.rent.entity.RentalOption;
 import com.algorycode.rent.entity.RentalStatus;
 import com.algorycode.rent.entity.Vehicle;
+import com.algorycode.rent.entity.VehicleOptionDefinition;
 import com.algorycode.rent.entity.VehicleStatus;
 import com.algorycode.rent.repository.RentalRepository;
 import com.algorycode.rent.service.support.RentalTestFixtures;
@@ -82,7 +83,9 @@ class RentalReportServiceTest {
     v.setRentalDailyPrice(new BigDecimal("100.00"));
 
     RentalOption opt = new RentalOption();
-    opt.setPrice(new BigDecimal("25.50"));
+    VehicleOptionDefinition optDef = new VehicleOptionDefinition();
+    optDef.setPrice(new BigDecimal("25.50"));
+    opt.setVehicleOptionDefinition(optDef);
 
     Rental r = new Rental();
     r.setVehicle(v);

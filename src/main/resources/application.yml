@@ -22,7 +22,7 @@ spring:
     hikari:
       connection-init-sql: SET search_path TO public
   flyway:
-    enabled: false
+    enabled: true
     baseline-on-migrate: true
     default-schema: public
     schemas: public

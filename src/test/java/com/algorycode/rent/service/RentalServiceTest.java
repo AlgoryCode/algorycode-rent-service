@@ -67,6 +67,16 @@ class RentalServiceTest {
   @BeforeEach
   void stubVehicleCatalogStatus() {
     lenient()
+        .when(vehicleCatalogStatusService.vehicleStatusForRental(any(RentalStatus.class)))
+        .thenAnswer(
+            inv -> {
+              RentalStatus rs = inv.getArgument(0);
+              return switch (rs) {
+                case ACTIVE, PENDING -> VehicleStatus.RENTED;
+                case COMPLETED, CANCELLED -> VehicleStatus.ACTIVE;
+              };
+            });
+    lenient()
         .doNothing()
         .when(vehicleCatalogStatusService)
         .updateVehicleStatus(anyLong(), any(VehicleStatus.class));
@@ -278,7 +288,7 @@ class RentalServiceTest {
     Long vehicleId = 1L;
 
     HandoverLocation returnLoc = new HandoverLocation();
-    returnLoc.setId(1L);
+    returnLoc.setId(2L);
     returnLoc.setKind(HandoverLocationKind.RETURN);
     returnLoc.setName("Havalimanı teslim");
     returnLoc.setActive(true);
